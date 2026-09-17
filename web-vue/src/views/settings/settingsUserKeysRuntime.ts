@@ -6,6 +6,7 @@ import type { usePageRuntime } from '@/composables/usePageRuntime'
 import { usePageQuery } from '@/composables/usePageQuery'
 import { useToast } from '@/composables/useToast'
 import { errorMessage } from '@/lib/errorMessage'
+import { writeClipboardText } from '@/lib/clipboard'
 
 export type UserKeyForm = {
   name: string
@@ -72,7 +73,7 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
   async function copyUserKey(value: string) {
     if (!value) return
     try {
-      await navigator.clipboard.writeText(value)
+      await writeClipboardText(value)
       if (value === newUserKey.value) clearNewUserKey()
       toast.success('已复制密钥')
     } catch {
@@ -127,7 +128,10 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
   async function createUserKey() {
     userKeyBusy.value = 'create'
     try {
-      const response = await userKeysApi.create(userKeyForm.value.name.trim())
+      const limitText = userKeyForm.value.dailyImageLimit.trim()
+      const parsed = limitText === '' ? NaN : parseInt(limitText, 10)
+      const dailyImageLimit = !isNaN(parsed) && parsed >= 0 ? parsed : null
+      const response = await userKeysApi.create(userKeyForm.value.name.trim(), dailyImageLimit)
       upsertUserKey(response.item)
       revealNewUserKey(response.raw_key)
       toast.success('用户密钥已创建')

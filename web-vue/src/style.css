@@ -541,6 +541,36 @@ main > * {
   transform-origin: top left;
 }
 
+/* 图片网格错峰入场：淡入上浮 + 轻微缩放（fade-in + slide-in-up + scale-in） */
+.gallery-image-card {
+  animation: ui-fade-slide-up 0.4s ease both;
+}
+.gallery-image-card:nth-child(1) { animation-delay: 0.02s; }
+.gallery-image-card:nth-child(2) { animation-delay: 0.05s; }
+.gallery-image-card:nth-child(3) { animation-delay: 0.08s; }
+.gallery-image-card:nth-child(4) { animation-delay: 0.11s; }
+.gallery-image-card:nth-child(5) { animation-delay: 0.14s; }
+.gallery-image-card:nth-child(6) { animation-delay: 0.17s; }
+.gallery-image-card:nth-child(7) { animation-delay: 0.2s; }
+.gallery-image-card:nth-child(n+8) { animation-delay: 0.23s; }
+
+/* 图片卡片悬停：轻微上浮与阴影加深 */
+.gallery-image-card .media-wrapper {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.gallery-image-card:hover .media-wrapper {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 26px hsl(var(--primary) / 0.16);
+}
+
+/* 图片卡片图片悬停：轻柔放大（zoom） */
+.gallery-image-card .media-content {
+  transition: transform 0.35s ease;
+}
+.gallery-image-card:hover .media-content {
+  transform: scale(1.04);
+}
+
 /* 尊重系统减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
   main > *,
@@ -549,12 +579,16 @@ main > * {
   .ui-card-sm,
   .shell-sidebar .ui-menu-item,
   .ui-overlay-panel,
-  .ui-menu-panel {
+  .ui-menu-panel,
+  .gallery-image-card {
     animation: none !important;
   }
   .ui-btn-primary::before,
   .ui-btn-outline:active,
-  .ui-btn-primary:active {
+  .ui-btn-primary:active,
+  .gallery-image-card:hover .media-wrapper,
+  .gallery-image-card:hover .media-content {
     animation: none !important;
+    transform: none !important;
   }
 }
