@@ -13,8 +13,7 @@ export interface StudioSessionLoadResult {
 }
 
 export async function loadStudioSessionState(): Promise<StudioSessionLoadResult> {
-  const { data } = await apiClient.get<StudioSessionLoadResult>('/api/studio-sessions')
-  return data
+  return apiClient.get<StudioSessionLoadResult, StudioSessionLoadResult>('/api/studio-sessions')
 }
 
 export async function saveStudioSessionState(state: StudioSessionState): Promise<void> {

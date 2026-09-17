@@ -53,6 +53,7 @@ class AuthView(_StrictModel):
 
 class UserKeyCreateRequest(_StrictModel):
     name: str = ""
+    daily_image_limit: int | None = None
 
 
 class UserKeyUpdateRequest(_StrictModel):

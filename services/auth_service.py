@@ -269,7 +269,13 @@ class AuthService:
             raise ValueError("这个名称已经在使用中了，换一个更容易区分的名称吧")
         return candidate
 
-    def create_key(self, *, role: AuthRole, name: str = "") -> tuple[dict[str, object], str]:
+    def create_key(
+        self,
+        *,
+        role: AuthRole,
+        name: str = "",
+        daily_image_limit: int | None = None,
+    ) -> tuple[dict[str, object], str]:
         with self._lock:
             for attempt in range(_CAS_ATTEMPTS):
                 self._reload_locked()
@@ -294,7 +300,13 @@ class AuthService:
                     "enabled": True,
                     "created_at": _now_iso(),
                     "last_used_at": None,
+                    "daily_image_limit": None,
                 }
+                if daily_image_limit is not None:
+                    try:
+                        item["daily_image_limit"] = max(0, int(daily_image_limit))
+                    except (TypeError, ValueError):
+                        item["daily_image_limit"] = None
                 try:
                     result = self.storage.mutate_auth_keys(
                         StorageMutation(
