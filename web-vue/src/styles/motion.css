@@ -1,0 +1,344 @@
+/* =====================================================================
+ * motion.css — 全站动效系统
+ * 参考 css-effects-hub 的动效体系，覆盖路由转场、加载骨架、按钮、卡片、
+ * 弹窗、列表、文字、微交互、滚动揭示、状态呼吸等关键交互。
+ * 所有动画遵循 prefers-reduced-motion 降级，保持可访问性。
+ * ===================================================================== */
+
+/* ---------- 1. 通用缓动与关键帧 ---------- */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 380ms;
+}
+
+/* 淡入上浮 */
+@keyframes motion-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* 淡入 */
+@keyframes motion-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* 缩放淡入 */
+@keyframes motion-pop-in {
+  0% { opacity: 0; transform: scale(0.96); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+/* 底部抽屉上滑 */
+@keyframes motion-slide-up-sheet {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* 右侧滑入 */
+@keyframes motion-slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* 左侧滑入 */
+@keyframes motion-slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* 骨架屏扫光 */
+@keyframes motion-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+/* 呼吸灯 */
+@keyframes motion-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+/* 脉冲光环 */
+@keyframes motion-pulse-ring {
+  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
+  70% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+/* 弹性点击 */
+@keyframes motion-tap-spring {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+/* 渐变文字流动 */
+@keyframes motion-gradient-text {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+/* 旋转加载 */
+@keyframes motion-spin {
+  to { transform: rotate(360deg); }
+}
+/* 闪光扫过 */
+@keyframes motion-shine {
+  from { transform: translateX(-130%) skewX(-18deg); }
+  to { transform: translateX(230%) skewX(-18deg); }
+}
+
+/* ---------- 2. 路由 / 页面转场（增强 route-view） ---------- */
+.route-view-enter-active {
+  transition:
+    opacity var(--motion-base) var(--ease-out-soft),
+    transform var(--motion-base) var(--ease-out-soft);
+}
+.route-view-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.route-view-leave-active {
+  transition: opacity var(--motion-fast) ease-out;
+}
+.route-view-leave-to {
+  opacity: 0;
+}
+
+/* 主内容区入场：不做全局位移（避免与 AppShell 的 route-view 转场冲突），
+ * 仅对独立页面内容块做轻微淡入上浮。 */
+main > .route-view-content {
+  animation: motion-fade-in var(--motion-base) var(--ease-out-soft) both;
+}
+
+/* ---------- 3. 加载骨架屏 ---------- */
+.motion-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted) / 0.6);
+  border-radius: 0.375rem;
+}
+.motion-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--card) / 0.85),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: motion-shimmer 1.4s ease-in-out infinite;
+}
+/* 页面加载状态中的块级占位 */
+.page-loading-skeleton {
+  animation: motion-fade-in var(--motion-base) ease-out both;
+}
+
+/* ---------- 4. 按钮交互 ---------- */
+.ui-btn {
+  transition:
+    transform var(--motion-fast) var(--ease-out-soft),
+    box-shadow var(--motion-base) ease,
+    background-color var(--motion-base) ease,
+    border-color var(--motion-base) ease,
+    opacity var(--motion-base) ease;
+}
+.ui-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.ui-btn:not(:disabled):active {
+  animation: motion-tap-spring var(--motion-base) var(--ease-out-soft);
+}
+/* 主按钮悬停光晕脉冲 */
+.ui-btn-primary:not(:disabled):hover {
+  animation: motion-pulse-ring 0.9s ease-out;
+}
+/* 图标按钮微动 */
+.ui-btn[icon-only]:not(:disabled):hover svg {
+  transform: scale(1.08);
+  transition: transform var(--motion-fast) var(--ease-spring);
+}
+
+/* ---------- 5. 卡片 / 面板悬浮 ---------- */
+/* 说明：项目真实卡片类为 metric-strip-card / form-section / surface-box，
+ * 以及 nanocat-ui 的 StatCard / ChartCard（bg-card + border + rounded-*）。
+ * 这里只对「真正的卡片」做悬停抬升，不再命中 .ui-panel（设置页 PagePanel
+ * 根节点带 ui-panel 且是透明无边框大容器，误伤会导致整体上移 + 边框错乱）。 */
+.metric-strip-card,
+.form-section,
+.surface-box,
+.ui-card,
+.ui-card-sm,
+.ui-surface,
+[class*='stat-card'],
+/* nanocat-ui StatCard / ChartCard 根元素（bg-card + border + rounded-*） */
+[class*='bg-card'][class*='rounded'] {
+  transition:
+    transform var(--motion-base) var(--ease-out-soft),
+    box-shadow var(--motion-base) var(--ease-out-soft),
+    border-color var(--motion-base) ease;
+  will-change: transform;
+}
+.metric-strip-card:hover,
+.form-section:hover,
+.surface-box:hover,
+.ui-card:hover,
+.ui-card-sm:hover,
+.ui-surface:hover,
+[class*='stat-card']:hover,
+[class*='bg-card'][class*='rounded']:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--primary) / 0.35) !important;
+  box-shadow:
+    0 6px 18px hsl(var(--primary) / 0.10),
+    0 2px 6px hsl(var(--primary) / 0.06) !important;
+}
+/* 悬停时卡片内图标微放大（metric-strip 图标 + 通用图标容器） */
+.metric-strip-card:hover .metric-strip-icon {
+  transform: scale(1.08);
+}
+.metric-strip-icon {
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+.metric-strip-card:active,
+.form-section:active,
+.surface-box:active,
+.ui-card:active,
+.ui-card-sm:active,
+.ui-surface:active,
+[class*='stat-card']:active,
+[class*='bg-card'][class*='rounded']:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* ---------- 6. 弹窗 / 抽屉入场 ---------- */
+.ui-overlay-panel,
+.ui-menu-panel {
+  animation: motion-pop-in var(--motion-base) var(--ease-spring) both;
+  transform-origin: top center;
+}
+/* 抽屉类（右侧滑入） */
+.ui-floating-panel,
+[class*='drawer'] {
+  animation: motion-slide-in-right var(--motion-base) var(--ease-out-soft) both;
+}
+/* 底部弹层（上滑） */
+[class*='sheet'],
+[class*='bottom-panel'] {
+  animation: motion-slide-up-sheet var(--motion-base) var(--ease-out-soft) both;
+}
+
+/* ---------- 7. 列表错峰入场 ---------- */
+.motion-stagger > * {
+  animation: motion-fade-up var(--motion-slow) var(--ease-out-soft) both;
+}
+.motion-stagger > *:nth-child(1) { animation-delay: 0.01s; }
+.motion-stagger > *:nth-child(2) { animation-delay: 0.03s; }
+.motion-stagger > *:nth-child(3) { animation-delay: 0.05s; }
+.motion-stagger > *:nth-child(4) { animation-delay: 0.07s; }
+.motion-stagger > *:nth-child(5) { animation-delay: 0.09s; }
+.motion-stagger > *:nth-child(6) { animation-delay: 0.11s; }
+.motion-stagger > *:nth-child(7) { animation-delay: 0.13s; }
+.motion-stagger > *:nth-child(8) { animation-delay: 0.15s; }
+.motion-stagger > *:nth-child(n+9) { animation-delay: 0.17s; }
+
+/* 表格行 / 内联列表：纯淡入错峰（不位移，避免表格布局抖动） */
+.motion-stagger-fade > * {
+  animation: motion-fade-in var(--motion-slow) var(--ease-out-soft) both;
+}
+.motion-stagger-fade > *:nth-child(1) { animation-delay: 0.01s; }
+.motion-stagger-fade > *:nth-child(2) { animation-delay: 0.03s; }
+.motion-stagger-fade > *:nth-child(3) { animation-delay: 0.05s; }
+.motion-stagger-fade > *:nth-child(4) { animation-delay: 0.07s; }
+.motion-stagger-fade > *:nth-child(5) { animation-delay: 0.09s; }
+.motion-stagger-fade > *:nth-child(6) { animation-delay: 0.11s; }
+.motion-stagger-fade > *:nth-child(7) { animation-delay: 0.13s; }
+.motion-stagger-fade > *:nth-child(8) { animation-delay: 0.15s; }
+.motion-stagger-fade > *:nth-child(n+9) { animation-delay: 0.17s; }
+
+/* 图库图片卡片错峰入场 */
+.gallery-image-card {
+  animation: motion-fade-up var(--motion-slow) var(--ease-out-soft) both;
+}
+.gallery-image-card:nth-child(1) { animation-delay: 0.02s; }
+.gallery-image-card:nth-child(2) { animation-delay: 0.05s; }
+.gallery-image-card:nth-child(3) { animation-delay: 0.08s; }
+.gallery-image-card:nth-child(4) { animation-delay: 0.11s; }
+.gallery-image-card:nth-child(5) { animation-delay: 0.14s; }
+.gallery-image-card:nth-child(6) { animation-delay: 0.17s; }
+.gallery-image-card:nth-child(7) { animation-delay: 0.2s; }
+.gallery-image-card:nth-child(n+8) { animation-delay: 0.23s; }
+
+/* ---------- 8. 文字效果 ---------- */
+/* 渐变文字（用于标题高亮） */
+.motion-gradient-text {
+  background: linear-gradient(
+    120deg,
+    hsl(var(--primary)),
+    hsl(250 100% 65%),
+    hsl(var(--primary))
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: motion-gradient-text 3s ease-in-out infinite;
+}
+
+/* ---------- 9. 微交互 ---------- */
+/* 分段控件指示器滑动 */
+.ui-segmented-btn {
+  transition:
+    color var(--motion-base) ease,
+    background-color var(--motion-base) ease,
+    transform var(--motion-fast) var(--ease-out-soft);
+}
+.ui-segmented-btn:active {
+  transform: scale(0.97);
+}
+/* 状态徽标呼吸（运行中） */
+[data-status='running'] .ui-pill,
+[data-status='running'] .ui-chip,
+[data-status='running'] .ui-state-badge,
+.ui-pill--running,
+.ui-chip--running {
+  animation: motion-breathe 1.6s ease-in-out infinite;
+}
+
+/* ---------- 10. 滚动揭示（进入视口淡入） ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .motion-reveal {
+      animation: motion-fade-up var(--motion-slow) var(--ease-out-soft) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+
+/* ---------- 11. 图片预览 / 灯箱 ---------- */
+.studio-lightbox,
+.gallery-lightbox,
+[class*='lightbox'] {
+  animation: motion-pop-in var(--motion-base) var(--ease-spring) both;
+}
+/* 图片悬停放大 */
+.gallery-image-card .media-content,
+[class*='image-card'] .media-content {
+  transition: transform var(--motion-slow) var(--ease-out-soft);
+}
+.gallery-image-card:hover .media-content,
+[class*='image-card']:hover .media-content {
+  transform: scale(1.04);
+}
+
+/* ---------- 12. 可访问性降级 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

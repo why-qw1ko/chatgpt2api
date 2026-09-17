@@ -10,6 +10,7 @@ import { applyThemeMode, getStoredThemeMode } from './lib/theme'
 import App from './App.vue'
 import './style.css'
 import './styles/features.css'
+import './styles/motion.css'
 
 setNanocatLocale(nanocatZhCN)
 registerLocalIcons()

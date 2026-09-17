@@ -842,9 +842,9 @@ async function resumeImageTask(message: StudioMessage) {
 }
 
 function ensureActiveConversation() {
-  if (!conversations.value.length) {
-    createConversation()
-  } else if (!activeConversationId.value || !conversationLookup.value.validIds.has(activeConversationId.value)) {
+  // 不自动创建空对话：用户未点「新对话」时保持空状态。
+  if (!conversations.value.length) return
+  if (!activeConversationId.value || !conversationLookup.value.validIds.has(activeConversationId.value)) {
     activeConversationId.value = conversations.value[0]?.id || ''
   }
 }
@@ -1000,34 +1000,16 @@ onBeforeUnmount(() => {
   bottom: 0;
   z-index: 10;
   width: 0.75rem;
-  cursor: col-resize;
+  /* 自定义双向箭头光标：深色箭头 + 浅色描边，明暗主题下都清晰 */
+  cursor: ew-resize;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23000000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E") 12 12, ew-resize;
   border-radius: 999px;
   touch-action: none;
   transition: background 0.15s;
 }
 
-.studio-history-resizer::before {
-  position: absolute;
-  top: 0.75rem;
-  bottom: 0.75rem;
-  left: 50%;
-  width: 2px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: hsl(var(--foreground) / 0.42);
-  content: '';
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
-}
-
 .studio-history-resizer:hover {
   background: transparent;
-}
-
-.studio-history-resizer:hover::before,
-:global(.studio-resizing) .studio-history-resizer::before {
-  background: hsl(var(--primary) / 0.58);
-  opacity: 1;
 }
 
 .studio-main {

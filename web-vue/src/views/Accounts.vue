@@ -177,7 +177,7 @@
 
       <div
         v-else
-        class="accounts-card-results scrollbar-slim grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+        class="accounts-card-results motion-stagger scrollbar-slim grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
         :class="isWorkspaceLayout ? 'accounts-card-results--contained min-h-0 flex-1 overflow-y-auto' : ''"
       >
         <div v-if="!loading && visibleAccounts.length === 0" class="col-span-full">

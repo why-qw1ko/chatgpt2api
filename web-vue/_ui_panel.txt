@@ -1,0 +1,16 @@
+﻿=== .ui-panel @ 26960 ===
+.ui-panel{border-width:1px;border-color:hsl(var(--border));background-color:hsl(var(--card));border-radius:1.5rem;paddin
+=== .ui-card @ 24735 ===
+.ui-card-title{color:hsl(var(--foreground));font-size:.875rem;font-weight:600;line-height:1.25rem}.ui-card-description{c
+=== .ui-card @ 24833 ===
+.ui-card-description{color:hsl(var(--muted-foreground))}.ui-section-kicker{text-transform:uppercase;letter-spacing:.3em;
+=== .ui-card @ 27089 ===
+.ui-card{border-width:1px;border-color:hsl(var(--border));background-color:hsl(var(--card));border-radius:1rem;padding:1
+=== .ui-card @ 27213 ===
+.ui-card-sm{border-width:1px;border-color:hsl(var(--border));background-color:hsl(var(--card));border-radius:1rem;paddin
+=== .ui-section @ 24638 ===
+.ui-section-title{color:hsl(var(--foreground));font-size:1rem;font-weight:600;line-height:1.5rem}.ui-card-title{color:hs
+=== .ui-section @ 24889 ===
+.ui-section-kicker{text-transform:uppercase;letter-spacing:.3em;color:hsl(var(--muted-foreground));font-size:.75rem;line
+=== .ui-surface @ 27347 ===
+.ui-surface{border-width:1px;border-color:hsl(var(--border));background-color:hsl(var(--card));border-radius:1rem}.ui-ca

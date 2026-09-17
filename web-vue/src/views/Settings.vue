@@ -704,9 +704,17 @@ useSettingsTabRuntime({
 
 <style scoped>
 .settings-page-panel {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+.settings-page-panel:hover {
+  box-shadow: none !important;
+  transform: none !important;
 }
 </style>

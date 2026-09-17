@@ -221,7 +221,7 @@
             <span>{{ storageActionMessage }}</span>
           </div>
 
-          <div class="gallery-storage-grid">
+          <div class="gallery-storage-grid motion-stagger">
             <div v-for="item in storageCardItems" :key="item.label" class="gallery-storage-card">
               <span>{{ item.label }}</span>
               <strong>{{ item.value }}</strong>

@@ -55,6 +55,7 @@ from services.image_service import (
     compress_images,
     delete_images,
     download_images_zip,
+    filter_paths_by_owner,
     get_image_download_response,
     get_image_response,
     get_thumbnail_response,
@@ -327,13 +328,25 @@ def create_router(app_version: str) -> APIRouter:
 
     @router.post("/api/images/delete")
     async def delete_images_endpoint(body: ImageDeleteRequest, authorization: str | None = Header(default=None)):
-        require_admin(authorization)
-        return delete_images(body.paths, start_date=body.start_date.strip(), end_date=body.end_date.strip(), all_matching=body.all_matching)
+        identity = require_identity(authorization)
+        paths = body.paths or []
+        if identity.get("role") != "admin":
+            # 普通用户只能删除自己的图片。
+            paths = filter_paths_by_owner(paths, str(identity.get("id") or ""))
+            if not paths:
+                raise HTTPException(status_code=403, detail={"error": "只能删除自己生成的图片"})
+        return delete_images(paths, start_date=body.start_date.strip(), end_date=body.end_date.strip(), all_matching=False)
 
     @router.post("/api/images/download")
     async def download_images_endpoint(body: ImageDownloadRequest, authorization: str | None = Header(default=None)):
-        require_admin(authorization)
-        buf = download_images_zip(body.paths)
+        identity = require_identity(authorization)
+        paths = body.paths or []
+        if identity.get("role") != "admin":
+            # 普通用户只能下载自己的图片。
+            paths = filter_paths_by_owner(paths, str(identity.get("id") or ""))
+            if not paths:
+                raise HTTPException(status_code=403, detail={"error": "只能下载自己生成的图片"})
+        buf = download_images_zip(paths)
         return StreamingResponse(
             buf,
             media_type="application/zip",
@@ -342,7 +355,11 @@ def create_router(app_version: str) -> APIRouter:
 
     @router.get("/api/images/download/{image_path:path}")
     async def download_single_image_endpoint(image_path: str, authorization: str | None = Header(default=None)):
-        require_admin(authorization)
+        identity = require_identity(authorization)
+        if identity.get("role") != "admin":
+            allowed = filter_paths_by_owner([image_path], str(identity.get("id") or ""))
+            if not allowed:
+                raise HTTPException(status_code=403, detail={"error": "只能下载自己生成的图片"})
         return get_image_download_response(image_path)
 
     @router.post("/api/images/genbox-push", response_model=GalleryGenBoxPushResult)

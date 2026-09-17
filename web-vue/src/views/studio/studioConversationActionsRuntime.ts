@@ -88,7 +88,6 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     if (input.activeConversationId.value === conversationId) {
       input.activeConversationId.value = input.conversations.value[0]?.id || ''
     }
-    if (!input.conversations.value.length) createConversation()
     input.persistenceRuntime.scheduleConversations()
   }
 
@@ -103,7 +102,6 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     input.hooks.resetTasks()
     input.conversationNotices.value = {}
     input.activeConversationId.value = ''
-    createConversation()
   }
 
   function clearCurrentConversation(conversationId?: string) {

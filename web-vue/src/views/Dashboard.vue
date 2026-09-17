@@ -28,7 +28,7 @@
 
     <section
       aria-label="账号概览"
-      class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
+      class="motion-stagger grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
     >
       <StatCard
         v-for="stat in accountStats"
@@ -43,7 +43,7 @@
 
     <section
       aria-label="调用概览"
-      class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
+      class="motion-stagger grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
     >
       <StatCard
         v-for="stat in callStats"
