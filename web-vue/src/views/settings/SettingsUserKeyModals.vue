@@ -17,6 +17,9 @@
       <FormField label="名称">
         <Input v-model.trim="form.name" block placeholder="例如：运营画图账号" />
       </FormField>
+      <FormField label="每日图片生成限制（可选）">
+        <Input v-model.trim="form.dailyImageLimit" block type="number" placeholder="留空表示不限制，0表示禁止生成" />
+      </FormField>
     </ModalBody>
     <ModalFooter :bordered="false">
       <Button size="sm" variant="outline" :disabled="busy === 'create'" @click="$emit('close')">取消</Button>

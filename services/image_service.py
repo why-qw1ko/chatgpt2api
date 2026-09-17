@@ -263,6 +263,24 @@ def list_images(
     )
 
 
+def filter_paths_by_owner(paths: list[str], owner_id: str) -> list[str]:
+    """Return only the paths owned by the given owner.
+
+    Images are indexed with an ``owner_id`` when saved. Non-admin users may only
+    operate on their own images, so the caller filters request paths against the
+    index before deleting or downloading.
+    """
+    owner = (owner_id or "").strip()
+    if not owner:
+        return []
+    try:
+        items = image_storage_service.list_items("", refresh_index=False, verify_existing=False)
+    except Exception:
+        return []
+    owned = {str(item.get("path") or "") for item in items if str(item.get("owner_id") or "") == owner}
+    return [p for p in paths if str(p or "") in owned]
+
+
 def delete_images(paths: list[str] | None = None, start_date: str = "", end_date: str = "", all_matching: bool = False) -> dict[str, int]:
     root = config.images_dir.resolve()
     targets = [

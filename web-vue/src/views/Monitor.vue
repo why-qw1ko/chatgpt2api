@@ -39,7 +39,7 @@
         </template>
       </PanelHeader>
 
-      <div class="grid gap-3 xl:grid-cols-2">
+      <div class="motion-stagger grid gap-3 xl:grid-cols-2">
         <div
           v-for="group in diagnosticGroups"
           :key="group.key"
@@ -210,7 +210,7 @@
         </div>
         <div
           v-if="slowRows.length"
-          class="monitor-detail-card-list scrollbar-slim px-4 pb-4"
+          class="monitor-detail-card-list motion-stagger scrollbar-slim px-4 pb-4"
         >
           <MonitorSlowCard
             v-for="row in slowRows"
