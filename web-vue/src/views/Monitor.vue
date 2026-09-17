@@ -491,6 +491,12 @@ pageRuntime.onDeactivate(() => {
   border: 1px solid hsl(var(--border));
   background: hsl(var(--background));
   padding: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.monitor-metric-group:hover {
+  border-color: hsl(var(--primary) / 0.35);
+  box-shadow: 0 4px 16px hsl(var(--foreground) / 0.06);
+  transform: translateY(-2px);
 }
 
 .monitor-metric-cell {
@@ -500,8 +506,16 @@ pageRuntime.onDeactivate(() => {
   flex-direction: column;
   justify-content: center;
   border-radius: 12px;
+  border: 1px solid hsl(var(--border) / 0.6);
   background: hsl(var(--muted) / 0.34);
   padding: 10px 12px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.monitor-metric-cell:hover {
+  border-color: hsl(var(--primary) / 0.45);
+  background: hsl(var(--muted) / 0.55);
+  box-shadow: 0 2px 10px hsl(var(--foreground) / 0.07);
+  transform: translateY(-1px);
 }
 
 .monitor-page {

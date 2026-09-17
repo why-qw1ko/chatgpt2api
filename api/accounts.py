@@ -1184,6 +1184,7 @@ def create_router() -> APIRouter:
                 "name": body.name,
                 "enabled": body.enabled,
                 "key": body.key,
+                "daily_image_limit": body.daily_image_limit,
             }.items()
             if value is not None
         }

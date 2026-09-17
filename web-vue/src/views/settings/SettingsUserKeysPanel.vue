@@ -66,6 +66,9 @@
           <p class="mt-1 text-xs text-muted-foreground">
             创建 {{ formatDateTime(item.created_at) }} · 最近使用 {{ formatDateTime(item.last_used_at) }}
           </p>
+          <p v-if="item.daily_image_limit != null" class="mt-0.5 text-xs text-muted-foreground">
+            每日图片限制：{{ item.daily_image_limit === 0 ? '禁止生成' : item.daily_image_limit + ' 张/天' }}
+          </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Button

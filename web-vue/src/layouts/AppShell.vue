@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-shell min-h-screen">
     <Transition name="route-progress">
       <div
@@ -34,22 +34,21 @@
       >
         <div class="flex h-16 items-center px-5 pt-4 lg:h-20 lg:pt-5">
           <div class="flex min-w-0 items-center">
-            <a
-              href="https://github.com/yukkcat/chatgpt2api"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="shell-sidebar-brand shrink-0 text-foreground transition-colors hover:text-primary"
-              aria-label="GitHub"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                class="h-6 w-6"
-                fill="currentColor"
-              >
-                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.419 2.865 8.166 6.839 9.489.5.09.682-.217.682-.483 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.341-3.369-1.341-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.071 1.532 1.031 1.532 1.031.892 1.529 2.341 1.087 2.91.832.091-.647.349-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.944 0-1.092.39-1.987 1.029-2.687-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.026 2.748-1.026.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.687 0 3.842-2.338 4.687-4.566 4.936.359.309.678.919.678 1.852 0 1.337-.012 2.418-.012 2.747 0 .268.18.577.688.479A10.002 10.002 0 0 0 22 12c0-5.523-4.477-10-10-10z" />
+            <div class="shell-sidebar-brand shrink-0">
+              <svg aria-hidden="true" viewBox="0 0 64 64" class="h-8 w-8">
+                <defs>
+                  <linearGradient id="sidebar-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4F7CFF"/>
+                    <stop offset="50%" stop-color="#7B5FFF"/>
+                    <stop offset="100%" stop-color="#C74FFF"/>
+                  </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="14" fill="url(#sidebar-logo-grad)"/>
+                <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
+                <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
+                <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
               </svg>
-            </a>
+            </div>
             <div class="sidebar-label sidebar-brand-label">
               <p class="ui-section-title">ChatGPT2API</p>
             </div>
@@ -177,31 +176,20 @@
             </Button>
             <svg
               aria-hidden="true"
-              viewBox="0 0 130 150"
-              class="logo-mark hidden h-9 w-9 shrink-0 text-foreground sm:block"
+              viewBox="0 0 64 64"
+              class="hidden h-9 w-9 shrink-0 sm:block"
             >
               <defs>
-                <filter id="head-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="rgba(0, 188, 212, 0.2)"/>
-                </filter>
+                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#4F7CFF"/>
+                  <stop offset="50%" stop-color="#7B5FFF"/>
+                  <stop offset="100%" stop-color="#C74FFF"/>
+                </linearGradient>
               </defs>
-              <g class="logo-cat-wrapper" transform="translate(0, 12)">
-                <g transform="translate(16, 20) rotate(-10, 9, 12)">
-                  <path d="M14 0 L18 24 L0 24 Z" fill="#2c3e50" />
-                </g>
-                <g transform="translate(96, 20) rotate(10, 9, 12)">
-                  <path d="M4 0 L18 24 L0 24 Z" fill="#2c3e50" />
-                </g>
-                <g filter="url(#head-shadow)">
-                  <path d="M 32 40 L 98 40 A 12 12 0 0 1 110 52 L 110 90 A 30 30 0 0 1 80 120 L 50 120 A 30 30 0 0 1 20 90 L 20 52 A 12 12 0 0 1 32 40 Z"
-                    fill="rgba(255, 255, 255, 0.9)"
-                    stroke="#2c3e50"
-                    stroke-width="3"
-                  />
-                </g>
-                <rect class="logo-eye" x="35" y="68" width="14" height="4" rx="1" />
-                <rect class="logo-eye" x="81" y="68" width="14" height="4" rx="1" />
-              </g>
+              <rect width="64" height="64" rx="14" fill="url(#logo-grad)"/>
+              <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
+              <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
+              <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
             </svg>
             <div class="min-w-0">
               <h2 class="truncate text-base font-semibold text-foreground sm:text-lg lg:text-xl">
@@ -237,10 +225,11 @@
                 <Button
                   size="sm"
                   variant="outline"
+                  icon-only
                   aria-label="刷新当前页面"
                   @click="refreshPage"
                 >
-                  刷新
+                  <Icon icon="lucide:refresh-cw" class="h-4 w-4" />
                 </Button>
               </Tooltip>
             </div>
@@ -257,18 +246,7 @@
                   </Button>
                 </Tooltip>
               </span>
-              <span class="hidden lg:inline-flex">
-                <Tooltip text="交流与服务" placement="bottom">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    aria-label="交流与服务"
-                    @click="isServiceDialogOpen = true"
-                  >
-                    服务
-                  </Button>
-                </Tooltip>
-              </span>
+
               <span v-if="authStore.isAdmin" class="hidden lg:inline-flex">
                 <Tooltip :text="`查看版本更新，当前 ${currentVersionLabel || '版本未知'}`" placement="bottom">
                   <Button
@@ -350,44 +328,7 @@
       @confirm="confirmDialog.confirm"
       @cancel="confirmDialog.cancel"
     />
-    <ModalShell
-      :open="isServiceDialogOpen"
-      max-width="min(22rem, calc(100vw - 24px))"
-      :z-index="100"
-      panel-class="w-full p-5"
-      close-on-backdrop
-      aria-label="交流与服务"
-      @close="isServiceDialogOpen = false"
-    >
-      <ModalHeader
-        title="交流与服务"
-        title-class="ui-subsection-title"
-        :bordered="false"
-        flush
-        @close="isServiceDialogOpen = false"
-      />
 
-      <div class="mt-4 grid gap-2">
-        <a
-          v-for="item in headerServiceItems"
-          :key="item.key"
-          :href="item.href"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="shell-service-link group flex min-w-0 items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:border-[hsl(var(--foreground)_/_0.24)] hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          @click="isServiceDialogOpen = false"
-        >
-          <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
-            <Icon :icon="item.icon" class="h-4 w-4" />
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-sm font-medium text-foreground">{{ item.label }}</span>
-            <span v-if="item.detail" class="mt-0.5 block text-xs leading-5 text-muted-foreground">{{ item.detail }}</span>
-          </span>
-          <Icon icon="lucide:external-link" class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-        </a>
-      </div>
-    </ModalShell>
     <ModalShell
       :open="isApiInfoOpen"
       :z-index="100"
@@ -738,7 +679,7 @@ const sidebarToggleRef = ref<ComponentPublicInstance | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const confirmDialog = useConfirmDialog()
 const isApiInfoOpen = ref(false)
-const isServiceDialogOpen = ref(false)
+
 const isUpdateDialogOpen = ref(false)
 const isCheckingUpdate = ref(false)
 const isUpdateConfirming = ref(false)
@@ -981,35 +922,6 @@ const canvasHref = computed(() => {
 })
 const themeButtonText = computed(() => themeOptions.find(option => option.value === themeMode.value)?.label || '系统')
 const themeButtonTitle = computed(() => `当前主题：${themeButtonText.value}，点击切换`)
-type HeaderServiceItem = {
-  key: string
-  label: string
-  detail?: string
-  href: string
-  icon: string
-}
-
-const headerServiceItems: HeaderServiceItem[] = [
-  {
-    key: 'service-qq',
-    label: 'QQ 交流群：1005859624',
-    href: 'https://qm.qq.com/q/yegwCqJisS',
-    icon: 'lucide:messages-square',
-  },
-  {
-    key: 'service-account',
-    label: '购买生图账号',
-    href: 'https://pay.ldxp.cn/shop/yukkcat',
-    icon: 'lucide:shopping-bag',
-  },
-  {
-    key: 'service-api',
-    label: '生图 API',
-    detail: '小量 ¥0.02/张 · 中转 ¥0.01/张 · 大量/企业 ¥0.009/张',
-    href: 'https://api.klong.lat',
-    icon: 'lucide:badge-dollar-sign',
-  },
-]
 
 const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   const items: ActionMenuItem[] = []
@@ -1020,7 +932,7 @@ const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
       { key: 'updates', label: '版本更新' },
     )
   }
-  items.push({ key: 'services', label: '交流与服务', dividerBefore: items.length > 0 })
+
   return items
 })
 const routePendingText = computed(() => `正在加载${currentPageTitle.value}`)
@@ -1181,11 +1093,7 @@ async function openInfiniteCanvas() {
 }
 
 function handleHeaderMenuSelect(key: string) {
-  if (key === 'services') {
-    isServiceDialogOpen.value = true
-    return
-  }
-  if (key === 'canvas') {
+if (key === 'canvas') {
     void openInfiniteCanvas()
     return
   }

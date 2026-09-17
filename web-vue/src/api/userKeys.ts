@@ -7,6 +7,7 @@ export interface UserKey {
   enabled: boolean
   created_at?: string | null
   last_used_at?: string | null
+  daily_image_limit?: number | null
 }
 
 export interface UserKeysResponse {
@@ -22,6 +23,7 @@ export interface UserKeyUpdatePayload {
   name?: string
   enabled?: boolean
   key?: string
+  daily_image_limit?: number | null
 }
 
 export interface UserKeyUpdateResponse {

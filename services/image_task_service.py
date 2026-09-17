@@ -84,6 +84,14 @@ ADMIN_LOG_ONLY_TASK_DETAIL_KEYS = (
 )
 
 
+class ImageTaskLimitExceededError(RuntimeError):
+    def __init__(self, limit: int, used: int):
+        self.limit = limit
+        self.used = used
+        self.code = "daily_limit_exceeded"
+        super().__init__(f"每日图片生成次数已达上限（{used}/{limit}），请明天再试")
+
+
 class ImageTaskQueueFullError(RuntimeError):
     code = "image_task_queue_full"
 
@@ -206,6 +214,17 @@ def _image_count(value: object) -> int:
 
 def _owner_id(identity: dict[str, object]) -> str:
     return _clean(identity.get("id")) or "anonymous"
+
+
+def _daily_image_limit(identity: dict[str, object]) -> int | None:
+    raw = identity.get("daily_image_limit")
+    if raw is None:
+        return None
+    try:
+        limit = int(raw)
+        return limit if limit >= 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _task_key(owner_id: str, task_id: str) -> str:
@@ -431,6 +450,17 @@ class ImageTaskService:
             reservation=reservation,
         )
 
+    def _count_today_tasks_locked(self, owner: str) -> int:
+        today = beijing_now_str()[:10]
+        count = 0
+        for task in self._tasks.values():
+            if task.get("owner_id") != owner:
+                continue
+            created_at = str(task.get("created_at") or "")
+            if created_at and created_at[:10] == today:
+                count += 1
+        return count
+
     def list_tasks(self, identity: dict[str, object], task_ids: list[str]) -> dict[str, Any]:
         owner = _owner_id(identity)
         requested_ids = [_clean(task_id) for task_id in task_ids if _clean(task_id)]
@@ -474,6 +504,14 @@ class ImageTaskService:
         now = _now_iso()
         submitted_wall = time.time()
         submitted_perf = time.perf_counter()
+
+        limit = _daily_image_limit(identity)
+        if limit is not None and limit >= 0:
+            today_count = self._count_today_tasks_locked(owner)
+            if today_count >= limit:
+                if reservation is not None:
+                    reservation.rollback()
+                raise ImageTaskLimitExceededError(limit=limit, used=today_count)
 
         while True:
             with self._lock:

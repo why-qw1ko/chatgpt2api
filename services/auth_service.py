@@ -65,6 +65,14 @@ class AuthService:
         name = self._clean(raw.get("name")) or self._default_name(role)
         created_at = self._clean(raw.get("created_at")) or _now_iso()
         last_used_at = self._clean(raw.get("last_used_at")) or None
+        daily_image_limit = raw.get("daily_image_limit")
+        if daily_image_limit is not None:
+            try:
+                daily_image_limit = int(daily_image_limit)
+                if daily_image_limit < 0:
+                    daily_image_limit = 0
+            except (TypeError, ValueError):
+                daily_image_limit = None
         return {
             "id": item_id,
             "name": name,
@@ -73,6 +81,7 @@ class AuthService:
             "enabled": bool(raw.get("enabled", True)),
             "created_at": created_at,
             "last_used_at": last_used_at,
+            "daily_image_limit": daily_image_limit,
         }
 
     def _load_snapshot(self) -> tuple[list[dict[str, object]], str]:
@@ -196,6 +205,7 @@ class AuthService:
             "enabled": bool(item.get("enabled", True)),
             "created_at": item.get("created_at"),
             "last_used_at": item.get("last_used_at"),
+            "daily_image_limit": item.get("daily_image_limit"),
         }
 
     def list_keys(self, role: AuthRole | None = None) -> list[dict[str, object]]:
@@ -328,6 +338,16 @@ class AuthService:
                     next_item["enabled"] = bool(updates.get("enabled"))
                 if "key" in updates and updates.get("key") is not None:
                     next_item["key_hash"] = self._build_key_hash_locked(str(updates.get("key") or ""), exclude_id=normalized_id)
+                if "daily_image_limit" in updates:
+                    limit_value = updates.get("daily_image_limit")
+                    if limit_value is None:
+                        next_item["daily_image_limit"] = None
+                    else:
+                        try:
+                            parsed_limit = int(limit_value)
+                            next_item["daily_image_limit"] = max(0, parsed_limit)
+                        except (TypeError, ValueError):
+                            pass
                 try:
                     result = self.storage.mutate_auth_keys(
                         StorageMutation(

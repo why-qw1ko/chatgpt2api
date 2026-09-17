@@ -59,6 +59,7 @@ class UserKeyUpdateRequest(_StrictModel):
     name: str | None = None
     enabled: bool | None = None
     key: str | None = None
+    daily_image_limit: int | None = None
 
 
 class UserKeyView(_StrictModel):
@@ -68,6 +69,7 @@ class UserKeyView(_StrictModel):
     enabled: bool
     created_at: str | None = None
     last_used_at: str | None = None
+    daily_image_limit: int | None = None
 
 
 class UserKeyListView(_StrictModel):

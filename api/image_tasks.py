@@ -8,7 +8,7 @@ from api.image_inputs import parse_image_edit_request, read_image_sources
 from api.image_task_contract import ImageTaskPage, ImageTaskRow
 from api.support import require_identity, resolve_image_base_url
 from services.content_filter import check_request
-from services.image_task_service import ImageTaskQueueFullError, image_task_service
+from services.image_task_service import ImageTaskLimitExceededError, ImageTaskQueueFullError, image_task_service
 from services.log_service import LoggedCall
 
 
@@ -33,6 +33,13 @@ def _queue_full_http_error(exc: ImageTaskQueueFullError) -> HTTPException:
     return HTTPException(
         status_code=503,
         detail={"code": exc.code, "error": str(exc)},
+    )
+
+
+def _limit_exceeded_http_error(exc: ImageTaskLimitExceededError) -> HTTPException:
+    return HTTPException(
+        status_code=429,
+        detail={"code": exc.code, "error": str(exc), "limit": exc.limit, "used": exc.used},
     )
 
 
@@ -75,6 +82,8 @@ def create_router() -> APIRouter:
                 quality=body.quality,
                 base_url=resolve_image_base_url(request),
             )
+        except ImageTaskLimitExceededError as exc:
+            raise _limit_exceeded_http_error(exc) from exc
         except ImageTaskQueueFullError as exc:
             raise _queue_full_http_error(exc) from exc
         except ValueError as exc:
@@ -112,6 +121,8 @@ def create_router() -> APIRouter:
                 masks=masks,
                 reservation=reservation,
             )
+        except ImageTaskLimitExceededError as exc:
+            raise _limit_exceeded_http_error(exc) from exc
         except ImageTaskQueueFullError as exc:
             raise _queue_full_http_error(exc) from exc
         except ValueError as exc:

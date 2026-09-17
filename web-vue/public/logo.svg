@@ -1,53 +1,18 @@
-<svg width="130" height="150" viewBox="0 0 130 150" xmlns="http://www.w3.org/2000/svg">
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <style>
-      :root {
-        --primary-ink: #2c3e50;
-        --soul-color: #00bcd4;
-      }
-      .logo-cat-wrapper {
-        animation: logo-float 4s ease-in-out infinite;
-        transform-origin: center;
-      }
-      .logo-eye {
-        fill: var(--soul-color);
-        filter: drop-shadow(0 0 2px var(--soul-color));
-        animation: logo-blink 5s infinite;
-        transform-box: fill-box;
-        transform-origin: center;
-      }
-      @keyframes logo-float {
-        0% { transform: translateY(0); }
-        25% { transform: translateY(6px); }
-        50% { transform: translateY(0); }
-        75% { transform: translateY(-6px); }
-        100% { transform: translateY(0); }
-      }
-      @keyframes logo-blink {
-        0%, 45%, 55%, 100% { transform: scaleY(1); opacity: 1; }
-        50% { transform: scaleY(0.1); opacity: 0.6; }
-      }
-    </style>
-    <filter id="head-shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="rgba(0, 188, 212, 0.2)"/>
-    </filter>
+    <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F7CFF"/>
+      <stop offset="50%" stop-color="#7B5FFF"/>
+      <stop offset="100%" stop-color="#C74FFF"/>
+    </linearGradient>
+    <linearGradient id="spark-grad-2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4F7CFF"/>
+      <stop offset="100%" stop-color="#00D4FF"/>
+    </linearGradient>
   </defs>
-
-  <g class="logo-cat-wrapper" transform="translate(0, 12)">
-    <g transform="translate(16, 20) rotate(-10, 9, 12)">
-      <path d="M14 0 L18 24 L0 24 Z" fill="#2c3e50" />
-    </g>
-    <g transform="translate(96, 20) rotate(10, 9, 12)">
-      <path d="M4 0 L18 24 L0 24 Z" fill="#2c3e50" />
-    </g>
-    <g filter="url(#head-shadow)">
-      <path d="M 32 40 L 98 40 A 12 12 0 0 1 110 52 L 110 90 A 30 30 0 0 1 80 120 L 50 120 A 30 30 0 0 1 20 90 L 20 52 A 12 12 0 0 1 32 40 Z"
-        fill="rgba(255, 255, 255, 0.9)"
-        stroke="#2c3e50"
-        stroke-width="3"
-      />
-    </g>
-    <rect class="logo-eye" x="35" y="68" width="14" height="4" rx="1" />
-    <rect class="logo-eye" x="81" y="68" width="14" height="4" rx="1" />
-  </g>
+  <rect width="64" height="64" rx="14" fill="url(#spark-grad)"/>
+  <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
+  <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
+  <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
+  <path d="M20 44 L22 50 L28 52 L22 54 L20 60 L18 54 L12 52 L18 50 Z" fill="url(#spark-grad-2)" opacity="0.8"/>
 </svg>

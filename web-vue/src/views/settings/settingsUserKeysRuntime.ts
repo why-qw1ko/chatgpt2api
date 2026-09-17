@@ -10,6 +10,7 @@ import { errorMessage } from '@/lib/errorMessage'
 export type UserKeyForm = {
   name: string
   key: string
+  dailyImageLimit: string
 }
 
 type SettingsUserKeysRuntimeOptions = {
@@ -18,7 +19,7 @@ type SettingsUserKeysRuntimeOptions = {
 }
 
 function createUserKeyForm(): UserKeyForm {
-  return { name: '', key: '' }
+  return { name: '', key: '', dailyImageLimit: '' }
 }
 
 export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptions) {
@@ -95,6 +96,7 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     userKeyForm.value = {
       name: item.name || '',
       key: '',
+      dailyImageLimit: item.daily_image_limit != null ? String(item.daily_image_limit) : '',
     }
     userKeyModal.value = 'edit'
   }
@@ -143,9 +145,18 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     if (!item) return
     const nextName = userKeyForm.value.name.trim()
     const nextKey = userKeyForm.value.key.trim()
-    const updates: { name?: string; key?: string } = {}
+    const nextDailyLimit = userKeyForm.value.dailyImageLimit.trim()
+    const updates: { name?: string; key?: string; daily_image_limit?: number | null } = {}
     if (nextName !== item.name) updates.name = nextName
     if (nextKey) updates.key = nextKey
+    if (nextDailyLimit === '') {
+      if (item.daily_image_limit != null) updates.daily_image_limit = null
+    } else {
+      const parsed = parseInt(nextDailyLimit, 10)
+      if (!isNaN(parsed) && parsed >= 0 && parsed !== item.daily_image_limit) {
+        updates.daily_image_limit = parsed
+      }
+    }
     if (!Object.keys(updates).length) {
       closeUserKeyModal()
       return

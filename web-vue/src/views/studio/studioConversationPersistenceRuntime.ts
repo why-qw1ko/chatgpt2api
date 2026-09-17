@@ -1,5 +1,6 @@
 import { type Ref, watch } from 'vue'
-import { getStringPreference, preferenceKeys, setStringPreference } from '@/lib/preferences'
+import { getStringPreference, preferenceKeys, removePreference, setStringPreference } from '@/lib/preferences'
+import { useAuthStore } from '@/stores/auth'
 import { scheduleIdleTask, type IdleTaskHandle } from '@/lib/idleTask'
 import type { StudioConversation, StudioConversationBadgeState } from '@/components/studio/types'
 import {
@@ -21,6 +22,25 @@ export type StudioConversationPersistenceRuntimeInput = {
 }
 
 export function loadStudioConversationPersistenceState() {
+  const authStore = useAuthStore()
+  const currentOwner = authStore.subject?.id || ''
+  const storedOwner = getStringPreference(preferenceKeys.studioOwnerKey, '')
+  if (currentOwner && storedOwner && currentOwner !== storedOwner) {
+    removePreference(preferenceKeys.studioConversations)
+    removePreference(preferenceKeys.studioActiveConversationId)
+    removePreference(preferenceKeys.studioConversationBadges)
+    removePreference(preferenceKeys.imageTaskLocalIds)
+    removePreference(preferenceKeys.imageTaskConversations)
+    setStringPreference(preferenceKeys.studioOwnerKey, currentOwner)
+    return {
+      activeConversationId: '',
+      conversationNotices: {},
+      conversations: [],
+    }
+  }
+  if (currentOwner && !storedOwner) {
+    setStringPreference(preferenceKeys.studioOwnerKey, currentOwner)
+  }
   return {
     activeConversationId: getStringPreference(preferenceKeys.studioActiveConversationId, ''),
     conversationNotices: loadStudioConversationNotices(),

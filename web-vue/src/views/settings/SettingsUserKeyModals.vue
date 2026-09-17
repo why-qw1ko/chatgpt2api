@@ -47,6 +47,9 @@
       <FormField label="新的专用密钥（可选）">
         <Input v-model.trim="form.key" block root-class="font-mono" placeholder="留空则不修改当前密钥" />
       </FormField>
+      <FormField label="每日图片生成限制（可选）">
+        <Input v-model.trim="form.dailyImageLimit" block type="number" placeholder="留空表示不限制，0表示禁止生成" />
+      </FormField>
     </ModalBody>
     <ModalFooter :bordered="false">
       <Button size="sm" variant="outline" :disabled="isEditBusy" @click="$emit('close')">取消</Button>
