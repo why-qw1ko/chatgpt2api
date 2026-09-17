@@ -949,7 +949,7 @@ const routeProgressDelayMs = 140
 const routeProgressFinishMs = 140
 let routeProgressDelayTimer: number | null = null
 let routeProgressFinishTimer: number | null = null
-const defaultReleasePageUrl = 'https://github.com/yukkcat/chatgpt2api/releases'
+const defaultReleasePageUrl = 'https://github.com/why-qw1ko/chatgpt2api/releases'
 const releasePageUrl = computed(() => updateStatus.value?.release_url || defaultReleasePageUrl)
 const updateCheckingMessage = '正在检查云端版本...'
 const updateTaskPollIntervalMs = 1000
