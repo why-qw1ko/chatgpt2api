@@ -1174,6 +1174,7 @@ class ImageTaskService:
                 task = self._tasks.get(key)
                 quality = _clean(task.get("quality"), "auto") if task else "auto"
                 size = _clean(task.get("size")) if task else None
+                task_owner_id = _clean(task.get("owner_id")) if task else ""
             formatted = format_image_result(
                 image_items,
                 "",  # prompt 已不重要，结果已经拿到了
@@ -1181,6 +1182,7 @@ class ImageTaskService:
                 base_url,
                 int(time.time()),
                 requested_size=size,
+                owner_id=task_owner_id,
             )
             data = formatted["data"]
             self._update_task(

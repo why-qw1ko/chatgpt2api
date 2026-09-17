@@ -146,7 +146,7 @@ export function isStudioFileMessageRunning(message: StudioMessage) {
   return message.mode === 'file' && (message.status === 'queued' || message.status === 'running')
 }
 
-function normalizeStudioConversation(item: unknown): StudioConversation | null {
+export function normalizeStudioConversation(item: unknown): StudioConversation | null {
   if (!item || typeof item !== 'object') return null
   const raw = item as Partial<StudioConversation>
   const messages = Array.isArray(raw.messages)

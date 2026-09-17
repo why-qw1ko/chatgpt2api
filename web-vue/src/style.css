@@ -383,3 +383,178 @@ html[data-theme="dark"] body::before {
   background-color: hsl(var(--primary) / 0.06) !important;
   border-color: hsl(var(--primary) / 0.12) !important;
 }
+
+/* ===== 动画增强（参考 css-effects-hub 动效库） ===== */
+
+/* 入场动画：淡入上浮（slide-in-up + fade-in） */
+@keyframes ui-fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 入场动画：缩放弹出（scale-in） */
+@keyframes ui-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 入场动画：右侧滑入（slide-in-right） */
+@keyframes ui-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 闪光扫过（shine sweep） */
+@keyframes ui-shine-sweep {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+/* 弹性缩放（elastic scale） */
+@keyframes ui-elastic-scale {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+  }
+  65% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 页面主内容入场 */
+main > * {
+  animation: ui-fade-slide-up 0.36s ease both;
+}
+
+/* 面板与卡片入场 */
+.ui-panel,
+.ui-card,
+.ui-card-sm {
+  animation: ui-scale-in 0.3s ease both;
+}
+
+/* 侧边栏菜单项入场：依次错开 */
+.shell-sidebar .ui-menu-item {
+  animation: ui-slide-in-right 0.32s ease both;
+}
+.shell-sidebar .ui-menu-item:nth-child(1) { animation-delay: 0.02s; }
+.shell-sidebar .ui-menu-item:nth-child(2) { animation-delay: 0.05s; }
+.shell-sidebar .ui-menu-item:nth-child(3) { animation-delay: 0.08s; }
+.shell-sidebar .ui-menu-item:nth-child(4) { animation-delay: 0.11s; }
+.shell-sidebar .ui-menu-item:nth-child(5) { animation-delay: 0.14s; }
+.shell-sidebar .ui-menu-item:nth-child(6) { animation-delay: 0.17s; }
+.shell-sidebar .ui-menu-item:nth-child(7) { animation-delay: 0.2s; }
+.shell-sidebar .ui-menu-item:nth-child(n+8) { animation-delay: 0.23s; }
+
+/* 悬停动效：菜单项下划线滑动（underline-slide） */
+.shell-sidebar .ui-menu-item {
+  position: relative;
+}
+.shell-sidebar .ui-menu-item::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: hsl(var(--primary) / 0.55);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.shell-sidebar .ui-menu-item:hover::after {
+  transform: scaleX(1);
+}
+
+/* 悬停动效：主按钮闪光扫过（shine） */
+.ui-btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+.ui-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 36%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.28), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  pointer-events: none;
+}
+.ui-btn-primary:hover::before {
+  animation: ui-shine-sweep 0.7s ease;
+}
+
+/* 悬停动效：图标按钮弹性反馈（elastic-scale） */
+.ui-btn-outline:active,
+.ui-btn-primary:active {
+  animation: ui-elastic-scale 0.4s ease;
+}
+
+/* 悬停动效：徽标与标签轻柔浮动（float） */
+.ui-pill:hover,
+.ui-chip:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+/* 过渡：输入框聚焦光晕脉冲（glow-pulse，弱化版） */
+.ui-input-sm,
+.ui-input-md,
+.ui-textarea-sm {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+/* 过渡：下拉与浮层缩放浮现（scale-in） */
+.ui-overlay-panel,
+.ui-menu-panel {
+  animation: ui-scale-in 0.18s ease both;
+  transform-origin: top left;
+}
+
+/* 尊重系统减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  main > *,
+  .ui-panel,
+  .ui-card,
+  .ui-card-sm,
+  .shell-sidebar .ui-menu-item,
+  .ui-overlay-panel,
+  .ui-menu-panel {
+    animation: none !important;
+  }
+  .ui-btn-primary::before,
+  .ui-btn-outline:active,
+  .ui-btn-primary:active {
+    animation: none !important;
+  }
+}

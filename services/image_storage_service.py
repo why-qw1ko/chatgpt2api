@@ -418,6 +418,7 @@ class ImageStorageService:
         base_url: str | None = None,
         *,
         deadline_monotonic: float | None = None,
+        owner_id: str = "",
     ) -> StoredImage:
         _raise_if_save_deadline_elapsed(deadline_monotonic)
         rel = self.make_relative_path(image_data)
@@ -460,6 +461,8 @@ class ImageStorageService:
                 "remote_url": remote_url,
                 "generation": self._new_generation(),
             }
+            if owner_id:
+                item["owner_id"] = owner_id
             if dimensions:
                 item["width"], item["height"] = dimensions
             with self._index_guard():

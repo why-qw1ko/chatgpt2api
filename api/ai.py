@@ -139,6 +139,7 @@ def create_router() -> APIRouter:
         identity = require_identity(authorization)
         payload = body.model_dump(mode="python")
         payload["base_url"] = resolve_image_base_url(request)
+        payload["owner_id"] = str(identity.get("id") or "")
         call = LoggedCall(identity, "/v1/images/generations", body.model, "文生图", request_text=body.prompt)
         attach_trace_headers(call, request)
         call.attach_trace_metadata(payload)
@@ -162,6 +163,7 @@ def create_router() -> APIRouter:
         if mask_sources:
             payload["mask"] = await read_image_sources(mask_sources)
         payload["base_url"] = resolve_image_base_url(request)
+        payload["owner_id"] = str(identity.get("id") or "")
         return await call.run(openai_v1_image_edit.handle, payload)
 
     @router.post("/v1/chat/completions")
@@ -169,6 +171,7 @@ def create_router() -> APIRouter:
         identity = require_identity(authorization)
         payload = body.model_dump(mode="python")
         payload["base_url"] = resolve_image_base_url(request)
+        payload["owner_id"] = str(identity.get("id") or "")
         model = str(payload.get("model") or "auto")
         request_preview = request_text(payload.get("prompt"), payload.get("messages"))
         image_chat = is_image_chat_request(payload)
@@ -190,6 +193,7 @@ def create_router() -> APIRouter:
     async def create_response(body: ResponseCreateRequest, authorization: str | None = Header(default=None)):
         identity = require_identity(authorization)
         payload = body.model_dump(mode="python")
+        payload["owner_id"] = str(identity.get("id") or "")
         model = str(payload.get("model") or "auto")
         request_preview = request_text(payload.get("input"), payload.get("instructions"))
         image_response = has_response_image_generation_tool(payload)
@@ -215,6 +219,7 @@ def create_router() -> APIRouter:
     ):
         identity = require_identity(authorization or (f"Bearer {x_api_key}" if x_api_key else None))
         payload = body.model_dump(mode="python")
+        payload["owner_id"] = str(identity.get("id") or "")
         model = str(payload.get("model") or "auto")
         request_preview = request_text(payload.get("system"), payload.get("messages"), payload.get("tools"))
         call = LoggedCall(identity, "/v1/messages", model, "Messages", request_text=request_preview)

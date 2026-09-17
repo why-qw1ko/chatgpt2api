@@ -57,7 +57,7 @@ export const appRoutes: RouteRecordRaw[] = [
         path: 'gallery',
         name: 'gallery',
         component: () => import('@/views/Gallery.vue'),
-        meta: { requiredCapability: 'admin_console', management: true },
+        meta: { requiredCapability: 'studio' },
       },
       {
         path: 'studio',

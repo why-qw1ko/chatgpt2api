@@ -49,6 +49,7 @@ from services.gallery_view import (
     gallery_compress_result,
 )
 from services.genbox_push_service import GenBoxPushError, push_gallery_image
+from services.studio_session_service import studio_session_service
 from services.image_service import (
     cleanup_expired_images,
     compress_images,
@@ -274,7 +275,8 @@ def create_router(app_version: str) -> APIRouter:
         search: str = Query(default=""),
         authorization: str | None = Header(default=None),
     ):
-        require_admin(authorization)
+        identity = require_identity(authorization)
+        owner_filter = "" if identity.get("role") == "admin" else str(identity.get("id") or "")
         return await run_in_threadpool(
             list_images,
             resolve_image_base_url(request),
@@ -285,7 +287,29 @@ def create_router(app_version: str) -> APIRouter:
             media_type=media_type,
             tag=tag.strip(),
             search=search.strip(),
+            owner_id=owner_filter,
         )
+
+    @router.get("/api/studio-sessions")
+    async def get_studio_sessions(authorization: str | None = Header(default=None)):
+        identity = require_identity(authorization)
+        owner_id = str(identity.get("id") or "")
+        return await run_in_threadpool(studio_session_service.load, owner_id)
+
+    @router.put("/api/studio-sessions")
+    async def save_studio_sessions(body: dict, authorization: str | None = Header(default=None)):
+        identity = require_identity(authorization)
+        owner_id = str(identity.get("id") or "")
+        state = body.get("state")
+        if not isinstance(state, dict):
+            raise HTTPException(status_code=400, detail={"error": "state 必须是对象"})
+        return await run_in_threadpool(studio_session_service.save, owner_id, state)
+
+    @router.delete("/api/studio-sessions")
+    async def clear_studio_sessions(authorization: str | None = Header(default=None)):
+        identity = require_identity(authorization)
+        owner_id = str(identity.get("id") or "")
+        return await run_in_threadpool(studio_session_service.clear, owner_id)
 
     @router.post("/api/images/retention-cleanup", response_model=GalleryCleanupResult)
     async def cleanup_expired_images_endpoint(authorization: str | None = Header(default=None)):

@@ -225,9 +225,11 @@ import { downloadUrlAsFile } from '@/lib/downloads'
 import {
   buildStudioConversationLookup,
   buildStudioConversationRuntimeIndex,
+  normalizeStudioConversation,
   type StudioConversationLookup,
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
+import { loadStudioSessionState } from '@/api/studioSessions'
 import { studioErrorMessage } from '@/views/studio/studioRequestView'
 import { useStudioChatStreamRuntime } from '@/views/studio/studioChatStreamRuntime'
 import { useStudioComposerRuntime } from '@/views/studio/studioComposerRuntime'
@@ -324,6 +326,37 @@ const imageHighResolutionEnabled = modelFormRuntime.imageHighResolutionEnabled
 const conversations = ref<StudioConversation[]>(persistedConversationState.conversations)
 const activeConversationId = ref(persistedConversationState.activeConversationId)
 const conversationNotices = ref<Record<string, StudioConversationBadgeState>>(persistedConversationState.conversationNotices)
+
+let serverHydrationDone = false
+onMounted(async () => {
+  if (serverHydrationDone) return
+  serverHydrationDone = true
+  try {
+    const result = await loadStudioSessionState()
+    const state = result.state
+    if (!state) return
+    const serverConversations = Array.isArray(state.conversations)
+      ? state.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 80)
+      : []
+    if (serverConversations.length === 0) return
+    const localNewest = conversations.value.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
+    const serverNewest = serverConversations.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
+    if (serverNewest > localNewest) {
+      conversations.value = serverConversations
+      const serverNotices: Record<string, StudioConversationBadgeState> = {}
+      Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
+        if (notice === 'done' || notice === 'error') serverNotices[id] = notice
+      })
+      conversationNotices.value = serverNotices
+      const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
+      if (serverActiveId && serverConversations.some(conversation => conversation.id === serverActiveId)) {
+        activeConversationId.value = serverActiveId
+      }
+    }
+  } catch {
+    // 服务端不可用时沿用本地缓存。
+  }
+})
 const conversationLookup = computed<StudioConversationLookup>(() => buildStudioConversationLookup(conversations.value))
 const conversationRuntimeIndex = computed<StudioConversationRuntimeIndex>(() => buildStudioConversationRuntimeIndex(conversations.value))
 const validConversationIds = computed(() => conversationLookup.value.validIds)

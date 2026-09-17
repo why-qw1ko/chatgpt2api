@@ -2,6 +2,7 @@ import { type Ref, watch } from 'vue'
 import { getStringPreference, preferenceKeys, removePreference, setStringPreference } from '@/lib/preferences'
 import { useAuthStore } from '@/stores/auth'
 import { scheduleIdleTask, type IdleTaskHandle } from '@/lib/idleTask'
+import { saveStudioSessionState } from '@/api/studioSessions'
 import type { StudioConversation, StudioConversationBadgeState } from '@/components/studio/types'
 import {
   loadStudioConversationNotices,
@@ -56,6 +57,35 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
   let activeConversationTimer: number | null = null
   let conversationsIdleTask: IdleTaskHandle | null = null
   let conversationNoticesIdleTask: IdleTaskHandle | null = null
+  let serverSyncTimer: number | null = null
+  let serverSyncInFlight = false
+
+  function scheduleServerSync() {
+    if (serverSyncTimer !== null) return
+    serverSyncTimer = window.setTimeout(() => {
+      serverSyncTimer = null
+      void syncToServer()
+    }, 2500)
+  }
+
+  async function syncToServer() {
+    if (serverSyncInFlight) {
+      scheduleServerSync()
+      return
+    }
+    serverSyncInFlight = true
+    try {
+      await saveStudioSessionState({
+        conversations: input.conversations.value,
+        conversationNotices: input.conversationNotices.value,
+        activeConversationId: input.activeConversationId.value,
+      })
+    } catch {
+      // 服务端不可用时保留本地缓存，下次变更再重试。
+    } finally {
+      serverSyncInFlight = false
+    }
+  }
 
   const stopConversationWatch = watch(input.conversations, scheduleConversations)
   const stopConversationNoticeWatch = watch(input.conversationNotices, scheduleConversationNotices)
@@ -69,6 +99,7 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
       conversationsIdleTask = scheduleIdleTask(() => {
         conversationsIdleTask = null
         persistStudioConversations(input.conversations.value)
+        scheduleServerSync()
       }, 1200)
     }, 300)
   }
@@ -81,6 +112,7 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
       conversationNoticesIdleTask = scheduleIdleTask(() => {
         conversationNoticesIdleTask = null
         persistStudioConversationNotices(input.conversationNotices.value, input.validConversationIds.value)
+        scheduleServerSync()
       }, 1200)
     }, 300)
   }
@@ -92,6 +124,7 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
     activeConversationTimer = window.setTimeout(() => {
       activeConversationTimer = null
       setStringPreference(preferenceKeys.studioActiveConversationId, input.activeConversationId.value)
+      scheduleServerSync()
     }, 200)
   }
 
@@ -133,6 +166,11 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
     if (conversationsTimer !== null || conversationsIdleTask) flushConversations()
     if (conversationNoticesTimer !== null || conversationNoticesIdleTask) flushConversationNotices()
     if (activeConversationTimer !== null) flushActiveConversationId()
+    if (serverSyncTimer !== null) {
+      window.clearTimeout(serverSyncTimer)
+      serverSyncTimer = null
+    }
+    void syncToServer()
   }
 
   function dispose() {

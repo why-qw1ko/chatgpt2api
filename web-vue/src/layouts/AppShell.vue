@@ -203,10 +203,11 @@
                 <Button
                   size="sm"
                   variant="outline"
+                  icon-only
                   :aria-label="themeButtonTitle"
                   @click="cycleThemeMode"
                 >
-                  {{ themeButtonText }}
+                  <Icon :icon="themeButtonIcon" class="h-4 w-4" />
                 </Button>
               </Tooltip>
               <span v-if="canvasHref" class="hidden lg:inline-flex">
@@ -755,7 +756,7 @@ const menuItems: NavigationItem[] = [
     path: '/gallery',
     label: '图片管理',
     icon: 'M22 16V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2zm-11-4 2.03 2.71L16 11l4 5H8l3-3zM2 6v14a2 2 0 0 0 2 2h14v-2H4V6H2z',
-    capability: 'admin_console',
+    capability: 'studio',
   },
   {
     path: '/proxy',
@@ -922,6 +923,11 @@ const canvasHref = computed(() => {
 })
 const themeButtonText = computed(() => themeOptions.find(option => option.value === themeMode.value)?.label || '系统')
 const themeButtonTitle = computed(() => `当前主题：${themeButtonText.value}，点击切换`)
+const themeButtonIcon = computed(() => {
+  if (themeMode.value === 'light') return 'lucide:sun'
+  if (themeMode.value === 'dark') return 'lucide:moon'
+  return 'lucide:sun-moon'
+})
 
 const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   const items: ActionMenuItem[] = []

@@ -230,6 +230,7 @@ def list_images(
     media_type: str = "all",
     tag: str = "",
     search: str = "",
+    owner_id: str = "",
 ) -> dict[str, object]:
     paged = int(limit or 0) > 0
     raw_items = image_storage_service.list_items(
@@ -239,6 +240,11 @@ def list_images(
         refresh_index=not paged,
         verify_existing=not paged,
     )
+    if owner_id:
+        raw_items = [
+            item for item in raw_items
+            if str(item.get("owner_id") or "") == owner_id
+        ]
     wanted_type = str(media_type or "all").strip().lower()
     if wanted_type not in {"all", "image"}:
         wanted_type = "all"
