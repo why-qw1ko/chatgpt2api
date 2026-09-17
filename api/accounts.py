@@ -1166,7 +1166,12 @@ def create_router() -> APIRouter:
     async def create_user_key(body: UserKeyCreateRequest, authorization: str | None = Header(default=None)):
         require_admin(authorization)
         try:
-            item, raw_key = await run_in_threadpool(auth_service.create_key, role="user", name=body.name)
+            item, raw_key = await run_in_threadpool(
+                auth_service.create_key,
+                role="user",
+                name=body.name,
+                daily_image_limit=body.daily_image_limit,
+            )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
         return {"item": item, "raw_key": raw_key}
