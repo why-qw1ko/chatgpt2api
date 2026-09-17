@@ -9,8 +9,9 @@
 <p align="center">本项目基于原仓库 <a href="https://github.com/yukkcat/chatgpt2api">yukkcat/chatgpt2api</a> 修改。</p>
 
 <p align="center">
-  <strong>简体中文</strong> · <a href="./README_EN.md">English</a>
+  <strong>简体中文</strong>
 </p>
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-v3.2.3-111827" alt="Version v3.2.3" />
@@ -22,20 +23,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/yukkcat/chatgpt2api/releases/tag/v3.2.3">v3.2.3 Release</a>
   · <a href="./CHANGELOG.md">更新说明</a>
   · <a href="./docs/README.md">维护文档</a>
 </p>
 
 > [!IMPORTANT]
-> `v3.0.0` 是新的发布起点。远程 `main` 历史已重新整理，旧版本源代码、Git 标签、Release 和容器镜像不再作为当前发布线维护。3.0 使用全新的 Application Database，不能直接读取 2.x 的分散存储数据；升级时请重新配置或导入账号。
+> 本项目只二改自用，若有需要请自行拉取代码部署，或使用本仓库提供的镜像，下面内容基本与本仓库无直接关系
 
 > [!WARNING]
 > 本项目通过逆向研究接入 ChatGPT 官网的文本、图片和文件生成能力，并非 OpenAI 官方服务。接口可能随上游变化失效，并可能导致账号受限、临时或永久封禁；请勿使用重要、常用或高价值账号。
 >
 > 使用者须自行了解技术、账号与合规风险，遵守 OpenAI 服务条款及当地法律法规。严禁用于批量滥用、恶意竞争、账号盗用、诈骗、骚扰，以及生成或传播违法、暴力、色情或涉及未成年人的内容；使用者自行承担全部风险与责任。
 
-## 快速部署
+## 快速部署(非本站)
 
 ### 一键安装
 
@@ -192,7 +192,7 @@ curl http://localhost:3000/v1/images/generations \
 
 其余设置通过控制台维护。配置项的权威默认值与约束以当前接口投影为准。
 
-## 效果展示
+## 效果展示(非本站)
 
 <table width="100%">
   <tr><td width="50%"><img src="docs/images/1.png" alt="控制台截图 1"></td><td width="50%"><img src="docs/images/2.png" alt="控制台截图 2"></td></tr>
@@ -236,8 +236,8 @@ npm run dev
 
 ## 本项目贡献者
 
-<a href="https://github.com/yukkcat/chatgpt2api/graphs/contributors">
-  <img alt="ChatGPT2API Contributors" src="https://contrib.rocks/image?repo=yukkcat/chatgpt2api" />
+<a href="https://github.com/why-qw1ko/chatgpt2api/graphs/contributors">
+  <img alt="ChatGPT2API Contributors" src="https://contrib.rocks/image?repo=why-qw1ko/chatgpt2api" />
 </a>
 
 ## 原版项目与贡献者
@@ -248,7 +248,3 @@ npm run dev
   <img alt="Contributors" src="https://contrib.rocks/image?repo=basketikun/chatgpt2api" />
 </a>
 
-## 社区与友链
-
-- QQ 交流群：[1005859624](https://qm.qq.com/q/yegwCqJisS)
-- 社区：[Linux.do](https://linux.do)
