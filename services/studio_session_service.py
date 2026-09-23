@@ -4,12 +4,15 @@ import json
 import threading
 from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, String, Text, select
 
 from services.application_database import (
     DatabaseBase,
     initialize_application_database,
     resolve_database_url,
+)
+from services.storage.studio_conversation_repository import (
+    StudioConversationRepository,
 )
 from utils.timezone import beijing_now
 
@@ -28,7 +31,11 @@ def _now_iso() -> str:
 
 
 class StudioSessionService:
-    """Server-side persistence for studio conversation state, keyed by owner."""
+    """Server-side studio conversation state, keyed by owner.
+
+    Structured conversations/messages are authoritative. Legacy whole-blob rows are
+    imported once and kept only as a migration source.
+    """
 
     def __init__(self) -> None:
         self._engine = initialize_application_database(resolve_database_url())
@@ -36,14 +43,12 @@ class StudioSessionService:
 
         self.Session = sessionmaker(bind=self._engine, expire_on_commit=False)
         self._lock = threading.Lock()
+        self._repository = StudioConversationRepository()
 
     def _clean(self, value: object) -> str:
         return str(value or "").strip()
 
-    def load(self, owner_id: str) -> dict[str, Any]:
-        owner = self._clean(owner_id)
-        if not owner:
-            return {"schema_version": 1, "state": None}
+    def _load_legacy_state(self, owner: str) -> dict[str, Any] | None:
         with self._lock:
             session = self.Session()
             try:
@@ -53,18 +58,42 @@ class StudioSessionService:
                     .one_or_none()
                 )
                 if row is None:
-                    return {"schema_version": 1, "state": None}
+                    return None
                 try:
                     state = json.loads(row.data)
                 except (TypeError, json.JSONDecodeError):
-                    state = None
-                return {
-                    "schema_version": 1,
-                    "state": state if isinstance(state, dict) else None,
-                    "updated_at": row.updated_at,
-                }
+                    return None
+                return state if isinstance(state, dict) else None
             finally:
                 session.close()
+
+    def _import_legacy_if_needed(self, owner: str) -> None:
+        structured = self._repository.load_owner_state(owner)
+        if structured.get("state"):
+            return
+        legacy = self._load_legacy_state(owner)
+        if not legacy:
+            return
+        self._repository.merge_owner_state(owner, legacy)
+
+    def load(self, owner_id: str) -> dict[str, Any]:
+        owner = self._clean(owner_id)
+        if not owner:
+            return {"schema_version": 2, "state": None}
+        self._import_legacy_if_needed(owner)
+        loaded = self._repository.load_owner_state(owner)
+        state = loaded.get("state")
+        if isinstance(state, dict):
+            notices = state.get("conversationNotices")
+            state = {
+                **state,
+                "conversationNotices": notices if isinstance(notices, dict) else {},
+            }
+        return {
+            "schema_version": 2,
+            "state": state,
+            "updated_at": loaded.get("updated_at"),
+        }
 
     def save(self, owner_id: str, state: dict[str, Any]) -> dict[str, Any]:
         owner = self._clean(owner_id)
@@ -72,45 +101,37 @@ class StudioSessionService:
             raise ValueError("owner_id is required")
         if not isinstance(state, dict):
             raise ValueError("state must be an object")
-        payload = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
-        now = _now_iso()
-        with self._lock:
-            session = self.Session()
-            try:
-                row = (
-                    session.query(StudioSessionModel)
-                    .filter(StudioSessionModel.owner_id == owner)
-                    .one_or_none()
-                )
-                if row is None:
-                    session.add(
-                        StudioSessionModel(owner_id=owner, data=payload, updated_at=now)
-                    )
-                else:
-                    row.data = payload
-                    row.updated_at = now
-                session.commit()
-            finally:
-                session.close()
-        return {"schema_version": 1, "saved": True, "updated_at": now}
+        self._import_legacy_if_needed(owner)
+        result = self._repository.merge_owner_state(owner, state)
+        return {
+            "schema_version": 2,
+            "saved": True,
+            "merged": True,
+            "updated_at": result.get("updated_at"),
+        }
+
+    def delete_conversation(self, owner_id: str, conversation_id: str) -> dict[str, Any]:
+        owner = self._clean(owner_id)
+        conversation_id = self._clean(conversation_id)
+        if not owner:
+            raise ValueError("owner_id is required")
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        self._import_legacy_if_needed(owner)
+        removed = self._repository.delete_conversation(
+            owner,
+            conversation_id,
+            deleted_at=_now_iso(),
+        )
+        return {"schema_version": 2, "deleted": bool(removed), "removed": removed}
 
     def clear(self, owner_id: str) -> dict[str, Any]:
         owner = self._clean(owner_id)
         if not owner:
             raise ValueError("owner_id is required")
-        removed = 0
-        with self._lock:
-            session = self.Session()
-            try:
-                removed = (
-                    session.query(StudioSessionModel)
-                    .filter(StudioSessionModel.owner_id == owner)
-                    .delete()
-                )
-                session.commit()
-            finally:
-                session.close()
-        return {"schema_version": 1, "removed": removed}
+        self._import_legacy_if_needed(owner)
+        removed = self._repository.clear_owner(owner, deleted_at=_now_iso())
+        return {"schema_version": 2, "removed": removed}
 
 
 studio_session_service = StudioSessionService()

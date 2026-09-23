@@ -16,6 +16,7 @@
 | 调用日志 | `LogService` 的 Call Record Repository | Application Database |
 | 概览指标 | `DashboardMetricsService` 的 Dashboard Metric Projection | Application Database 中的状态、小时和模型小时三张表，保留 30 天 |
 | 提示词、远程导入和清理协调状态 | 各自领域 Repository | Application Database |
+| Studio 会话与消息 | `StudioSessionService` / `StudioConversationRepository` | Application Database（按对话/消息合并，删除写墓碑；旧 `studio_sessions` 整包仅作迁移来源） |
 | Editable File Task 元数据 | `EditableFileTaskService` 的任务 Repository | Application Database |
 | 图片任务 | `ImageTaskService` | `data/image_tasks.json` |
 | 图片索引与删除恢复状态 | `ImageStorageService` | `data/image_index.json`，实际图片可在本地或 WebDAV |

@@ -1,7 +1,7 @@
 <template>
   <div
     class="accounts-page relative"
-    :class="{ 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col': isWorkspaceLayout }"
+    :class="{ 'flex min-h-0 flex-1 flex-col': isWorkspaceLayout }"
   >
     <PagePanel
       class="accounts-panel flex flex-col gap-5"
@@ -121,7 +121,7 @@
         loading-description="读取账号列表、分组和分页状态。"
         :show-empty="!loading && visibleAccounts.length === 0"
         :empty-colspan="10"
-        :scroll-class="isWorkspaceLayout ? 'max-h-[min(36rem,60dvh)] lg:max-h-none' : ''"
+        :scroll-class="isWorkspaceLayout ? 'max-h-none' : ''"
         table-class="min-w-[980px] w-full"
         head-class="tracking-[0.16em]"
       >

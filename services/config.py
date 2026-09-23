@@ -67,7 +67,7 @@ DEFAULT_CHAT_COMPLETION_CACHE = {
     "dedupe_inflight": True,
     "stream_cache": True,
     "normalize_messages": True,
-    "drop_adjacent_duplicates": True,
+    "drop_adjacent_duplicates": False,
     "drop_assistant_history": False,
 }
 

@@ -24,7 +24,10 @@ export type StudioConversationActionsRuntimeInput = {
   activeConversation: Ref<StudioConversation | null>
   conversationNotices: Ref<Record<string, StudioConversationBadgeState>>
   conversationLookup: StudioConversationLookupRef
-  persistenceRuntime: Pick<StudioConversationPersistenceRuntime, 'scheduleConversationNotices' | 'scheduleConversations'>
+  persistenceRuntime: Pick<
+    StudioConversationPersistenceRuntime,
+    'scheduleConversationNotices' | 'scheduleConversations' | 'removeConversation' | 'clearAllConversations'
+  >
   selectionRuntime: Pick<StudioConversationSelectionRuntime, 'cancel' | 'select'>
   hooks: StudioConversationActionsRuntimeHooks
 }
@@ -89,6 +92,7 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
       input.activeConversationId.value = input.conversations.value[0]?.id || ''
     }
     input.persistenceRuntime.scheduleConversations()
+    void input.persistenceRuntime.removeConversation?.(conversationId)
   }
 
   function prepareClearHistory() {
@@ -102,6 +106,8 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     input.hooks.resetTasks()
     input.conversationNotices.value = {}
     input.activeConversationId.value = ''
+    input.persistenceRuntime.scheduleConversations()
+    void input.persistenceRuntime.clearAllConversations?.()
   }
 
   function clearCurrentConversation(conversationId?: string) {
@@ -110,6 +116,7 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
       : input.activeConversation.value
     if (!conversation?.messages.length) return null
     input.hooks.cancelMessageEdit()
+    conversation.messagesReplacedAt = new Date().toISOString()
     conversation.messages = []
     conversation.title = '新对话'
     clearConversationNotice(conversation.id)

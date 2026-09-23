@@ -2,7 +2,7 @@ import { type Ref, watch } from 'vue'
 import { getStringPreference, preferenceKeys, removePreference, setStringPreference } from '@/lib/preferences'
 import { useAuthStore } from '@/stores/auth'
 import { scheduleIdleTask, type IdleTaskHandle } from '@/lib/idleTask'
-import { saveStudioSessionState } from '@/api/studioSessions'
+import { clearStudioSessionState, deleteStudioConversation, saveStudioSessionState } from '@/api/studioSessions'
 import type { StudioConversation, StudioConversationBadgeState } from '@/components/studio/types'
 import {
   loadStudioConversationNotices,
@@ -76,7 +76,7 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
     serverSyncInFlight = true
     try {
       await saveStudioSessionState({
-        conversations: input.conversations.value,
+        conversations: input.conversations.value.filter((item) => !item.deletedAt),
         conversationNotices: input.conversationNotices.value,
         activeConversationId: input.activeConversationId.value,
       })
@@ -85,6 +85,25 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
     } finally {
       serverSyncInFlight = false
     }
+  }
+
+  async function removeConversation(conversationId: string) {
+    if (!conversationId) return
+    try {
+      await deleteStudioConversation(conversationId)
+    } catch {
+      // 删除失败时仍更新本地，下次同步会带上墓碑。
+    }
+    scheduleServerSync()
+  }
+
+  async function clearAllConversations() {
+    try {
+      await clearStudioSessionState()
+    } catch {
+      // 清空失败时保留本地结果，避免误以为服务端已清。
+    }
+    scheduleServerSync()
   }
 
   const stopConversationWatch = watch(input.conversations, scheduleConversations)
@@ -181,7 +200,9 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
   }
 
   return {
+    clearAllConversations,
     flush,
+    removeConversation,
     scheduleConversationNotices,
     scheduleConversations,
     dispose,

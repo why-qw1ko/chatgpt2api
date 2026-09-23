@@ -4,6 +4,8 @@ import type { OpenAIV1ChatMessage } from './openaiV1'
 export interface ChatStreamInput {
   model: string
   messages: OpenAIV1ChatMessage[]
+  conversationId?: string
+  parentMessageId?: string
   reasoningEffort?: string
   signal?: AbortSignal
   onDelta?: (delta: string) => void
@@ -12,6 +14,8 @@ export interface ChatStreamInput {
 export interface ChatStreamResult {
   content: string
   rawChunks: number
+  conversationId?: string
+  parentMessageId?: string
 }
 
 function apiUrl(path: string) {
@@ -116,6 +120,8 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     body: JSON.stringify({
       model: input.model.trim() || 'auto',
       messages: input.messages,
+      ...(input.conversationId ? { conversation_id: input.conversationId } : {}),
+      ...(input.parentMessageId ? { parent_message_id: input.parentMessageId } : {}),
       stream: true,
       ...(input.reasoningEffort ? { reasoning_effort: input.reasoningEffort } : {}),
     }),
@@ -136,6 +142,8 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
   let buffer = ''
   let content = ''
   let rawChunks = 0
+  let conversationId = ''
+  let parentMessageId = ''
 
   const handleEvent = (eventText: string) => {
     const data = parseSseEvent(eventText)
@@ -151,6 +159,9 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     }
     const error = extractStreamError(payload)
     if (error) throw new Error(error)
+    const meta = payload as Record<string, any>
+    if (!conversationId && typeof meta.conversation_id === 'string') conversationId = meta.conversation_id
+    if (!parentMessageId && typeof meta.message_id === 'string') parentMessageId = meta.message_id
     const delta = extractDelta(payload)
     if (delta) {
       content += delta
@@ -171,7 +182,12 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
       buffer = buffer.slice(boundary + separatorLength)
       if (handleEvent(eventText)) {
         await reader.cancel().catch(() => {})
-        return { content, rawChunks }
+        return {
+    content,
+    rawChunks,
+    conversationId: conversationId || undefined,
+    parentMessageId: parentMessageId || undefined,
+  }
       }
       boundary = buffer.search(/\r?\n\r?\n/)
     }
@@ -181,5 +197,10 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
   if (rest) buffer += rest
   if (buffer.trim()) handleEvent(buffer)
 
-  return { content, rawChunks }
+  return {
+    content,
+    rawChunks,
+    conversationId: conversationId || undefined,
+    parentMessageId: parentMessageId || undefined,
+  }
 }

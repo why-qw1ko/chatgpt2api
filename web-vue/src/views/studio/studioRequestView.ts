@@ -36,16 +36,19 @@ export function buildStudioChatMessages(conversation: StudioConversation, curren
   return conversation.messages
     .filter((message) => {
       if (message.id === currentAssistantId) return false
-      if (message.error) return false
-      if (!message.content.trim() && !hasChatVisionReferences(message)) return false
-      if (message.role === 'assistant' && message.mode !== 'chat' && message.mode !== 'search') return false
+      if (message.deletedAt) return false
+      if (!message.content.trim() && !hasChatVisionReferences(message) && message.status !== 'error') return false
       return true
     })
     .map((message): OpenAIV1ChatMessage => ({
       role: message.role === 'assistant' ? 'assistant' : 'user',
       content: buildStudioChatContextContent(message),
     }))
-    .slice(-32)
+    .filter((message) => {
+      const text = typeof message.content === 'string' ? message.content : ''
+      return Boolean(text.trim()) || Array.isArray(message.content)
+    })
+    .slice(-48)
 }
 
 export function studioModeRequestErrorFallback(mode: StudioComposeMode) {
@@ -74,9 +77,11 @@ export async function streamStudioChatReply(input: {
   signal: AbortSignal
   handlers: StudioChatReplyHandlers
 }) {
-  await streamChatCompletion({
+  return await streamChatCompletion({
     model: input.model,
     messages: buildStudioChatMessages(input.conversation, input.currentAssistantId),
+    conversationId: input.conversation.upstreamConversationId,
+    parentMessageId: input.conversation.upstreamParentMessageId,
     reasoningEffort: input.reasoningEffort,
     signal: input.signal,
     onDelta: input.handlers.onDelta,
@@ -135,6 +140,23 @@ function buildStudioChatContextText(message: StudioMessage) {
   if (message.role === 'user' && message.mode === 'image') return `画图请求：${message.content}`
   if (message.role === 'user' && message.mode === 'search') return `搜索请求：${message.content}`
   if (message.role === 'user' && message.mode === 'file') return `${message.fileKind === 'psd' ? 'PSD' : 'PPT'} 文件请求：${message.content}`
+  if (message.role === 'assistant' && message.mode === 'image') {
+    const base = message.content.trim() || '（图片任务结果）'
+    return message.status === 'error'
+      ? `${base}\n（图片任务失败${message.error ? `：${message.error}` : ''}）`
+      : base
+  }
+  if (message.role === 'assistant' && message.mode === 'file') {
+    const base = message.content.trim() || '（文件任务结果）'
+    return message.status === 'error'
+      ? `${base}\n（文件任务失败${message.error ? `：${message.error}` : ''}）`
+      : base
+  }
+  if (message.status === 'error' && message.error) {
+    return message.content.trim()
+      ? `${message.content}\n（上一轮失败：${message.error}）`
+      : `（上一轮失败：${message.error}）`
+  }
   return message.content
 }
 

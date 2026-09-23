@@ -535,12 +535,11 @@ pageRuntime.onShow(() => {
   gap: 16px;
 }
 
-@media (min-width: 1024px) {
-  .gallery-page--contained {
-    min-height: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-  }
+.gallery-page--contained {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
 }
 
 .gallery-hero {

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+
+- 文本对话支持绑定上游 `conversation_id` / `parent_message_id` 续聊。
+- 生成前探测当前出口能否访问 chatgpt.com，失败时拦截并提示「当前人数较多，请稍后再试」。
+
+### Changed
+
+- Studio 会话改为 Application Database 结构化存储：按对话/消息合并同步，删除使用墓碑，跨端不再整包覆盖。
+- Studio 连续对话上下文保留画图/文件结果与失败轮次；`normalize_messages` 幂等，避免 `global_system_prompt` 重复注入。
+- 新增 `DELETE /api/studio-sessions/conversations/{id}`；`PUT /api/studio-sessions` 语义改为合并。
+- 清空/编辑/重试会通过 `messagesReplacedAt` 在服务端墓碑化被移除的消息，避免跨端复活。
+- 列表页 workspace 布局改为全断点单滚动容器；Studio 历史/消息区 `overscroll-behavior: contain`。
+- 默认关闭 `drop_adjacent_duplicates`，避免相邻重复消息被静默丢弃；消息编辑带 `baseUpdatedAt` 做并发判定。
+
 ## 3.2.9 - 2026-09-18
 
 + [优化] 版本更新检查与发布页链接指向自己的 fork 仓库（why-qw1ko），支持网页一键更新到自有版本。

@@ -1,7 +1,7 @@
 <template>
   <div
     class="logs-page"
-    :class="{ 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col': isWorkspaceLayout }"
+    :class="{ 'flex min-h-0 flex-1 flex-col': isWorkspaceLayout }"
   >
     <PagePanel
       class="log-main-panel flex flex-col gap-4"

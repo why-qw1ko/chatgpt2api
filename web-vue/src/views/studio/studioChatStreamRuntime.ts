@@ -49,7 +49,7 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
     }
 
     try {
-      await streamStudioChatReply({
+      const streamResult = await streamStudioChatReply({
         conversation: input.conversation,
         currentAssistantId: input.assistantMessage.id,
         model: input.model,
@@ -60,6 +60,8 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
         },
       })
       flushPendingDelta()
+      if (streamResult?.conversationId) input.conversation.upstreamConversationId = streamResult.conversationId
+      if (streamResult?.parentMessageId) input.conversation.upstreamParentMessageId = streamResult.parentMessageId
       input.assistantMessage.status = 'done'
       if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '上游没有返回内容。'
       hooks.markConversationNotice(input.conversation.id, 'done')

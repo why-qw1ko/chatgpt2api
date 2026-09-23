@@ -414,6 +414,7 @@ function formatConversationTime(conversation: StudioConversation) {
   flex: 1;
   flex-direction: column;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .studio-history-window-spacer {
