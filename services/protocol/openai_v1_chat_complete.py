@@ -6,6 +6,7 @@ from typing import Any, Iterable, Iterator
 
 from fastapi import HTTPException
 
+from services.generation_network_guard import GenerationUnavailableError, ensure_generation_network
 from services.protocol.chat_completion_cache import cache_key, chat_completion_cache, normalize_text_messages
 from services.protocol.conversation import (
     ConversationRequest,
@@ -134,7 +135,15 @@ def stream_text_chat_completion(
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
     sent_role = False
-    request = ConversationRequest(model=model, messages=messages, thinking_effort=thinking_effort)
+    result_facts: dict[str, Any] = {}
+    request = ConversationRequest(
+        model=model,
+        messages=messages,
+        thinking_effort=thinking_effort,
+        result_facts=result_facts,
+        upstream_conversation_id=str((body or {}).get("conversation_id") or (body or {}).get("_conversation_id") or "").strip(),
+        upstream_parent_message_id=str((body or {}).get("parent_message_id") or "").strip(),
+    )
     for delta_text in stream_text_deltas(backend, request):
         if not sent_role:
             sent_role = True
@@ -152,7 +161,13 @@ def stream_text_chat_completion(
             completion_chunk(model, {"role": "assistant", "content": ""}, None, completion_id, created),
             _backend_account_email(backend),
         )
-    yield _with_log_metadata(completion_chunk(model, {}, "stop", completion_id, created), _backend_account_email(backend))
+    stop_chunk = completion_chunk(model, {}, "stop", completion_id, created)
+    if isinstance(result_facts, dict):
+        if result_facts.get("conversation_id"):
+            stop_chunk["conversation_id"] = result_facts["conversation_id"]
+        if result_facts.get("message_id"):
+            stop_chunk["message_id"] = result_facts["message_id"]
+    yield _with_log_metadata(stop_chunk, _backend_account_email(backend))
 
 
 def collect_chat_content(chunks: Iterable[dict[str, Any]]) -> str:
@@ -346,6 +361,8 @@ def text_completion_response(model: str, messages: list[dict[str, Any]], thinkin
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
+    ensure_generation_network()
+
     if body.get("stream"):
         if is_image_chat_request(body):
             return image_chat_events(body)

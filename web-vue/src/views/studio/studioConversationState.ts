@@ -56,7 +56,7 @@ export function buildStudioConversationTitle(content: string) {
 export function loadStudioConversations(): StudioConversation[] {
   const items = getJsonPreference<unknown[]>(preferenceKeys.studioConversations, [])
   if (!Array.isArray(items)) return []
-  return items.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 80)
+  return items.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 200)
 }
 
 export function loadStudioConversationNotices(): Record<string, StudioConversationBadgeState> {
@@ -69,9 +69,9 @@ export function loadStudioConversationNotices(): Record<string, StudioConversati
 }
 
 export function persistStudioConversations(conversations: StudioConversation[]) {
-  const payload = conversations.slice(0, 80).map((conversation) => ({
+  const payload = conversations.slice(0, 200).map((conversation) => ({
     ...conversation,
-    messages: conversation.messages.slice(-160).map((message) => ({
+    messages: conversation.messages.slice(-400).map((message) => ({
       ...message,
       status: message.status === 'streaming' || message.status === 'sending' ? 'done' : message.status,
     })),
@@ -146,17 +146,60 @@ export function isStudioFileMessageRunning(message: StudioMessage) {
   return message.mode === 'file' && (message.status === 'queued' || message.status === 'running')
 }
 
+export function mergeStudioConversations(local: StudioConversation, remote: StudioConversation): StudioConversation {
+  const messageById = new Map<string, StudioMessage>()
+  for (const message of [...local.messages, ...remote.messages]) {
+    const existing = messageById.get(message.id)
+    if (!existing) {
+      messageById.set(message.id, message)
+      continue
+    }
+    const next = (message.createdAt || '') >= (existing.createdAt || '') ? message : existing
+    if (next.deletedAt && (!existing.deletedAt || next.createdAt >= existing.createdAt)) continue
+    messageById.set(message.id, next)
+  }
+  const localReplacedAt = local.messagesReplacedAt || ''
+  const remoteReplacedAt = remote.messagesReplacedAt || ''
+  const replaceWinner = localReplacedAt >= remoteReplacedAt ? local : remote
+  const allowIds = (localReplacedAt || remoteReplacedAt)
+    ? new Set(replaceWinner.messages.map((message) => message.id))
+    : null
+  const messages = Array.from(messageById.values())
+    .filter((message) => !message.deletedAt)
+    .filter((message) => {
+      if (!allowIds) return true
+      return allowIds.has(message.id)
+    })
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
+  const base = (remote.updatedAt || '') >= (local.updatedAt || '') ? remote : local
+  const messagesReplacedAt = [local.messagesReplacedAt, remote.messagesReplacedAt]
+    .filter(Boolean)
+    .sort()
+    .at(-1)
+  return {
+    ...base,
+    title: (remote.updatedAt || '') >= (local.updatedAt || '') ? (remote.title || local.title) : local.title,
+    updatedAt: (remote.updatedAt || '') > (local.updatedAt || '') ? remote.updatedAt : local.updatedAt,
+    messagesReplacedAt,
+    messages,
+  }
+}
+
 export function normalizeStudioConversation(item: unknown): StudioConversation | null {
   if (!item || typeof item !== 'object') return null
   const raw = item as Partial<StudioConversation>
   const messages = Array.isArray(raw.messages)
-    ? raw.messages.map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message)).slice(-160)
+    ? raw.messages.map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message)).slice(-400)
     : []
   return {
     id: cleanStudioText(raw.id) || createStudioId('studio'),
     title: cleanStudioText(raw.title) || '新对话',
     createdAt: cleanStudioText(raw.createdAt) || new Date().toISOString(),
     updatedAt: cleanStudioText(raw.updatedAt) || new Date().toISOString(),
+    deletedAt: cleanStudioText(raw.deletedAt) || undefined,
+    messagesReplacedAt: cleanStudioText(raw.messagesReplacedAt) || undefined,
+    upstreamConversationId: cleanStudioText(raw.upstreamConversationId) || undefined,
+    upstreamParentMessageId: cleanStudioText(raw.upstreamParentMessageId) || undefined,
     messages,
   }
 }
@@ -188,6 +231,7 @@ function normalizeStudioMessage(item: unknown): StudioMessage | null {
       ? linkStudioSearchCitations(migratedSearchResult.content, id, searchSources?.length || 0)
       : migratedSearchResult.content,
     createdAt: cleanStudioText(raw.createdAt) || new Date().toISOString(),
+    deletedAt: cleanStudioText(raw.deletedAt) || undefined,
     status: normalizeStudioMessageStatus(raw.status),
     model: cleanStudioText(raw.model) || undefined,
     imageSize: cleanStudioText(raw.imageSize) || undefined,

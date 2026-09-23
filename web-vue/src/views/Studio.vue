@@ -226,6 +226,7 @@ import {
   buildStudioConversationLookup,
   buildStudioConversationRuntimeIndex,
   normalizeStudioConversation,
+  mergeStudioConversations,
   type StudioConversationLookup,
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
@@ -336,22 +337,38 @@ onMounted(async () => {
     const state = result.state
     if (!state) return
     const serverConversations = Array.isArray(state.conversations)
-      ? state.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 80)
+      ? state.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item))
       : []
-    if (serverConversations.length === 0) return
-    const localNewest = conversations.value.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
-    const serverNewest = serverConversations.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
-    if (serverNewest > localNewest) {
-      conversations.value = serverConversations
-      const serverNotices: Record<string, StudioConversationBadgeState> = {}
-      Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
-        if (notice === 'done' || notice === 'error') serverNotices[id] = notice
-      })
-      conversationNotices.value = serverNotices
-      const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
-      if (serverActiveId && serverConversations.some(conversation => conversation.id === serverActiveId)) {
-        activeConversationId.value = serverActiveId
+    const localById = new Map(conversations.value.map((item) => [item.id, item]))
+    const serverById = new Map(serverConversations.map((item) => [item.id, item]))
+    const merged = new Map<string, StudioConversation>()
+    for (const [id, local] of localById) {
+      const server = serverById.get(id)
+      if (!server) {
+        if (!local.deletedAt) merged.set(id, local)
+        continue
       }
+      if (server.deletedAt && (!local.deletedAt || server.updatedAt >= local.updatedAt)) continue
+      if (local.deletedAt && local.updatedAt > server.updatedAt) continue
+      merged.set(id, mergeStudioConversations(local, server))
+    }
+    for (const [id, server] of serverById) {
+      if (merged.has(id) || server.deletedAt) continue
+      merged.set(id, server)
+    }
+    const nextConversations = Array.from(merged.values())
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
+      .slice(0, 200)
+    conversations.value = nextConversations
+    const serverNotices: Record<string, StudioConversationBadgeState> = {}
+    Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
+      if (notice === 'done' || notice === 'error') serverNotices[id] = notice
+    })
+    conversationNotices.value = { ...serverNotices, ...conversationNotices.value }
+    const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
+    const activeStillValid = nextConversations.some((item) => item.id === activeConversationId.value && !item.deletedAt)
+    if (!activeStillValid && serverActiveId && nextConversations.some((item) => item.id === serverActiveId)) {
+      activeConversationId.value = serverActiveId
     }
   } catch {
     // 服务端不可用时沿用本地缓存。

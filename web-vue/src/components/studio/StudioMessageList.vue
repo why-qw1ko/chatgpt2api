@@ -627,6 +627,7 @@ defineExpose({
   min-height: 0;
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   overflow-anchor: none;
   scroll-behavior: auto;
   overscroll-behavior: contain;

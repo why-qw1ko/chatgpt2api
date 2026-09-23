@@ -148,7 +148,7 @@
         class="relative min-w-0 flex-1 bg-card lg:ml-0"
         :class="[
           { 'flex h-dvh min-h-0 flex-col overflow-hidden': isWorkspacePage },
-          { 'lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden': isContainedManagementPage },
+          { 'flex h-dvh min-h-0 flex-col overflow-hidden': isContainedManagementPage },
         ]"
         :aria-hidden="isMobileSidebarActive ? 'true' : undefined"
         :inert="isMobileSidebarActive"
@@ -283,7 +283,7 @@
           class="relative min-w-0 overflow-x-hidden bg-card"
           :class="[
             isWorkspacePage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
-            isContainedManagementPage ? 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-hidden' : '',
+            isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
             isImmersivePage ? 'p-0' : 'px-4 py-6 sm:px-6',
           ]"
         >
@@ -294,7 +294,7 @@
                   class="route-view-content"
                   :class="[
                     isWorkspacePage ? 'flex min-h-0 flex-1 flex-col' : '',
-                    isContainedManagementPage ? 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col' : '',
+                    isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col' : '',
                     { 'h-full': isImmersivePage },
                   ]"
                 >

@@ -49,15 +49,23 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
     const conversation = input.activeConversation.value
     if (!conversation) return null
     conversation.messages = conversation.messages.filter((message) => message.id !== messageId)
+    conversation.messagesReplacedAt = new Date().toISOString()
+    input.hooks.touchConversation(conversation)
     input.hooks.touchConversation(conversation)
     return conversation
   }
 
   function replaceFromTarget(target: StudioMessageTarget, message: StudioMessage) {
     const { conversation, index } = target
+    conversation.messagesReplacedAt = new Date().toISOString()
+    const previous = conversation.messages[index]
+    const nextMessage: StudioMessage = {
+      ...message,
+      baseUpdatedAt: previous?.updatedAt || previous?.createdAt,
+    }
     conversation.messages = [
       ...conversation.messages.slice(0, index),
-      message,
+      nextMessage,
     ]
     if (!conversation.messages.slice(0, index).some((item) => item.role === 'user')) {
       conversation.title = buildStudioConversationTitle(message.content)
@@ -66,6 +74,7 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
   }
 
   function pruneAfterTarget(target: StudioMessageTarget) {
+    target.conversation.messagesReplacedAt = new Date().toISOString()
     target.conversation.messages = target.conversation.messages.slice(0, target.index)
     input.hooks.touchConversation(target.conversation)
   }

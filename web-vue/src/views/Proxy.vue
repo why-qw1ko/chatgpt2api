@@ -160,7 +160,7 @@
         :empty-colspan="6"
         empty-title="暂无代理组"
         empty-description="新建代理组后，可绑定账号组、账号或默认出口使用。"
-        :scroll-class="isWorkspaceLayout ? 'max-h-[min(36rem,65dvh)]' : ''"
+        :scroll-class="isWorkspaceLayout ? 'max-h-none' : ''"
         table-class="min-w-[1080px] w-full table-fixed text-left text-sm"
         head-class="tracking-[0.16em]"
       >

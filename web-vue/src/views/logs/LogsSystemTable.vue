@@ -12,7 +12,7 @@
     :empty-colspan="9"
     :empty-title="logsLoadError ? '日志加载失败' : '暂无日志'"
     :empty-description="logsLoadError || '换个筛选条件或刷新后再看。'"
-    :scroll-class="layoutMode === 'workspace' ? 'max-h-[min(36rem,60dvh)] lg:max-h-none' : ''"
+    :scroll-class="layoutMode === 'workspace' ? 'max-h-none' : ''"
     table-class="w-full min-w-[1080px] table-fixed"
     head-class="normal-case tracking-normal"
     style="--table-shell-footer-padding: 12px 0 0"

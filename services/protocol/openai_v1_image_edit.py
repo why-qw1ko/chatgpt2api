@@ -5,6 +5,7 @@ from typing import Any, Iterator
 
 from PIL import Image
 
+from services.generation_network_guard import GenerationUnavailableError, ensure_generation_network
 from services.image_failure import image_failure
 from services.protocol.conversation import (
     ConversationRequest,
@@ -50,6 +51,8 @@ def _composite_mask(
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
+    ensure_generation_network()
+
     prompt = str(body.get("prompt") or "")
     images = body.get("images") or []
     masks = body.get("mask") or []

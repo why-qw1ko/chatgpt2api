@@ -16,6 +16,9 @@ export interface StudioMessage {
   mode: StudioComposeMode
   content: string
   createdAt: string
+  deletedAt?: string
+  baseUpdatedAt?: string
+  baseUpdatedAt?: string
   status?: StudioMessageStatus
   model?: string
   imageSize?: string
@@ -49,6 +52,10 @@ export interface StudioConversation {
   title: string
   createdAt: string
   updatedAt: string
+  deletedAt?: string
+  messagesReplacedAt?: string
+  upstreamConversationId?: string
+  upstreamParentMessageId?: string
   messages: StudioMessage[]
 }
 

@@ -389,10 +389,16 @@ def message_text(content: Any) -> str:
 
 def normalize_messages(messages: object, system: Any = None) -> list[dict[str, Any]]:
     normalized = []
-    if config.global_system_prompt:
-        normalized.append({"role": "system", "content": config.global_system_prompt})
+    global_prompt = config.global_system_prompt
+    existing_system_texts: set[str] = set()
+    if isinstance(messages, list):
+        for message in messages:
+            if isinstance(message, dict) and str(message.get("role") or "") == "system":
+                existing_system_texts.add(str(message.get("content") or ""))
+    if global_prompt and global_prompt not in existing_system_texts:
+        normalized.append({"role": "system", "content": global_prompt})
     system_text = message_text(system)
-    if system_text:
+    if system_text and system_text not in existing_system_texts and system_text != global_prompt:
         normalized.append({"role": "system", "content": system_text})
     if isinstance(messages, list):
         for message in messages:
@@ -540,6 +546,9 @@ class ConversationRequest:
     quality: str = "auto"
     response_format: str = "b64_json"
     base_url: str | None = None
+    upstream_conversation_id: str = ""
+    upstream_parent_message_id: str = ""
+    result_facts: dict[str, Any] | None = None
     message_as_error: bool = False
     progress_callback: Any = None  # Callable[[str], None] | None
     call_id: str = ""
@@ -677,7 +686,11 @@ def strip_history(text: str, history_text: str = "") -> str:
     history_text = str(history_text or "")
     while history_text and text.startswith(history_text):
         text = text[len(history_text):]
-    return text
+    history_messages = [item for item in history_text.split("\n\n") if item]
+    for item in history_messages:
+        if text.startswith(item):
+            text = text[len(item):]
+    return text.lstrip("\n")
 
 
 def sanitize_output_text(text: str) -> str:
@@ -995,6 +1008,7 @@ def conversation_base_event(event_type: str, state: ConversationState, **extra: 
         "message_type": state.message_type,
         "message_role": str(state.message_facts.get("role") or ""),
         "content_type": str(state.message_facts.get("content_type") or ""),
+        "message_id": str(state.message_facts.get("message_id") or ""),
         "_terminal_tool_arguments": (
             dict(state.terminal_tool_arguments)
             if state.terminal_tool_arguments is not None else None
@@ -1075,13 +1089,21 @@ def conversation_events(
         images=images if image_model else None,
         system_hints=["picture_v2"] if image_model else None,
         thinking_effort=thinking_effort if not image_model else "",
+        conversation_id=str(getattr(request, "upstream_conversation_id", "") or ""),
+        parent_message_id=str(getattr(request, "upstream_parent_message_id", "") or ""),
     )
-    yield from iter_conversation_payloads(
+    for event in iter_conversation_payloads(
         payloads,
         history_text,
         history_messages,
         classify_terminal_text_as_image_failure=image_model,
-    )
+    ):
+        if isinstance(getattr(request, "result_facts", None), dict):
+            if event.get("conversation_id"):
+                request.result_facts["conversation_id"] = str(event.get("conversation_id") or "")
+            if event.get("message_id"):
+                request.result_facts["message_id"] = str(event.get("message_id") or "")
+        yield event
 
 
 def _text_account_email(access_token: str) -> str:

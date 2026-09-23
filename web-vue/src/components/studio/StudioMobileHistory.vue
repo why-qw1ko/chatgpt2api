@@ -158,6 +158,7 @@ function formatTime(value: string) {
   min-height: 0;
   flex-direction: column;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .studio-mobile-history-window-spacer {
