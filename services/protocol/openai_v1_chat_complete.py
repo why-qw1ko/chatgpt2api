@@ -167,6 +167,8 @@ def stream_text_chat_completion(
             stop_chunk["conversation_id"] = result_facts["conversation_id"]
         if result_facts.get("message_id"):
             stop_chunk["message_id"] = result_facts["message_id"]
+        if result_facts.get("upstream_fallback"):
+            stop_chunk["upstream_fallback"] = True
     yield _with_log_metadata(stop_chunk, _backend_account_email(backend))
 
 
