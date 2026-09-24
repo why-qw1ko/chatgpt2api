@@ -609,6 +609,11 @@ function formatConversationTime(conversation: StudioConversation) {
   color: #dc2626;
 }
 
+.studio-history-badge.is-expired {
+  background: #fffbeb;
+  color: #92400e;
+}
+
 .studio-history-empty {
   padding: 0.875rem;
   color: hsl(var(--muted-foreground));

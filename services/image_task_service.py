@@ -28,7 +28,6 @@ from services.image_failure import (
 )
 from services.image_task_view import image_task_page, image_task_row
 from services.json_file import read_json_file, write_json_file
-from services.generation_network_guard import ensure_generation_network
 from services.log_service import (
     LOG_TYPE_CALL,
     collect_image_attempts,

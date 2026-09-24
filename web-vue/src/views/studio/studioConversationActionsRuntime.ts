@@ -85,14 +85,14 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     return input.conversationLookup.value.byId.get(conversationId) || null
   }
 
-  function deleteConversation(conversationId: string) {
+  async function deleteConversation(conversationId: string) {
+    await input.persistenceRuntime.removeConversation(conversationId)
     input.conversations.value = input.conversations.value.filter((item) => item.id !== conversationId)
     clearConversationNotice(conversationId)
     if (input.activeConversationId.value === conversationId) {
       input.activeConversationId.value = input.conversations.value[0]?.id || ''
     }
     input.persistenceRuntime.scheduleConversations()
-    void input.persistenceRuntime.removeConversation?.(conversationId)
   }
 
   function prepareClearHistory() {
@@ -100,14 +100,14 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     return input.conversations.value.length > 0
   }
 
-  function clearHistory() {
+  async function clearHistory() {
+    await input.persistenceRuntime.clearAllConversations()
     input.hooks.cancelMessageEdit()
     input.conversations.value = []
     input.hooks.resetTasks()
     input.conversationNotices.value = {}
     input.activeConversationId.value = ''
     input.persistenceRuntime.scheduleConversations()
-    void input.persistenceRuntime.clearAllConversations?.()
   }
 
   function clearCurrentConversation(conversationId?: string) {
@@ -127,14 +127,16 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
   }
 
   function touchConversation(conversation: StudioConversation) {
-    conversation.updatedAt = new Date().toISOString()
+    const previousUpdatedAt = Date.parse(conversation.updatedAt)
+    conversation.updatedAt = new Date(Math.max(Date.now(), Number.isFinite(previousUpdatedAt) ? previousUpdatedAt + 1 : 0)).toISOString()
     input.persistenceRuntime.scheduleConversations()
   }
 
   function markConversationNotice(conversationId: string, state: StudioConversationBadgeState) {
     if (!conversationId) return
     const current = input.conversationNotices.value[conversationId]
-    const nextState = current === 'error' && state === 'done' ? current : state
+    const nextState = (current === 'error' || current === 'expired') && state === 'done' ? current : state
+    if (current === nextState) return
     input.conversationNotices.value = {
       ...input.conversationNotices.value,
       [conversationId]: nextState,

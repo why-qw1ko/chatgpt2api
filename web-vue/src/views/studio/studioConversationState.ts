@@ -63,7 +63,7 @@ export function loadStudioConversationNotices(): Record<string, StudioConversati
   const raw = getJsonPreference<Record<string, unknown>>(preferenceKeys.studioConversationBadges, {})
   const notices: Record<string, StudioConversationBadgeState> = {}
   Object.entries(raw || {}).forEach(([id, state]) => {
-    if (state === 'done' || state === 'error') notices[id] = state
+    if (state === 'done' || state === 'error' || state === 'expired') notices[id] = state
   })
   return notices
 }
@@ -84,7 +84,7 @@ export function persistStudioConversationNotices(
   validIds: Set<string>,
 ) {
   const payload = Object.fromEntries(
-    Object.entries(notices).filter(([id, state]) => validIds.has(id) && (state === 'done' || state === 'error')),
+    Object.entries(notices).filter(([id, state]) => validIds.has(id) && (state === 'done' || state === 'error' || state === 'expired')),
   )
   setJsonPreference(preferenceKeys.studioConversationBadges, payload)
 }
@@ -148,29 +148,31 @@ export function isStudioFileMessageRunning(message: StudioMessage) {
 
 export function mergeStudioConversations(local: StudioConversation, remote: StudioConversation): StudioConversation {
   const messageById = new Map<string, StudioMessage>()
-  for (const message of [...local.messages, ...remote.messages]) {
+  for (const message of [...remote.messages, ...(remote.messageTombstones || []), ...local.messages, ...(local.messageTombstones || [])]) {
     const existing = messageById.get(message.id)
-    if (!existing) {
+    if (!existing || (message.deletedAt && (!existing.deletedAt || message.deletedAt >= existing.deletedAt))) {
       messageById.set(message.id, message)
       continue
     }
-    const next = (message.createdAt || '') >= (existing.createdAt || '') ? message : existing
-    if (next.deletedAt && (!existing.deletedAt || next.createdAt >= existing.createdAt)) continue
-    messageById.set(message.id, next)
+    if (existing.deletedAt || message.deletedAt) continue
+    if (message.baseUpdatedAt) {
+      if ((existing.updatedAt || existing.createdAt) <= message.baseUpdatedAt) messageById.set(message.id, message)
+      continue
+    }
+    if ((message.updatedAt || message.createdAt) >= (existing.updatedAt || existing.createdAt)) {
+      messageById.set(message.id, message)
+    }
   }
   const localReplacedAt = local.messagesReplacedAt || ''
   const remoteReplacedAt = remote.messagesReplacedAt || ''
   const replaceWinner = localReplacedAt >= remoteReplacedAt ? local : remote
-  const allowIds = (localReplacedAt || remoteReplacedAt)
-    ? new Set(replaceWinner.messages.map((message) => message.id))
-    : null
+  const replacedAt = localReplacedAt >= remoteReplacedAt ? localReplacedAt : remoteReplacedAt
+  const retainedIds = new Set(replaceWinner.messages.map((message) => message.id))
   const messages = Array.from(messageById.values())
     .filter((message) => !message.deletedAt)
-    .filter((message) => {
-      if (!allowIds) return true
-      return allowIds.has(message.id)
-    })
+    .filter((message) => !replacedAt || retainedIds.has(message.id) || message.createdAt > replacedAt)
     .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
+  const messageTombstones = Array.from(messageById.values()).filter((message) => Boolean(message.deletedAt))
   const base = (remote.updatedAt || '') >= (local.updatedAt || '') ? remote : local
   const messagesReplacedAt = [local.messagesReplacedAt, remote.messagesReplacedAt]
     .filter(Boolean)
@@ -182,15 +184,19 @@ export function mergeStudioConversations(local: StudioConversation, remote: Stud
     updatedAt: (remote.updatedAt || '') > (local.updatedAt || '') ? remote.updatedAt : local.updatedAt,
     messagesReplacedAt,
     messages,
+    messageTombstones,
   }
 }
 
 export function normalizeStudioConversation(item: unknown): StudioConversation | null {
   if (!item || typeof item !== 'object') return null
   const raw = item as Partial<StudioConversation>
-  const messages = Array.isArray(raw.messages)
-    ? raw.messages.map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message)).slice(-400)
-    : []
+  const normalizedMessages = [
+    ...(Array.isArray(raw.messages) ? raw.messages : []),
+    ...(Array.isArray(raw.messageTombstones) ? raw.messageTombstones : []),
+  ].map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message))
+  const messages = normalizedMessages.filter((message) => !message.deletedAt).slice(-400)
+  const messageTombstones = normalizedMessages.filter((message) => Boolean(message.deletedAt))
   return {
     id: cleanStudioText(raw.id) || createStudioId('studio'),
     title: cleanStudioText(raw.title) || '新对话',
@@ -201,6 +207,7 @@ export function normalizeStudioConversation(item: unknown): StudioConversation |
     upstreamConversationId: cleanStudioText(raw.upstreamConversationId) || undefined,
     upstreamParentMessageId: cleanStudioText(raw.upstreamParentMessageId) || undefined,
     messages,
+    messageTombstones,
   }
 }
 
@@ -211,9 +218,21 @@ function normalizeStudioMessage(item: unknown): StudioMessage | null {
   const taskId = cleanStudioText(raw.taskId)
   const fileTaskId = cleanStudioText(raw.fileTaskId)
   const fileTaskDeleted = raw.fileTaskDeleted === true
-  if (!content && !taskId && !fileTaskId && !fileTaskDeleted) return null
+  if (!content && !taskId && !fileTaskId && !fileTaskDeleted && !cleanStudioText(raw.deletedAt)) return null
   const id = cleanStudioText(raw.id) || createStudioId('message')
   const mode = raw.mode === 'chat' || raw.mode === 'search' || raw.mode === 'file' ? raw.mode : 'image'
+  const deletedAt = cleanStudioText(raw.deletedAt)
+  if (deletedAt) {
+    return {
+      id,
+      role: raw.role === 'assistant' ? 'assistant' : 'user',
+      mode,
+      content: '',
+      createdAt: cleanStudioText(raw.createdAt) || deletedAt,
+      updatedAt: deletedAt,
+      deletedAt,
+    }
+  }
   const normalizedContent = mode === 'search' ? cleanStudioSearchAnswer(content) : content
   const migratedSearchResult = mode === 'search'
     ? splitStudioLegacySearchResult(normalizedContent)
@@ -231,7 +250,8 @@ function normalizeStudioMessage(item: unknown): StudioMessage | null {
       ? linkStudioSearchCitations(migratedSearchResult.content, id, searchSources?.length || 0)
       : migratedSearchResult.content,
     createdAt: cleanStudioText(raw.createdAt) || new Date().toISOString(),
-    deletedAt: cleanStudioText(raw.deletedAt) || undefined,
+    updatedAt: cleanStudioText(raw.updatedAt) || undefined,
+    baseUpdatedAt: cleanStudioText(raw.baseUpdatedAt) || undefined,
     status: normalizeStudioMessageStatus(raw.status),
     model: cleanStudioText(raw.model) || undefined,
     imageSize: cleanStudioText(raw.imageSize) || undefined,

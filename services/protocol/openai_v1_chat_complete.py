@@ -6,8 +6,7 @@ from typing import Any, Iterable, Iterator
 
 from fastapi import HTTPException
 
-from services.generation_network_guard import GenerationUnavailableError, ensure_generation_network
-from services.protocol.chat_completion_cache import cache_key, chat_completion_cache, normalize_text_messages
+from services.protocol.chat_completion_cache import normalize_text_messages
 from services.protocol.conversation import (
     ConversationRequest,
     ImageOutput,
@@ -131,6 +130,7 @@ def stream_text_chat_completion(
     messages: list[dict[str, Any]],
     model: str,
     thinking_effort: str = "",
+    body: dict[str, Any] | None = None,
 ) -> Iterator[dict[str, Any]]:
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
@@ -352,19 +352,29 @@ def stream_image_chat_completion(image_outputs: Iterable[ImageOutput], model: st
     yield completion_chunk(model, {}, "stop", completion_id, created)
 
 
-def text_completion_response(model: str, messages: list[dict[str, Any]], thinking_effort: str) -> dict[str, Any]:
+def text_completion_response(model: str, messages: list[dict[str, Any]], thinking_effort: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
     backend = text_backend()
+    body = body or {}
+    result_facts: dict[str, Any] = {}
     response = completion_response(
         model,
-        collect_text(backend, ConversationRequest(model=model, messages=messages, thinking_effort=thinking_effort)),
+        collect_text(backend, ConversationRequest(
+            model=model,
+            messages=messages,
+            thinking_effort=thinking_effort,
+            result_facts=result_facts,
+            upstream_conversation_id=str(body.get("conversation_id") or body.get("_conversation_id") or "").strip(),
+            upstream_parent_message_id=str(body.get("parent_message_id") or "").strip(),
+        )),
         messages=messages,
     )
-    return _with_log_metadata(response, _backend_account_email(backend))
+    for key in ("conversation_id", "message_id", "upstream_fallback"):
+        if result_facts.get(key):
+            response[key] = result_facts[key]
+    return _with_log_metadata(response, _backend_account_email(backend), str(result_facts.get("conversation_id") or ""))
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
-    ensure_generation_network()
-
     if body.get("stream"):
         if is_image_chat_request(body):
             return image_chat_events(body)
@@ -372,19 +382,12 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         if is_web_search_chat_request(body) and not has_unsupported_tools(body, WEB_SEARCH_TOOL_TYPES):
             return stream_web_search_chat_completion(messages, model)
         thinking_effort = thinking_effort_from_body(body)
-        key = cache_key(body, messages, stream=True)
-        return chat_completion_cache.get_or_compute_stream(
-            key,
-            lambda: stream_text_chat_completion(text_backend(), messages, model, thinking_effort),
-        )
+        # A cached stream would reuse another request's upstream conversation IDs.
+        return stream_text_chat_completion(text_backend(), messages, model, thinking_effort, body)
     if is_image_chat_request(body):
         return image_chat_response(body)
     model, messages = text_chat_parts(body)
     if is_web_search_chat_request(body) and not has_unsupported_tools(body, WEB_SEARCH_TOOL_TYPES):
         return web_search_chat_response(messages, model)
     thinking_effort = thinking_effort_from_body(body)
-    key = cache_key(body, messages, stream=False)
-    return chat_completion_cache.get_or_compute_response(
-        key,
-        lambda: text_completion_response(model, messages, thinking_effort),
-    )
+    return text_completion_response(model, messages, thinking_effort, body)

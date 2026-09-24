@@ -230,7 +230,7 @@ import {
   type StudioConversationLookup,
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
-import { loadStudioSessionState } from '@/api/studioSessions'
+import { loadStudioSessionState, saveStudioSessionState } from '@/api/studioSessions'
 import { studioErrorMessage } from '@/views/studio/studioRequestView'
 import { useStudioChatStreamRuntime } from '@/views/studio/studioChatStreamRuntime'
 import { useStudioComposerRuntime } from '@/views/studio/studioComposerRuntime'
@@ -329,11 +329,31 @@ const activeConversationId = ref(persistedConversationState.activeConversationId
 const conversationNotices = ref<Record<string, StudioConversationBadgeState>>(persistedConversationState.conversationNotices)
 
 let serverHydrationDone = false
+let conversationMutationVersion = 0
 onMounted(async () => {
   if (serverHydrationDone) return
   serverHydrationDone = true
+  const hydrationMutationVersion = conversationMutationVersion
   try {
-    const result = await loadStudioSessionState()
+    let result = await loadStudioSessionState()
+    if (hydrationMutationVersion !== conversationMutationVersion) return
+    const localTombstones = conversations.value.filter((item) => item.deletedAt)
+    if (localTombstones.length) {
+      const initialState = result.state
+      const initialServerConversations = Array.isArray(initialState?.conversations)
+        ? initialState.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item))
+        : []
+      const initialServerById = new Map(initialServerConversations.map((item) => [item.id, item]))
+      const pendingTombstones = localTombstones.filter((item) => {
+        const server = initialServerById.get(item.id)
+        return !server || (item.deletedAt || '') >= server.updatedAt
+      })
+      if (pendingTombstones.length) {
+        await saveStudioSessionState({ conversations: pendingTombstones, conversationNotices: {} })
+        result = await loadStudioSessionState()
+      }
+    }
+    if (hydrationMutationVersion !== conversationMutationVersion) return
     const state = result.state
     if (!state) return
     const serverConversations = Array.isArray(state.conversations)
@@ -348,12 +368,16 @@ onMounted(async () => {
         if (!local.deletedAt) merged.set(id, local)
         continue
       }
-      if (server.deletedAt && (!local.deletedAt || server.updatedAt >= local.updatedAt)) continue
-      if (local.deletedAt && local.updatedAt > server.updatedAt) continue
-      merged.set(id, mergeStudioConversations(local, server))
+      if (local.deletedAt) {
+        if (!server.deletedAt && server.updatedAt > local.deletedAt) merged.set(id, server)
+        continue
+      }
+      if (server.deletedAt) continue
+      Object.assign(local, mergeStudioConversations(local, server))
+      merged.set(id, local)
     }
     for (const [id, server] of serverById) {
-      if (merged.has(id) || server.deletedAt) continue
+      if (localById.has(id) || server.deletedAt) continue
       merged.set(id, server)
     }
     const nextConversations = Array.from(merged.values())
@@ -362,7 +386,7 @@ onMounted(async () => {
     conversations.value = nextConversations
     const serverNotices: Record<string, StudioConversationBadgeState> = {}
     Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
-      if (notice === 'done' || notice === 'error') serverNotices[id] = notice
+      if (notice === 'done' || notice === 'error' || notice === 'expired') serverNotices[id] = notice
     })
     conversationNotices.value = { ...serverNotices, ...conversationNotices.value }
     const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
@@ -372,6 +396,7 @@ onMounted(async () => {
     }
   } catch {
     // 服务端不可用时沿用本地缓存。
+    if (conversations.value.some((item) => item.deletedAt)) conversationPersistenceRuntime.scheduleConversations()
   }
 })
 const conversationLookup = computed<StudioConversationLookup>(() => buildStudioConversationLookup(conversations.value))
@@ -518,7 +543,6 @@ const conversationSelectionRuntime = useStudioConversationSelectionRuntime({
   validConversationIds,
   hooks: {
     cancelMessageEdit: () => cancelMessageEdit(false),
-    clearConversationNotice,
   },
 })
 const conversationActionsRuntime = useStudioConversationActionsRuntime({
@@ -599,7 +623,12 @@ async function deleteConversation(id: string) {
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.deleteConversation(id)
+  conversationMutationVersion += 1
+  try {
+    await conversationActionsRuntime.deleteConversation(id)
+  } catch {
+    toast.error('删除失败，请稍后重试')
+  }
 }
 
 async function confirmClearHistory() {
@@ -611,8 +640,13 @@ async function confirmClearHistory() {
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.clearHistory()
-  isMobileHistoryOpen.value = false
+  conversationMutationVersion += 1
+  try {
+    await conversationActionsRuntime.clearHistory()
+    isMobileHistoryOpen.value = false
+  } catch {
+    toast.error('清空失败，请稍后重试')
+  }
 }
 
 async function clearCurrentConversation() {

@@ -6,7 +6,6 @@ from typing import Any, Iterable, Iterator
 
 from fastapi import HTTPException
 
-from services.generation_network_guard import GenerationUnavailableError, ensure_generation_network
 from services.protocol.chat_completion_cache import cache_key, chat_completion_cache, normalize_text_messages
 from services.protocol.conversation import (
     ConversationRequest,
@@ -493,8 +492,6 @@ def response_events(body: dict[str, Any]) -> Iterator[dict[str, Any]]:
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
-    ensure_generation_network()
-
     events = response_events(body)
     if body.get("stream"):
         return events

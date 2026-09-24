@@ -6,7 +6,6 @@ type StudioConversationIdSetRef = {
 
 export type StudioConversationSelectionRuntimeHooks = {
   cancelMessageEdit: () => void
-  clearConversationNotice: (conversationId: string) => void
 }
 
 export type StudioConversationSelectionRuntimeInput = {
@@ -38,7 +37,6 @@ export function useStudioConversationSelectionRuntime(input: StudioConversationS
     if (!input.validConversationIds.value.has(conversationId)) return
     input.hooks.cancelMessageEdit()
     input.activeConversationId.value = conversationId
-    input.hooks.clearConversationNotice(conversationId)
   }
 
   function cancel() {

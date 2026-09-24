@@ -240,4 +240,9 @@ function formatTime(value: string) {
   background: #fef2f2;
   color: #dc2626;
 }
+
+.studio-mobile-history-badge.is-expired {
+  background: #fffbeb;
+  color: #92400e;
+}
 </style>

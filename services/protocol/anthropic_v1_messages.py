@@ -9,7 +9,6 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from typing import Any
 
-from services.generation_network_guard import GenerationUnavailableError, ensure_generation_network
 from services.openai_backend_api import OpenAIBackendAPI
 from services.protocol.conversation import count_message_tokens, count_text_tokens, normalize_messages, text_backend
 from services.protocol.openai_v1_chat_complete import collect_chat_content, stream_text_chat_completion
@@ -283,10 +282,11 @@ def stream_events(chunks: Iterable[dict[str, object]], model: str, input_tokens:
                     start_index = 1
                     content = content[1:]
                 yield from _stream_buffered_blocks(content, start_index)
-            yield _with_log_metadata(
-                {"type": "message_delta", "delta": {"stop_reason": stop_reason, "stop_sequence": None}, "usage": {"output_tokens": output_tokens(current_text)}},
-                account_email,
-            )
+            final_event = {"type": "message_delta", "delta": {"stop_reason": stop_reason, "stop_sequence": None}, "usage": {"output_tokens": output_tokens(current_text)}}
+            for key in ("conversation_id", "message_id", "upstream_fallback"):
+                if chunk.get(key):
+                    final_event[key] = chunk[key]
+            yield _with_log_metadata(final_event, account_email)
             break
     yield _with_log_metadata({"type": "message_stop", "created": created}, account_email)
 
@@ -306,18 +306,22 @@ def _stream_buffered_blocks(content: list[dict[str, object]], start_index: int =
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
-    ensure_generation_network()
-
     request = message_request(body)
     if body.get("stream"):
         return stream_events(
-            stream_text_chat_completion(request.backend, request.messages, request.model),
+            stream_text_chat_completion(request.backend, request.messages, request.model, body=body),
             request.model,
             count_message_tokens(request.messages, request.model),
             lambda text: count_text_tokens(text, request.model),
             request.tools,
         )
-    text = collect_chat_content(stream_text_chat_completion(request.backend, request.messages, request.model))
+    final_chunk: dict[str, Any] = {}
+    def capture_chunks() -> Iterator[dict[str, Any]]:
+        for chunk in stream_text_chat_completion(request.backend, request.messages, request.model, body=body):
+            final_chunk.update(chunk)
+            yield chunk
+
+    text = collect_chat_content(capture_chunks())
     response = message_response(
         request.model,
         text,
@@ -325,4 +329,7 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         count_text_tokens(text, request.model),
         request.tools,
     )
+    for key in ("conversation_id", "message_id", "upstream_fallback"):
+        if final_chunk.get(key):
+            response[key] = final_chunk[key]
     return _with_log_metadata(response, str(getattr(request.backend, "account_email", "") or "").strip())

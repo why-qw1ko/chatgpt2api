@@ -20,6 +20,18 @@ export type StudioMessageRuntimeInput = {
 }
 
 export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
+  function tombstone(message: StudioMessage, deletedAt: string): StudioMessage {
+    return {
+      id: message.id,
+      role: message.role,
+      mode: message.mode,
+      content: '',
+      createdAt: message.createdAt,
+      updatedAt: deletedAt,
+      deletedAt,
+    }
+  }
+
   function findMessage(messageId: string): StudioMessageTarget | null {
     if (!messageId) return null
     for (const conversation of input.conversations.value) {
@@ -48,21 +60,32 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
   function deleteActiveMessage(messageId: string) {
     const conversation = input.activeConversation.value
     if (!conversation) return null
+    const message = conversation.messages.find((item) => item.id === messageId)
+    if (!message) return null
+    const deletedAt = new Date().toISOString()
     conversation.messages = conversation.messages.filter((message) => message.id !== messageId)
-    conversation.messagesReplacedAt = new Date().toISOString()
-    input.hooks.touchConversation(conversation)
+    conversation.messageTombstones = [
+      ...(conversation.messageTombstones || []),
+      tombstone(message, deletedAt),
+    ]
     input.hooks.touchConversation(conversation)
     return conversation
   }
 
   function replaceFromTarget(target: StudioMessageTarget, message: StudioMessage) {
     const { conversation, index } = target
-    conversation.messagesReplacedAt = new Date().toISOString()
     const previous = conversation.messages[index]
+    const previousUpdatedAt = Date.parse(previous?.updatedAt || previous?.createdAt || '')
+    const updatedAt = new Date(Math.max(Date.now(), Number.isFinite(previousUpdatedAt) ? previousUpdatedAt + 1 : 0)).toISOString()
     const nextMessage: StudioMessage = {
       ...message,
+      updatedAt,
       baseUpdatedAt: previous?.updatedAt || previous?.createdAt,
     }
+    conversation.messageTombstones = [
+      ...(conversation.messageTombstones || []),
+      ...conversation.messages.slice(index + 1).map((item) => tombstone(item, updatedAt)),
+    ]
     conversation.messages = [
       ...conversation.messages.slice(0, index),
       nextMessage,
@@ -74,7 +97,11 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
   }
 
   function pruneAfterTarget(target: StudioMessageTarget) {
-    target.conversation.messagesReplacedAt = new Date().toISOString()
+    const deletedAt = new Date().toISOString()
+    target.conversation.messageTombstones = [
+      ...(target.conversation.messageTombstones || []),
+      ...target.conversation.messages.slice(target.index).map((item) => tombstone(item, deletedAt)),
+    ]
     target.conversation.messages = target.conversation.messages.slice(0, target.index)
     input.hooks.touchConversation(target.conversation)
   }
