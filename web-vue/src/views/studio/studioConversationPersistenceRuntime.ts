@@ -58,7 +58,9 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
   let conversationsIdleTask: IdleTaskHandle | null = null
   let conversationNoticesIdleTask: IdleTaskHandle | null = null
   let serverSyncTimer: number | null = null
-  let serverSyncInFlight = false
+  let serverSyncInFlight: Promise<void> | null = null
+  let serverMutationInFlight = false
+  let serverMutationQueue: Promise<void> = Promise.resolve()
 
   function scheduleServerSync() {
     if (serverSyncTimer !== null) return
@@ -69,41 +71,58 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
   }
 
   async function syncToServer() {
-    if (serverSyncInFlight) {
+    if (serverMutationInFlight) {
       scheduleServerSync()
       return
     }
-    serverSyncInFlight = true
-    try {
-      await saveStudioSessionState({
-        conversations: input.conversations.value.filter((item) => !item.deletedAt),
-        conversationNotices: input.conversationNotices.value,
-        activeConversationId: input.activeConversationId.value,
-      })
-    } catch {
-      // 服务端不可用时保留本地缓存，下次变更再重试。
-    } finally {
-      serverSyncInFlight = false
+    if (serverSyncInFlight) {
+      scheduleServerSync()
+      return serverSyncInFlight
     }
+    const pending = saveStudioSessionState({
+      conversations: input.conversations.value.map((item) => {
+        const { messageTombstones, ...conversation } = item
+        return { ...conversation, messages: [...item.messages, ...(messageTombstones || [])] }
+      }),
+      conversationNotices: input.conversationNotices.value,
+      activeConversationId: input.activeConversationId.value,
+    }).catch(() => {
+      // 服务端不可用时保留本地缓存，下次变更再重试。
+    })
+    serverSyncInFlight = pending
+    try {
+      await pending
+    } finally {
+      serverSyncInFlight = null
+    }
+  }
+
+  function runServerMutation(action: () => Promise<void>): Promise<void> {
+    const pending = serverMutationQueue.then(async () => {
+      serverMutationInFlight = true
+      if (serverSyncTimer !== null) {
+        window.clearTimeout(serverSyncTimer)
+        serverSyncTimer = null
+      }
+      try {
+        if (serverSyncInFlight) await serverSyncInFlight
+        await action()
+      } finally {
+        serverMutationInFlight = false
+        scheduleServerSync()
+      }
+    })
+    serverMutationQueue = pending.catch(() => {})
+    return pending
   }
 
   async function removeConversation(conversationId: string) {
     if (!conversationId) return
-    try {
-      await deleteStudioConversation(conversationId)
-    } catch {
-      // 删除失败时仍更新本地，下次同步会带上墓碑。
-    }
-    scheduleServerSync()
+    await runServerMutation(() => deleteStudioConversation(conversationId))
   }
 
   async function clearAllConversations() {
-    try {
-      await clearStudioSessionState()
-    } catch {
-      // 清空失败时保留本地结果，避免误以为服务端已清。
-    }
-    scheduleServerSync()
+    await runServerMutation(clearStudioSessionState)
   }
 
   const stopConversationWatch = watch(input.conversations, scheduleConversations)

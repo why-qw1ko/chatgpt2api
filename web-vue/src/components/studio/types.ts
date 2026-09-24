@@ -2,7 +2,7 @@ export type StudioComposeMode = 'chat' | 'image' | 'search' | 'file'
 export type StudioFileKind = 'ppt' | 'psd'
 export type StudioRole = 'user' | 'assistant'
 export type StudioMessageStatus = 'sending' | 'streaming' | 'queued' | 'running' | 'done' | 'error'
-export type StudioConversationBadgeState = 'running' | 'done' | 'error'
+export type StudioConversationBadgeState = 'running' | 'done' | 'error' | 'expired'
 
 export interface StudioConversationBadge {
   state: StudioConversationBadgeState
@@ -16,8 +16,8 @@ export interface StudioMessage {
   mode: StudioComposeMode
   content: string
   createdAt: string
+  updatedAt?: string
   deletedAt?: string
-  baseUpdatedAt?: string
   baseUpdatedAt?: string
   status?: StudioMessageStatus
   model?: string
@@ -57,6 +57,7 @@ export interface StudioConversation {
   upstreamConversationId?: string
   upstreamParentMessageId?: string
   messages: StudioMessage[]
+  messageTombstones?: StudioMessage[]
 }
 
 export interface StudioReferenceImage {

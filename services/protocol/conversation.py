@@ -20,6 +20,7 @@ from curl_cffi.requests import exceptions as curl_exceptions
 
 from services.account_service import ImageAccountSelectionError, account_service
 from services.config import config
+from services.generation_network_guard import ensure_generation_network
 from services.image_failure import (
     ImageDownloadError,
     ImageFailure,
@@ -1077,7 +1078,10 @@ def conversation_events(
     size: str | None = None,
     quality: str = "auto",
     thinking_effort: str = "",
+    request: ConversationRequest | None = None,
 ) -> Iterator[dict[str, Any]]:
+    request = request or ConversationRequest()
+    ensure_generation_network(backend.proxy_profile)
     normalized = normalize_messages(messages or ([{"role": "user", "content": prompt}] if prompt else []))
     image_model = is_supported_image_model(model)
     history_text = "" if image_model else assistant_history_text(normalized)
@@ -1189,6 +1193,7 @@ def stream_text_deltas(backend: OpenAIBackendAPI, request: ConversationRequest) 
                 model=request.model,
                 prompt=request.prompt,
                 thinking_effort=request.thinking_effort,
+                request=request,
             ):
                 structured_failure = event.get("_image_failure")
                 if isinstance(structured_failure, ImageFailure):
@@ -1729,6 +1734,7 @@ def stream_image_outputs(
                 images=request.images or [],
                 size=request.size,
                 quality=request.quality,
+                request=request,
         ):
             last = event
             if event.get("type") == "conversation.delta":
@@ -2021,6 +2027,7 @@ def stream_codex_image_outputs(
         index: int = 1,
         total: int = 1,
 ) -> Iterator[ImageOutput]:
+    ensure_generation_network(backend.proxy_profile)
     codex_started = time.perf_counter()
     events = list(backend.iter_codex_image_response_events(
         prompt=request.prompt,

@@ -138,7 +138,7 @@ class StudioConversationRepository:
         }
         if row.deleted_at:
             conversation["deletedAt"] = row.deleted_at
-        if row.notice in {"done", "error", "running"}:
+        if row.notice in {"done", "error", "running", "expired"}:
             conversation["notice"] = row.notice
         return conversation
 
@@ -169,7 +169,7 @@ class StudioConversationRepository:
             updated_at = ""
             for row in rows:
                 messages = messages_by_conversation.get(row.id, [])
-                if not row.deleted_at and row.notice in {"done", "error"}:
+                if not row.deleted_at and row.notice in {"done", "error", "expired"}:
                     notices[row.id] = row.notice
                 conversation = self._conversation_from_rows(row, messages)
                 conversations.append(conversation)
@@ -270,7 +270,7 @@ class StudioConversationRepository:
         incoming_created_at = self._clean(incoming.get("createdAt")) or incoming_updated_at
         incoming_deleted_at = self._clean(incoming.get("deletedAt"))
         notice = str(notices.get(conversation_id) or incoming.get("notice") or "").strip()
-        if notice not in {"done", "error", "running"}:
+        if notice not in {"done", "error", "running", "expired"}:
             notice = None
 
         row = session.get(StudioConversationModel, conversation_id)
@@ -289,6 +289,8 @@ class StudioConversationRepository:
             if str(row.owner_id) != owner:
                 return
             current_updated_at = str(row.updated_at or "")
+            if incoming_deleted_at and incoming_deleted_at < current_updated_at:
+                return
             if incoming_updated_at and incoming_updated_at < current_updated_at and not incoming_deleted_at:
                 # Older client snapshot: still merge messages, keep newer conversation metadata.
                 pass
@@ -325,6 +327,8 @@ class StudioConversationRepository:
                 ).all()
                 for message_row in existing_messages:
                     if message_row.id in incoming_ids:
+                        continue
+                    if str(message_row.created_at or "") > messages_replaced_at:
                         continue
                     if message_row.deleted_at and str(message_row.deleted_at) >= messages_replaced_at:
                         continue

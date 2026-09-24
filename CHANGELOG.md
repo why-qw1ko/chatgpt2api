@@ -5,16 +5,23 @@
 ### Added
 
 - 文本对话支持绑定上游 `conversation_id` / `parent_message_id` 续聊；续聊失败自动降级为全量历史重放。
-- 生成前探测当前出口能否访问 chatgpt.com，失败时拦截并提示「当前人数较多，请稍后再试」。
+- 生成前通过实际选中的出口探测 `https://chatgpt.com`，网络不可达时提示「当前人数较多，请稍后再试」。
 
 ### Changed
 
 - Studio 会话改为 Application Database 结构化存储：按对话/消息合并同步，删除使用墓碑，跨端不再整包覆盖。
 - Studio 连续对话上下文保留画图/文件结果与失败轮次；`normalize_messages` 幂等，避免 `global_system_prompt` 重复注入。
 - 新增 `DELETE /api/studio-sessions/conversations/{id}`；`PUT /api/studio-sessions` 语义改为合并。
-- 清空/编辑/重试会通过 `messagesReplacedAt` 在服务端墓碑化被移除的消息，避免跨端复活。
+- 清空整段对话使用 `messagesReplacedAt`；单条删除、编辑和重试按消息 ID 写墓碑，避免误删另一端的消息。
 - 列表页 workspace 布局改为全断点单滚动容器；Studio 历史/消息区 `overscroll-behavior: contain`。
 - 默认关闭 `drop_adjacent_duplicates`，避免相邻重复消息被静默丢弃；消息编辑带 `baseUpdatedAt` 做并发判定。
+
+### Fixed
+
+- 修复文本流式请求报错、续聊元数据被缓存复用，以及前置网络探测误拦截生成请求。
+- 修复 Studio 删除失败后历史重新出现、跨端消息合并误删新消息，以及图库样式解析错误。
+- 修复本地消息编辑在水合时被覆盖、非流式与 Anthropic 续聊字段丢失，以及本地会话墓碑未回写服务端。
+- Studio 对话列表的状态在查看后继续显示；找不到的图片或文件任务标记为「已过期」。
 
 ## 3.2.9 - 2026-09-18
 

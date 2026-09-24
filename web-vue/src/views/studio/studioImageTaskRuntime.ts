@@ -77,6 +77,8 @@ export function useStudioImageTaskRuntime(input: StudioImageTaskRuntimeInput) {
         badges[conversationId] = { state: 'done', label: '已完成' }
       } else if (notice === 'error') {
         badges[conversationId] = { state: 'error', label: '失败' }
+      } else if (notice === 'expired') {
+        badges[conversationId] = { state: 'expired', label: '已过期' }
       }
     })
     return badges
@@ -106,11 +108,13 @@ export function useStudioImageTaskRuntime(input: StudioImageTaskRuntimeInput) {
     const changedConversations = new Set<StudioConversation>()
     input.conversationRuntimeIndex.value.imageTaskMessageEntries.forEach(({ conversation, message }) => {
       if (!message.taskId || !missing.has(message.taskId)) return
-      if (message.status === 'done' || message.status === 'error') return
+      if (taskById.value.get(message.taskId)?.terminal) return
+      if (message.status === 'done') return
+      const changed = message.status !== 'error' || message.error !== '图片任务已过期或不存在'
       message.status = 'error'
       message.error = '图片任务已过期或不存在'
-      changedConversations.add(conversation)
-      input.hooks.markConversationNotice(conversation.id, 'error')
+      if (changed) changedConversations.add(conversation)
+      input.hooks.markConversationNotice(conversation.id, 'expired')
     })
     changedConversations.forEach(input.hooks.touchConversation)
   }
