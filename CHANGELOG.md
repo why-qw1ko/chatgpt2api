@@ -4,7 +4,7 @@
 
 ### Added
 
-- 文本对话支持绑定上游 `conversation_id` / `parent_message_id` 续聊。
+- 文本对话支持绑定上游 `conversation_id` / `parent_message_id` 续聊；续聊失败自动降级为全量历史重放。
 - 生成前探测当前出口能否访问 chatgpt.com，失败时拦截并提示「当前人数较多，请稍后再试」。
 
 ### Changed

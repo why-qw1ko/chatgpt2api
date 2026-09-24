@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import itertools
 import json
 import re
 import time
@@ -1082,28 +1083,68 @@ def conversation_events(
     history_text = "" if image_model else assistant_history_text(normalized)
     history_messages = [] if image_model else assistant_history_messages(normalized)
     final_prompt = prompt_with_global_system(build_image_prompt(prompt, size, quality)) if image_model else prompt
-    payloads = backend.stream_conversation(
-        messages=normalized,
-        model=model,
-        prompt=final_prompt,
-        images=images if image_model else None,
-        system_hints=["picture_v2"] if image_model else None,
-        thinking_effort=thinking_effort if not image_model else "",
-        conversation_id=str(getattr(request, "upstream_conversation_id", "") or ""),
-        parent_message_id=str(getattr(request, "upstream_parent_message_id", "") or ""),
-    )
-    for event in iter_conversation_payloads(
-        payloads,
-        history_text,
-        history_messages,
-        classify_terminal_text_as_image_failure=image_model,
-    ):
-        if isinstance(getattr(request, "result_facts", None), dict):
-            if event.get("conversation_id"):
-                request.result_facts["conversation_id"] = str(event.get("conversation_id") or "")
-            if event.get("message_id"):
-                request.result_facts["message_id"] = str(event.get("message_id") or "")
-        yield event
+    upstream_conversation_id = str(getattr(request, "upstream_conversation_id", "") or "")
+    upstream_parent_message_id = str(getattr(request, "upstream_parent_message_id", "") or "")
+    use_upstream_thread = bool(upstream_conversation_id or upstream_parent_message_id)
+
+    def _open_stream(conversation_id: str = "", parent_message_id: str = ""):
+        return backend.stream_conversation(
+            messages=normalized,
+            model=model,
+            prompt=final_prompt,
+            images=images if image_model else None,
+            system_hints=["picture_v2"] if image_model else None,
+            thinking_effort=thinking_effort if not image_model else "",
+            conversation_id=conversation_id,
+            parent_message_id=parent_message_id,
+        )
+
+    emitted = {"count": 0}
+
+    def _iter_events(source):
+        for event in iter_conversation_payloads(
+            source,
+            history_text,
+            history_messages,
+            classify_terminal_text_as_image_failure=image_model,
+        ):
+            emitted["count"] += 1
+            if isinstance(getattr(request, "result_facts", None), dict):
+                if event.get("conversation_id"):
+                    request.result_facts["conversation_id"] = str(event.get("conversation_id") or "")
+                if event.get("message_id"):
+                    request.result_facts["message_id"] = str(event.get("message_id") or "")
+            yield event
+
+    if use_upstream_thread:
+        try:
+            source = _open_stream(upstream_conversation_id, upstream_parent_message_id)
+            first = next(source, None)
+            if first is None:
+                raise RuntimeError("upstream conversation continuation returned empty stream")
+
+            def _chained():
+                yield first
+                yield from source
+
+            yield from _iter_events(_chained())
+            return
+        except Exception as exc:
+            if emitted["count"] > 0:
+                raise
+            logger.warning({
+                "event": "upstream_conversation_continue_failed",
+                "conversation_id": upstream_conversation_id,
+                "parent_message_id": upstream_parent_message_id,
+                "error_type": type(exc).__name__,
+                "error": diagnostic_excerpt(str(exc), 500),
+            })
+            if isinstance(getattr(request, "result_facts", None), dict):
+                request.result_facts["upstream_fallback"] = True
+            request.upstream_conversation_id = ""
+            request.upstream_parent_message_id = ""
+
+    yield from _iter_events(_open_stream("", ""))
 
 
 def _text_account_email(access_token: str) -> str:

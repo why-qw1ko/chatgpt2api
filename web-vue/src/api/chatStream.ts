@@ -16,6 +16,7 @@ export interface ChatStreamResult {
   rawChunks: number
   conversationId?: string
   parentMessageId?: string
+  upstreamFallback?: boolean
 }
 
 function apiUrl(path: string) {
@@ -144,6 +145,7 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
   let rawChunks = 0
   let conversationId = ''
   let parentMessageId = ''
+  let upstreamFallback = false
 
   const handleEvent = (eventText: string) => {
     const data = parseSseEvent(eventText)
@@ -162,6 +164,7 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     const meta = payload as Record<string, any>
     if (!conversationId && typeof meta.conversation_id === 'string') conversationId = meta.conversation_id
     if (!parentMessageId && typeof meta.message_id === 'string') parentMessageId = meta.message_id
+    if (meta.upstream_fallback) upstreamFallback = true
     const delta = extractDelta(payload)
     if (delta) {
       content += delta
@@ -187,6 +190,7 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     rawChunks,
     conversationId: conversationId || undefined,
     parentMessageId: parentMessageId || undefined,
+    upstreamFallback: upstreamFallback || undefined,
   }
       }
       boundary = buffer.search(/\r?\n\r?\n/)
@@ -202,5 +206,6 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     rawChunks,
     conversationId: conversationId || undefined,
     parentMessageId: parentMessageId || undefined,
+    upstreamFallback: upstreamFallback || undefined,
   }
 }
