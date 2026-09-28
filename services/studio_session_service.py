@@ -4,7 +4,7 @@ import json
 import threading
 from typing import Any
 
-from sqlalchemy import Column, String, Text, select
+from sqlalchemy import Column, Integer, String, Text, select
 
 from services.application_database import (
     DatabaseBase,
