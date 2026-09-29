@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import type { CPAPool, Sub2APIRemoteGroup, Sub2APIServer } from '@/api/accountImports'
 import StateBlock from '@/components/ai/StateBlock.vue'
 

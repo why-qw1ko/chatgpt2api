@@ -1,4 +1,4 @@
-import type { ActionMenuItem } from 'nanocat-ui'
+import type { ActionMenuItem } from '@/components/ui'
 import type { ProxyGroup, ProxyNode, ProxyTestResult, ProxyTestTone } from '@/api/proxy'
 import { actionMenuGroups } from '@/components/ai/menuItems'
 

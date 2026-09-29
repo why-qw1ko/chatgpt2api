@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { CloseButton, ModalShell } from 'nanocat-ui'
+import { CloseButton, ModalShell } from '@/components/ui'
 import type { GalleryFile } from '@/api/gallery'
 
 const props = withDefaults(defineProps<{

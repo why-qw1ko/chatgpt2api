@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button, Input } from 'nanocat-ui'
+import { Button, Input } from '@/components/ui'
 import type { GalleryFile } from '@/api/gallery'
 import ModalFooter from './ModalFooter.vue'
 import ModalHeader from './ModalHeader.vue'

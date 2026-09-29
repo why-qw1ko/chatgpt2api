@@ -89,14 +89,11 @@ querying, and deleting the task remain owner-scoped operations.
 
 ## UI ownership
 
-`nanocat-ui` is the npm-delivered source of generic visual and interaction
-modules: tokens, form controls, menus, generic overlays, keyboard behaviour, and
-theme states. `chatgpt2api` owns AppShell, page composition, tables, charts,
-business timelines, and product-specific responsive layout.
-
-A generic UI Module is extracted to Nanocat only when it has more than one real
-consumer or a concrete cross-project use case. A page-specific implementation
-stays in this repository while it remains page-specific.
+The LuxuryImage console uses `element-plus` for generic controls and modal
+interaction primitives. The repository owns branding, theme tokens, UI adapters,
+AppShell, page composition, tables, charts, non-modal panels, and domain flows.
+See [Frontend Map](maps/frontend-map.md#ui-ownership-boundary) for the current
+ownership boundary and theme entry points.
 
 ## Page lifecycle
 

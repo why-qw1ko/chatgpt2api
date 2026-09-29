@@ -126,7 +126,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button, EmptyState } from 'nanocat-ui'
+import { Button, EmptyState } from '@/components/ui'
 import { computed, onBeforeUnmount, watch } from 'vue'
 import type { EditableFileTask } from '@/api/editableFileTasks'
 import MetaChip from '@/components/ai/MetaChip.vue'

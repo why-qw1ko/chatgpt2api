@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button, FormField, Input } from 'nanocat-ui'
+import { Button, FormField, Input } from '@/components/ui'
 import ModalBody from '@/components/ai/ModalBody.vue'
 import ModalFooter from '@/components/ai/ModalFooter.vue'
 import ModalHeader from '@/components/ai/ModalHeader.vue'

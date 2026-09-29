@@ -85,11 +85,10 @@ withDefaults(defineProps<{
 }
 
 .form-section__title {
-  font-size: 11px;
-  line-height: 1.25;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
 }
 
 .form-section__subtitle {

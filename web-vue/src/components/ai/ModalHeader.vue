@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { CloseButton } from 'nanocat-ui'
+import { CloseButton } from '@/components/ui'
 
 withDefaults(defineProps<{
   title?: string

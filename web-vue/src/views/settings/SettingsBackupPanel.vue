@@ -168,7 +168,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, Checkbox, FormField, FormSection, Input } from 'nanocat-ui'
+import { Button, Checkbox, FormField, FormSection, Input } from '@/components/ui'
 import type { BackupItem, BackupState, BackupTestResult } from '@/api/settings'
 import type { Settings } from '@/types/api'
 import SettingsNumberInput from '@/views/settings/SettingsNumberInput.vue'

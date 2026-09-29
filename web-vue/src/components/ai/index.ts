@@ -1,6 +1,6 @@
 export { default as AccountActionButtons } from './AccountActionButtons.vue'
 export { default as ActionRow } from './ActionRow.vue'
-export { ChartCard, StatCard } from 'nanocat-ui'
+export { ChartCard, StatCard } from '@/components/ui'
 export { default as CodeBlock } from './CodeBlock.vue'
 export { default as ConsoleSegmentedTabs } from './ConsoleSegmentedTabs.vue'
 export { default as DateRangeInputs } from './DateRangeInputs.vue'

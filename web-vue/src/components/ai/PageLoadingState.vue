@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { LoadingState } from 'nanocat-ui'
+import { LoadingState } from '@/components/ui'
 
 withDefaults(defineProps<{
   title?: string

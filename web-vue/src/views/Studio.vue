@@ -212,7 +212,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button, DrawerShell } from 'nanocat-ui'
+import { Button, DrawerShell } from '@/components/ui'
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -1071,9 +1071,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid hsl(var(--border));
-  border-radius: 1.25rem;
-  background: hsl(var(--card) / 0.88);
-  box-shadow: 0 16px 44px -36px rgba(15, 23, 42, 0.45);
+  border-radius: 14px;
+  background: hsl(var(--card));
+  box-shadow: none;
 }
 
 .studio-content-layout {
@@ -1145,7 +1145,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 0.75rem;
   border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--card) / 0.84);
+  background: hsl(var(--card));
   padding: 0.625rem 0.875rem;
 }
 

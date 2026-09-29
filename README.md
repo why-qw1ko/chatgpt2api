@@ -90,7 +90,7 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 
 ## 核心能力
 
-通用 UI 组件、主题和基础交互来自 [yukkcat/nanocat-ui](https://github.com/yukkcat/nanocat-ui)；本项目负责业务页面、后端状态投影和产品流程。
+控制台品牌为 **LuxuryImage**，通用控件采用 [Element Plus](https://element-plus.org/)。本项目负责业务页面、组件适配和 CSS 变量主题；配色入口为 `web-vue/src/style.css`，支持亮色和暗色两种主题。
 
 |       | 领域       | 能力                                                                                                           |
 | :---: | :--------- | :------------------------------------------------------------------------------------------------------------- |

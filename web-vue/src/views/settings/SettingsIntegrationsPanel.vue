@@ -133,7 +133,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Checkbox, FormField, FormSection, Input } from 'nanocat-ui'
+import { Checkbox, FormField, FormSection, Input } from '@/components/ui'
 import SurfaceBox from '@/components/ai/SurfaceBox.vue'
 import { getAuthToken } from '@/api/client'
 import type { Settings } from '@/types/api'

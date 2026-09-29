@@ -295,7 +295,7 @@ import {
   type GalleryFile,
   type ImageStorageStats,
 } from '@/api/gallery'
-import { Button, Checkbox, CloseButton, GroupedSelectMenu, Input } from 'nanocat-ui'
+import { Button, Checkbox, CloseButton, GroupedSelectMenu, Input } from '@/components/ui'
 import ActionRow from '@/components/ai/ActionRow.vue'
 import DateRangeInputs from '@/components/ai/DateRangeInputs.vue'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'

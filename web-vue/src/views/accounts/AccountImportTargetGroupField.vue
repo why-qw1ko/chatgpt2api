@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 
 import type { AccountGroup } from '@/api/accounts'
 

@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { Input } from 'nanocat-ui'
+import { Input } from '@/components/ui'
 
 withDefaults(defineProps<{
   start?: string

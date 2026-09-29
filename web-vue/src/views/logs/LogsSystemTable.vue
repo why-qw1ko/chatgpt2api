@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { Checkbox, TableShell } from 'nanocat-ui'
+import { Checkbox, TableShell } from '@/components/ui'
 
 import ListPagination from '@/components/ai/ListPagination.vue'
 import type { SystemLogRow } from '@/api/logs'
