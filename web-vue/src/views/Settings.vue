@@ -4,7 +4,7 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p class="ui-section-title">设置</p>
-          <p class="mt-1 text-xs text-muted-foreground">按原版模块分组维护系统配置。</p>
+          <p class="mt-1 text-xs text-muted-foreground">集中管理服务配置、存储与访问密钥。</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" :disabled="settingsStore.isLoading || isSaving" @click="reloadSettings">
@@ -291,7 +291,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
-import { Button, FormField, FormSection, HelpTip } from 'nanocat-ui'
+import { Button, FormField, FormSection, HelpTip } from '@/components/ui'
 import { usePageRuntime } from '@/composables/usePageRuntime'
 import ConsoleSegmentedTabs from '@/components/ai/ConsoleSegmentedTabs.vue'
 import ModalBody from '@/components/ai/ModalBody.vue'

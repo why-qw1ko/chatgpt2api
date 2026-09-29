@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { FormField, FormSection, GroupedSelectMenu, HelpTip, Input } from 'nanocat-ui'
+import { FormField, FormSection, GroupedSelectMenu, HelpTip, Input } from '@/components/ui'
 import { DASHBOARD_TIME_RANGE_OPTIONS } from '@/lib/timeRanges'
 import {
   readDashboardDefaultTimeRange,

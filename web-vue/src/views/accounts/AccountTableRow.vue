@@ -49,9 +49,9 @@
     </td>
     <td class="py-3 pr-5 align-middle">
       <div class="font-mono text-sm tabular-nums">
-        <span class="text-emerald-600">{{ item.success_count || 0 }}</span>
+        <span class="text-[hsl(var(--tone-success-foreground))]">{{ item.success_count || 0 }}</span>
         <span class="mx-1 text-muted-foreground/60">/</span>
-        <span class="text-rose-600">{{ item.failure_count || 0 }}</span>
+        <span class="text-[hsl(var(--tone-error-foreground))]">{{ item.failure_count || 0 }}</span>
       </div>
     </td>
     <td class="py-3 pr-3 text-right align-middle">
@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { Checkbox, StatusDetailPill } from 'nanocat-ui'
+import { Checkbox, StatusDetailPill } from '@/components/ui'
 
 import AccountActionButtons from '@/components/ai/AccountActionButtons.vue'
 import QuotaBadge from '@/components/ai/QuotaBadge.vue'

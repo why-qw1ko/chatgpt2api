@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 
 import type { ListLayoutMode } from '@/composables/useListLayoutPreference'
 

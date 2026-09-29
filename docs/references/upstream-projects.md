@@ -14,7 +14,7 @@ requirements.
 | [`basketikun/infinite-canvas`](https://github.com/basketikun/infinite-canvas) | Concise contributor guidance, documentation indexing, and explicit separation of implementation from pending verification | That its product boundaries, frontend architecture, task lifecycle, or release process applies here |
 | [`colbymchenry/codegraph`](https://github.com/colbymchenry/codegraph) | Symbol lookup, caller/callee discovery, route indexing, and change-impact exploration | That a generated edge establishes domain ownership or that every dynamic dependency was found |
 | [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) | A minimum-solution ladder and focused over-engineering review prompts | That its benchmark savings apply locally, or that shorter code permits removing validation, safety, accessibility, ownership, or lifecycle boundaries |
-| [`yukkcat/nanocat-ui`](https://github.com/yukkcat/nanocat-ui) | Generic Vue controls, overlays, tokens, focus behavior, and interaction primitives consumed as an npm dependency | That product pages, domain workflows, charts, or responsive composition belong in the UI package |
+| [`element-plus/element-plus`](https://github.com/element-plus/element-plus) | Vue 3 controls, menus, modal overlays, focus primitives, and notifications consumed as an npm dependency | That product themes, pages, domain workflows, charts, or responsive composition belong in the UI package |
 
 ## Reference workflow
 

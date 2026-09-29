@@ -34,7 +34,8 @@ flowchart LR
     Contract["Backend JSON contract"] --> Adapter["web-vue/src/api adapter"]
     Adapter --> Runtime["Page or page-private runtime"]
     Runtime --> View["Vue page/components"]
-    Nanocat["nanocat-ui primitives"] --> View
+    ElementPlus["Element Plus controls"] --> UI["Product UI adapters / CSS theme"]
+    UI --> View
 ```
 
 - `web-vue/src/api/` owns HTTP transport, request types, response validation,
@@ -47,14 +48,17 @@ flowchart LR
 
 ## UI ownership boundary
 
-| Belongs to `nanocat-ui` | Belongs to this repository |
+| Belongs to `element-plus` | Belongs to this repository |
 | --- | --- |
-| Tokens, controls, menus, generic overlays, focus behavior, theme state, and reusable dock/modal primitives | AppShell, routes, product copy, tables, charts, domain timelines, page workflows, and product-specific responsive layout |
+| Form controls, menus, popovers, modal dialogs/drawers, keyboard focus primitives, cards, and notifications | LuxuryImage branding, CSS tokens, theme preference, UI adapters, AppShell, routes, product copy, tables, charts, non-modal panels, page workflows, and responsive layout |
 
-A visual Module moves to Nanocat only after more than one real consumer or a
-concrete cross-project use case exists. Page-specific code stays next to the
-page while it has one owner. The Nanocat source is an independent repository
-and is tested, committed, and released separately.
+`web-vue/src/components/ui/` adapts Element Plus to the product's sizing,
+semantic tones, model values, and overlay contracts. Page-specific code stays
+next to its page. `web-vue/src/style.css` owns the light/dark CSS tokens and
+maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns preference
+persistence for light/dark modes. Non-modal task panels use a non-blocking region
+because an Element Plus drawer traps focus even without a backdrop. Domain
+tables retain semantic HTML row slots and a single internal scroll container.
 
 ## Lifecycle rules
 

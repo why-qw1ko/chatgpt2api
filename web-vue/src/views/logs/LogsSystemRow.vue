@@ -145,7 +145,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button, Checkbox } from 'nanocat-ui'
+import { Button, Checkbox } from '@/components/ui'
 import LogImagePreviewCell from '@/components/ai/LogImagePreviewCell.vue'
 import MetaChip from '@/components/ai/MetaChip.vue'
 import StateBadge from '@/components/ai/StateBadge.vue'

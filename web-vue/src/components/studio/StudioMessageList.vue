@@ -2,7 +2,9 @@
   <section class="studio-chat-panel" :class="{ 'is-fullscreen': fullscreen }">
     <div ref="scrollEl" class="studio-chat-scroll custom-scrollbar" @scroll="handleScroll">
       <div v-if="!displayedConversation || !displayedConversation.messages.length" class="studio-chat-empty">
-        <h1>对话画图</h1>
+        <img src="/logo.svg" alt="" class="studio-empty-logo" />
+        <span class="studio-empty-eyebrow">LUXURYIMAGE STUDIO</span>
+        <h1>从一个想法开始</h1>
         <p>输入文字可以直接对话；切到画图后，在同一个窗口里生成图片、上传参考图和继续编辑。</p>
       </div>
 
@@ -611,6 +613,8 @@ defineExpose({
 </script>
 
 <style scoped>
+.studio-empty-logo { width: 52px; height: 52px; margin: 0 auto 20px; }
+.studio-empty-eyebrow { color: hsl(var(--secondary-foreground)); font-size: 10px; letter-spacing: 0.16em; }
 .studio-chat-panel {
   position: relative;
   display: flex;
@@ -650,7 +654,7 @@ defineExpose({
 
 .studio-chat-empty h1 {
   color: hsl(var(--foreground));
-  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
   font-weight: 700;
   letter-spacing: 0;
 }

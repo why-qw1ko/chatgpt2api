@@ -1,31 +1,23 @@
 import { getStringPreference, preferenceKeys, setStringPreference } from './preferences'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
-
-type ResolvedTheme = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark'
 
 export function normalizeThemeMode(value: unknown): ThemeMode {
   if (value === 'dark' || value === 'mono-dark') return 'dark'
   if (value === 'light') return 'light'
-  return 'system'
+  return 'light'
 }
 
 export function getStoredThemeMode(): ThemeMode {
-  return normalizeThemeMode(getStringPreference(preferenceKeys.themeMode, 'system'))
-}
-
-export function resolveThemeMode(mode: ThemeMode): ResolvedTheme {
-  if (mode !== 'system') return mode
-  if (typeof window === 'undefined') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return normalizeThemeMode(getStringPreference(preferenceKeys.themeMode, 'light'))
 }
 
 export function applyThemeMode(mode: ThemeMode): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  const resolved = resolveThemeMode(mode)
   root.dataset.themePreference = mode
-  if (resolved === 'dark') {
+  root.classList.toggle('dark', mode === 'dark')
+  if (mode === 'dark') {
     root.dataset.theme = 'dark'
     root.style.colorScheme = 'dark'
     return

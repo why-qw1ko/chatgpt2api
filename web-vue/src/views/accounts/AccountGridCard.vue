@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { Checkbox, KeyValueList, MetaChip, StatusDetailPill } from 'nanocat-ui'
+import { Checkbox, KeyValueList, MetaChip, StatusDetailPill } from '@/components/ui'
 
 import AccountActionButtons from '@/components/ai/AccountActionButtons.vue'
 import type { Account } from '@/api/accounts'

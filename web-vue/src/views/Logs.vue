@@ -160,9 +160,9 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, reactive, ref, toRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Button, Input } from 'nanocat-ui'
+import { Button, Input } from '@/components/ui'
 import ConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import DateRangeInputs from '@/components/ai/DateRangeInputs.vue'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'
 import MetricStrip from '@/components/ai/MetricStrip.vue'

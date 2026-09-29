@@ -35,22 +35,11 @@
         <div class="flex h-16 items-center px-5 pt-4 lg:h-20 lg:pt-5">
           <div class="flex min-w-0 items-center">
             <div class="shell-sidebar-brand shrink-0">
-              <svg aria-hidden="true" viewBox="0 0 64 64" class="h-8 w-8">
-                <defs>
-                  <linearGradient id="sidebar-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#4F7CFF"/>
-                    <stop offset="50%" stop-color="#7B5FFF"/>
-                    <stop offset="100%" stop-color="#C74FFF"/>
-                  </linearGradient>
-                </defs>
-                <rect width="64" height="64" rx="14" fill="url(#sidebar-logo-grad)"/>
-                <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
-                <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
-                <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
-              </svg>
+              <img src="/logo.svg" alt="" class="h-9 w-9" />
             </div>
             <div class="sidebar-label sidebar-brand-label">
-              <p class="ui-section-title">ChatGPT2API</p>
+              <p class="shell-wordmark">LuxuryImage</p>
+              <p class="shell-brand-caption">创作与管理控制台</p>
             </div>
           </div>
         </div>
@@ -75,22 +64,18 @@
             >
               <Tooltip v-if="isSidebarRail" :text="item.label" placement="right">
                 <span
-                  class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors"
+                  class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors"
                   :class="navIconClassMap[item.path]"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                    <path :d="item.icon" />
-                  </svg>
+                  <Icon :icon="item.icon" class="h-4 w-4" aria-hidden="true" />
                 </span>
               </Tooltip>
               <span
                 v-else
-                class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors"
+                class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors"
                 :class="navIconClassMap[item.path]"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                  <path :d="item.icon" />
-                </svg>
+                <Icon :icon="item.icon" class="h-4 w-4" aria-hidden="true" />
               </span>
               <span class="sidebar-label">{{ item.label }}</span>
             </RouterLink>
@@ -103,17 +88,13 @@
               size="sm"
               variant="outline"
               :icon-only="isSidebarRail"
-              root-class="sidebar-logout shell-sidebar-footer-button rounded-full text-muted-foreground"
+              root-class="sidebar-logout shell-sidebar-footer-button text-muted-foreground"
               aria-label="退出登录"
               @click="handleLogout"
             >
               <Tooltip v-if="isSidebarRail" text="退出登录" placement="right">
                 <span class="sidebar-footer-tooltip-trigger">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5" />
-                    <path d="M15 12H3" />
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
-                  </svg>
+                  <Icon icon="lucide:log-out" class="h-4 w-4 shrink-0" aria-hidden="true" />
                 </span>
               </Tooltip>
               <span class="sidebar-label sidebar-logout-label">退出登录</span>
@@ -123,7 +104,7 @@
               size="sm"
               variant="outline"
               icon-only
-              root-class="sidebar-collapse-button shell-sidebar-footer-button shrink-0 rounded-full text-muted-foreground"
+              root-class="sidebar-collapse-button shell-sidebar-footer-button shrink-0 text-muted-foreground"
               @click="isSidebarCollapsed = !isSidebarCollapsed"
               :aria-label="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
               :aria-expanded="!isSidebarCollapsed"
@@ -131,21 +112,17 @@
             >
               <Tooltip v-if="isSidebarRail" :text="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" placement="right">
                 <span class="sidebar-footer-tooltip-trigger">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="currentColor">
-                    <path d="M6 4h2v16H6V4zm4 4h8v2h-8V8zm0 6h8v2h-8v-2z" />
-                  </svg>
+                  <Icon icon="lucide:panel-left-close" class="h-4 w-4 shrink-0" aria-hidden="true" />
                 </span>
               </Tooltip>
-              <svg v-else aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="currentColor">
-                <path d="M6 4h2v16H6V4zm4 4h8v2h-8V8zm0 6h8v2h-8v-2z" />
-              </svg>
+              <Icon v-else icon="lucide:panel-left-close" class="h-4 w-4 shrink-0" aria-hidden="true" />
             </Button>
           </div>
         </div>
       </aside>
 
       <main
-        class="relative min-w-0 flex-1 bg-card lg:ml-0"
+        class="shell-main relative min-w-0 flex-1 lg:ml-0"
         :class="[
           { 'flex h-dvh min-h-0 flex-col overflow-hidden': isWorkspacePage },
           { 'flex h-dvh min-h-0 flex-col overflow-hidden': isContainedManagementPage },
@@ -170,27 +147,9 @@
               :aria-expanded="isMobileViewport && isSidebarOpen"
               aria-controls="app-sidebar-navigation"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
-                <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" />
-              </svg>
+              <Icon icon="lucide:menu" class="h-4 w-4 shrink-0" aria-hidden="true" />
             </Button>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 64 64"
-              class="hidden h-9 w-9 shrink-0 sm:block"
-            >
-              <defs>
-                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#4F7CFF"/>
-                  <stop offset="50%" stop-color="#7B5FFF"/>
-                  <stop offset="100%" stop-color="#C74FFF"/>
-                </linearGradient>
-              </defs>
-              <rect width="64" height="64" rx="14" fill="url(#logo-grad)"/>
-              <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
-              <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
-              <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
-            </svg>
+            <span class="shell-breadcrumb hidden sm:inline">工作空间 <span aria-hidden="true">/</span></span>
             <div class="min-w-0">
               <h2 class="truncate text-base font-semibold text-foreground sm:text-lg lg:text-xl">
                 {{ currentPageTitle }}
@@ -280,11 +239,11 @@
         </header>
 
         <div
-          class="relative min-w-0 overflow-x-hidden bg-card"
+          class="shell-content relative min-w-0 overflow-x-hidden"
           :class="[
             isWorkspacePage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
             isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
-            isImmersivePage ? 'p-0' : 'px-4 py-6 sm:px-6',
+            isImmersivePage ? 'p-0' : 'px-4 py-5 sm:px-7 sm:py-7',
           ]"
         >
           <RouterView v-slot="{ Component, route: currentRoute }">
@@ -637,7 +596,7 @@ import { useModelCatalog } from '@/composables/useModelCatalog'
 import { usePublicRuntimeConfig } from '@/composables/usePublicRuntimeConfig'
 import { useListLayoutPreference } from '@/composables/useListLayoutPreference'
 import { useOperationProgressRuntime } from '@/composables/useOperationProgressRuntime'
-import { ActionMenu, Button, Tooltip, ValueSurface, type ActionMenuItem } from 'nanocat-ui'
+import { ActionMenu, Button, Tooltip, ValueSurface, type ActionMenuItem } from '@/components/ui'
 import ConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import MetaChip from '@/components/ai/MetaChip.vue'
 import ModalFooter from '@/components/ai/ModalFooter.vue'
@@ -698,11 +657,6 @@ const pendingNavigationPath = ref('')
 const routeProgressPhase = ref<RouteProgressPhase>('idle')
 const cachedRouteNames = ['Dashboard', 'Studio', 'Accounts', 'Logs', 'Monitor', 'Gallery', 'Proxy', 'Settings']
 const cachedRouteMax = cachedRouteNames.length
-const themeOptions: { label: string; value: ThemeMode }[] = [
-  { label: '浅色', value: 'light' },
-  { label: '深色', value: 'dark' },
-  { label: '系统', value: 'system' },
-]
 const {
   chatModels: supportedChatModels,
   imageModels: supportedImageModels,
@@ -725,49 +679,49 @@ const menuItems: NavigationItem[] = [
   {
     path: '/',
     label: '概览中心',
-    icon: 'M4 4h7v7H4V4zm9 0h7v4h-7V4zm0 6h7v10h-7V10zM4 13h7v7H4v-7z',
+    icon: 'lucide:layout-dashboard',
     capability: 'admin_console',
   },
   {
     path: '/monitor',
     label: '实时监控',
-    icon: 'M4 5h3v14H4V5zm5 6h3v8H9v-8zm5-4h3v12h-3V7zm5 7h3v5h-3v-5z',
+    icon: 'lucide:activity',
     capability: 'admin_console',
   },
   {
     path: '/studio',
     label: '对话画图',
-    icon: 'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l-4 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 3v6h12V7H6zm2 2 2.1 2.8 2.4-3.1L17 14H7l1-5z',
+    icon: 'lucide:messages-square',
     capability: 'studio',
   },
   {
     path: '/accounts',
     label: '账号管理',
-    icon: 'M12 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 12 12zm0 2c-4.1 0-7.5 2.2-7.5 5v1h15v-1c0-2.8-3.4-5-7.5-5z',
+    icon: 'lucide:users-round',
     capability: 'admin_console',
   },
   {
     path: '/logs',
     label: '日志管理',
-    icon: 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z',
+    icon: 'lucide:logs',
     capability: 'admin_console',
   },
   {
     path: '/gallery',
     label: '图片管理',
-    icon: 'M22 16V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2zm-11-4 2.03 2.71L16 11l4 5H8l3-3zM2 6v14a2 2 0 0 0 2 2h14v-2H4V6H2z',
+    icon: 'lucide:images',
     capability: 'studio',
   },
   {
     path: '/proxy',
     label: '代理管理',
-    icon: 'M12 3a5 5 0 0 1 5 5v2h1a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3h1V8a5 5 0 0 1 5-5zm-3 7h6V8a3 3 0 0 0-6 0v2zm-3 2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H6z',
+    icon: 'lucide:network',
     capability: 'admin_console',
   },
   {
     path: '/settings',
     label: '系统设置',
-    icon: 'M4 6h10v2H4V6zm12 0h4v2h-4V6zM4 11h6v2H4v-2zm8 0h8v2h-8v-2zM4 16h10v2H4v-2zm12 0h4v2h-4v-2z',
+    icon: 'lucide:settings-2',
     capability: 'admin_console',
   },
 ]
@@ -804,7 +758,7 @@ const isSidebarRail = computed(() => (
   !isMobileViewport.value && (isSidebarCollapsed.value || isImmersivePage.value)
 ))
 const sidebarStyle = computed(() => ({
-  '--sidebar-width': isSidebarRail.value ? '4rem' : '16rem',
+  '--sidebar-width': isSidebarRail.value ? '4.75rem' : '15.75rem',
 }))
 
 const navItemBaseClass = 'justify-start gap-0 px-1.5'
@@ -841,16 +795,16 @@ function isNavVisuallyActive(path: string) {
 function buildNavItemClass(path: string) {
   const base = navItemBaseClass
   if (isNavVisuallyActive(path)) {
-    return `${base} rounded-[0.9rem] border-[hsl(var(--primary)_/_0.28)] bg-[hsl(var(--primary)_/_0.08)] font-semibold text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)_/_0.08)]`
+    return `${base} shell-nav-item--active font-semibold`
   }
-  return `${base} rounded-[0.9rem] border-transparent text-muted-foreground hover:border-border hover:bg-[hsl(var(--secondary)_/_0.55)] hover:text-foreground`
+  return `${base} text-muted-foreground hover:bg-secondary hover:text-foreground`
 }
 
 function buildNavIconClass(path: string) {
   if (isNavVisuallyActive(path)) {
-    return 'border-[hsl(var(--primary)_/_0.28)] bg-[hsl(var(--card))] text-foreground shadow-sm'
+    return 'text-secondary-foreground'
   }
-  return 'border-border bg-[hsl(var(--card))] text-muted-foreground group-hover:border-[hsl(var(--foreground)_/_0.28)] group-hover:text-foreground'
+  return 'text-muted-foreground group-hover:text-foreground'
 }
 
 const navItemClassMap = computed<Record<string, string>>(() => {
@@ -921,13 +875,8 @@ const canvasHref = computed(() => {
   if (!canvas?.enabled || !canvas.url.trim() || !token) return ''
   return buildThirdPartyHref(canvas.url, apiBaseUrl.value, token)
 })
-const themeButtonText = computed(() => themeOptions.find(option => option.value === themeMode.value)?.label || '系统')
-const themeButtonTitle = computed(() => `当前主题：${themeButtonText.value}，点击切换`)
-const themeButtonIcon = computed(() => {
-  if (themeMode.value === 'light') return 'lucide:sun'
-  if (themeMode.value === 'dark') return 'lucide:moon'
-  return 'lucide:sun-moon'
-})
+const themeButtonTitle = computed(() => themeMode.value === 'light' ? '切换到暗色主题' : '切换到亮色主题')
+const themeButtonIcon = computed(() => themeMode.value === 'light' ? 'lucide:moon' : 'lucide:sun')
 
 const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   const items: ActionMenuItem[] = []
@@ -942,7 +891,6 @@ const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   return items
 })
 const routePendingText = computed(() => `正在加载${currentPageTitle.value}`)
-let systemThemeMedia: MediaQueryList | null = null
 let viewportMedia: MediaQueryList | null = null
 const prefetchedRoutePaths = new Set<string>()
 const routeProgressDelayMs = 140
@@ -1118,9 +1066,7 @@ function setThemeMode(mode: ThemeMode) {
 }
 
 function cycleThemeMode() {
-  const index = themeOptions.findIndex(option => option.value === themeMode.value)
-  const next = themeOptions[(index + 1) % themeOptions.length]
-  setThemeMode(next.value)
+  setThemeMode(themeMode.value === 'light' ? 'dark' : 'light')
 }
 
 function openUpdateDialog() {
@@ -1151,7 +1097,7 @@ function applyUpdateTask(task: UpdateTaskResponse, open: boolean) {
   updateTargetTag.value = normalizeVersionTag(task.latest_tag || updateTargetTag.value)
   currentVersionTag.value = normalizeVersionTag(task.current_tag || currentVersionTag.value)
   updateProgressState.open = open
-  updateProgressState.title = task.busy ? '正在更新 ChatGPT2API' : 'ChatGPT2API 更新'
+  updateProgressState.title = task.busy ? '正在更新 LuxuryImage' : 'LuxuryImage 更新'
   updateProgressState.subtitle = task.latest_tag ? `目标版本 ${normalizeVersionTag(task.latest_tag)}` : ''
   updateProgressState.total = task.total
   updateProgressState.current = task.current
@@ -1281,18 +1227,6 @@ async function loadCurrentVersion() {
   } catch {}
 }
 
-function handleSystemThemeChange() {
-  if (themeMode.value === 'system') {
-    applyThemeMode(themeMode.value)
-  }
-}
-
-function setupSystemThemeListener() {
-  if (typeof window === 'undefined') return
-  systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)')
-  systemThemeMedia.addEventListener('change', handleSystemThemeChange)
-}
-
 function handlePublicSettingsChanged() {
   void loadPublicRuntimeConfig(true)
 }
@@ -1380,7 +1314,6 @@ const removeRouteErrorHook = router.onError((_error, to) => {
 
 onMounted(() => {
   applyThemeMode(themeMode.value)
-  setupSystemThemeListener()
   setupViewportListener()
   window.addEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.addEventListener('keydown', handleWindowKeydown)
@@ -1395,8 +1328,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.removeEventListener('keydown', handleWindowKeydown)
-  systemThemeMedia?.removeEventListener('change', handleSystemThemeChange)
-  systemThemeMedia = null
   teardownViewportListener()
   clearUpdateTaskPollTimer()
   clearRouteProgressDelayTimer()

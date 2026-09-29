@@ -1,6 +1,6 @@
 <template>
-  <NanocatMetaChip
-    :tone="nanocatTone"
+  <ElementMetaChip
+    :tone="elementTone"
     :variant="props.variant"
     :size="props.size"
     :radius="props.radius"
@@ -9,12 +9,12 @@
     :chip-class="resolvedChipClass"
   >
     <slot />
-  </NanocatMetaChip>
+  </ElementMetaChip>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MetaChip as NanocatMetaChip } from 'nanocat-ui'
+import { MetaChip as ElementMetaChip } from '@/components/ui'
 
 type MetaChipTone = 'default' | 'muted' | 'success' | 'warning' | 'danger' | 'info'
 type MetaChipVariant = 'soft' | 'outline' | 'solid'
@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<{
   chipClass: '',
 })
 
-const nanocatTone = computed(() => {
+const elementTone = computed(() => {
   if (props.tone === 'success') return 'success'
   if (props.tone === 'warning') return 'warning'
   if (props.tone === 'danger') return 'error'
