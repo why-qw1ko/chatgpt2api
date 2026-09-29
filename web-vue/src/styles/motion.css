@@ -1,12 +1,24 @@
 /* Controls own their transitions; data surfaces remain stationary. */
 :root {
-  --motion-fast: 120ms;
-  --motion-base: 180ms;
-  --motion-slow: 240ms;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 320ms;
   --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes motion-fade-in { from { opacity: 0; } to { opacity: 1; } }
-.motion-stagger, .motion-stagger-fade { animation: motion-fade-in 180ms ease-out; }
+@keyframes motion-rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.motion-stagger, .motion-stagger-fade { animation: motion-fade-in var(--motion-base) var(--ease-out-soft); }
+.motion-stagger-rise { animation: motion-rise-in var(--motion-slow) var(--ease-spring); }
+.ui-panel, .ui-card, .ui-card-sm {
+  transition: box-shadow var(--motion-base) var(--ease-out-soft), border-color var(--motion-base) var(--ease-out-soft);
+}
+.ui-panel:hover, .ui-card:hover, .ui-card-sm:hover {
+  box-shadow: var(--shadow-floating);
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

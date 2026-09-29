@@ -47,7 +47,7 @@ const elementTone = computed(() => {
 })
 
 const resolvedChipClass = computed(() => {
-  return ['min-w-0 justify-center tracking-normal', props.chipClass]
+  return ['min-w-0 tracking-normal', props.chipClass]
     .filter(Boolean)
     .join(' ')
 })

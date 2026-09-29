@@ -17,9 +17,9 @@
         </template>
       </PanelHeader>
 
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <FormSection density="roomy">
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
             <label class="block text-xs">
               <span class="ui-field-label">默认出口模式</span>
               <GroupedSelectMenu
@@ -60,7 +60,7 @@
               未指定账号或账号组代理时直连。
             </div>
           </div>
-          <ActionRow class="mt-3" gap="tight">
+          <ActionRow class="mt-4" gap="tight">
             <Button size="xs" variant="outline" :disabled="testingKey === DEFAULT_TEST_KEY || !canTestDefaultProxy" @click="testDefaultProxy">
               {{ testingKey === DEFAULT_TEST_KEY ? '测试中...' : '测试默认出口' }}
             </Button>
@@ -68,8 +68,8 @@
               设为直连
             </Button>
           </ActionRow>
-          <div class="mt-4 border-t border-border pt-4">
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="mt-5 border-t border-border pt-5">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
               <label class="block text-xs">
                 <span class="ui-field-label">备用出口模式</span>
                 <GroupedSelectMenu
