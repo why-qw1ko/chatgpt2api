@@ -1407,13 +1407,15 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-label {
-  display: block;
+  display: flex;
+  align-items: center;
   min-width: 0;
   max-width: 11rem;
   flex: 1 1 auto;
   overflow: hidden;
   margin-inline-start: 0.75rem;
   white-space: nowrap;
+  line-height: 1.2;
   opacity: 1;
   transform: translateX(0);
   transition:

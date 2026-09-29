@@ -94,10 +94,17 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
   animation: lightbox-fade 180ms var(--ease-out-soft);
 }
 
+:global(.lightbox .el-overlay-dialog) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
 :global(.lightbox .el-dialog) {
   width: fit-content !important;
   max-width: 92vw;
-  margin: 0 !important;
+  margin: 0 auto !important;
   background: transparent;
   box-shadow: none;
   border-radius: 0;
@@ -107,6 +114,8 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
 :global(.lightbox .el-dialog__body) {
   padding: 0;
   display: flex;
+  width: 100%;
+  justify-content: center;
 }
 
 :global(.lightbox-content) {
