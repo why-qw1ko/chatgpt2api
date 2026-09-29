@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, GroupedSelectMenu } from 'nanocat-ui'
+import { Button, GroupedSelectMenu } from '@/components/ui'
 
 import type { Account, AccountTestMode, AccountTestResult } from '@/api/accounts'
 import ConsoleSegmentedTabs from '@/components/ai/ConsoleSegmentedTabs.vue'

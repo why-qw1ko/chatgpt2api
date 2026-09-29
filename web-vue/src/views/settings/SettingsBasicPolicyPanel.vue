@@ -119,8 +119,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Checkbox, FormField, FormSection, HelpTip } from 'nanocat-ui'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { Checkbox, FormField, FormSection, HelpTip } from '@/components/ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import type { Settings } from '@/types/api'
 import SettingsNumberInput from '@/views/settings/SettingsNumberInput.vue'
 import {

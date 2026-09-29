@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 
 withDefaults(defineProps<{
   title: string

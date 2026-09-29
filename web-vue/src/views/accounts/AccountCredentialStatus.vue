@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, HoverCard, MetaChip } from 'nanocat-ui'
+import { Button, HoverCard, MetaChip } from '@/components/ui'
 
 import type { Account } from '@/api/accounts'
 import { formatAccountDate } from './viewUtils'

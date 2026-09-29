@@ -1,5 +1,5 @@
 <template>
-  <NanocatModalShell
+  <ElementModalShell
     :open="open"
     :max-width="maxWidth"
     :z-index="zIndex"
@@ -13,12 +13,12 @@
     @close="emit('close')"
   >
     <slot />
-  </NanocatModalShell>
+  </ElementModalShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ModalShell as NanocatModalShell, OVERLAY_LAYER } from 'nanocat-ui'
+import { ModalShell as ElementModalShell, OVERLAY_LAYER } from '@/components/ui'
 
 const props = withDefaults(defineProps<{
   open: boolean

@@ -14,12 +14,12 @@
 </template>
 
 <script setup lang="ts">
-import { SegmentedTabs } from 'nanocat-ui'
-import type { SegmentedOption, SegmentedValue } from 'nanocat-ui'
+import { SegmentedTabs } from '@/components/ui'
+import type { SegmentedOption, SegmentedValue } from '@/components/ui'
 
 withDefaults(defineProps<{
   modelValue: SegmentedValue
-  options: SegmentedOption[]
+  options: readonly SegmentedOption[]
   ariaLabel?: string
   fit?: 'stretch' | 'content'
 }>(), {

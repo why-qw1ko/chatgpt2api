@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { ActionMenuItem } from 'nanocat-ui'
+import type { ActionMenuItem } from '@/components/ui'
 
 import { actionMenuGroups } from '@/components/ai/menuItems'
 import type { AccountBulkAction } from './accountBulkActionsRuntime'

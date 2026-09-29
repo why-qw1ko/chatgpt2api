@@ -1,5 +1,6 @@
 <template>
-  <div class="space-y-5">
+  <div class="dashboard-page space-y-5">
+    <div class="page-intro"><div><p class="page-eyebrow">OVERVIEW</p><h1>工作空间概览</h1><p>账号资源、调用趋势与运行状态。</p></div><span class="page-intro-mark" aria-hidden="true"><Icon icon="lucide:chart-no-axes-combined" /></span></div>
     <PageLoadingState
       v-if="!dashboardDataReady && !dashboardLoadError"
       title="正在加载概览"
@@ -223,7 +224,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, ChartCard, HelpTip, HoverCard, StatCard } from 'nanocat-ui'
+import { Button, ChartCard, HelpTip, HoverCard, StatCard } from '@/components/ui'
 import { Icon } from '@iconify/vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
@@ -327,25 +328,25 @@ const runtimeResourceMetrics = computed(() => {
       label: '应用 CPU',
       value: formatPercent(runtime?.process_cpu_percent),
       icon: 'lucide:cpu',
-      iconClass: 'text-sky-600 dark:text-sky-400',
+      iconClass: 'text-primary',
       progress: runtime?.process_cpu_percent ?? null,
-      progressClass: 'text-sky-500 dark:text-sky-400',
+      progressClass: 'text-primary',
     },
     {
       label: '应用内存',
       value: formatBytes(runtime?.process_memory_bytes),
       icon: 'lucide:memory-stick',
-      iconClass: 'text-indigo-600 dark:text-indigo-400',
+      iconClass: 'text-primary',
       progress: runtime?.process_memory_percent ?? null,
-      progressClass: 'text-indigo-500 dark:text-indigo-400',
+      progressClass: 'text-primary',
     },
     {
       label: memoryScopeLabel(runtime?.memory_scope),
       value: formatPercent(runtime?.memory_percent),
       icon: 'lucide:memory-stick',
-      iconClass: 'text-amber-600 dark:text-amber-400',
+      iconClass: 'text-primary',
       progress: runtime?.memory_percent ?? null,
-      progressClass: 'text-amber-500 dark:text-amber-400',
+      progressClass: 'text-primary',
     },
     {
       label: '数据盘',

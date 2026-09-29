@@ -1,4 +1,4 @@
-import type { ActionMenuItem } from 'nanocat-ui'
+import type { ActionMenuItem } from '@/components/ui'
 
 export type ActionMenuGroup<T extends ActionMenuItem = ActionMenuItem> = T[]
 

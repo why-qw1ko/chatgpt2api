@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { FormField, FormSection, HelpTip, Input } from 'nanocat-ui'
+import { FormField, FormSection, HelpTip, Input } from '@/components/ui'
 import type { Settings } from '@/types/api'
 import SettingsNumberInput from '@/views/settings/SettingsNumberInput.vue'
 import { settingsFieldReadOnly, type SettingsFields } from '@/views/settings/settingsView'

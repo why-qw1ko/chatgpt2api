@@ -19,7 +19,7 @@ flowchart LR
     Domain --> TaskFiles["Image Task and update-task JSON"]
     Domain --> Assets["Image and editable-file assets<br/>local filesystem and optional WebDAV"]
     Domain --> Live["Process memory<br/>Active Requests and live operations"]
-    Nanocat["nanocat-ui package"] --> Browser
+    ElementPlus["Element Plus package"] --> Browser
 ```
 
 [`../../api/app.py`](../../api/app.py) assembles the backend routers. The Vue
@@ -34,7 +34,7 @@ assembles the browser routes.
 | Business state, capability, diagnostics, and action results | Backend domain services and projection services | API contracts and Vue adapters |
 | Public request/response shape | FastAPI contracts under `api/` | External clients and `web-vue/src/api/` |
 | Drafts, selection, loading, overlays, layout, and scrolling | The owning Vue page or page-private runtime | Page components |
-| Generic controls, overlays, tokens, and interaction primitives | `nanocat-ui` | Vue product pages |
+| Generic controls, modal overlays, and keyboard primitives | `element-plus` | Product UI adapters and Vue pages |
 | Product navigation, charts, workflows, and responsive composition | `chatgpt2api/web-vue` | Control-panel users |
 
 The backend does not own browser layout, and the frontend does not reconstruct

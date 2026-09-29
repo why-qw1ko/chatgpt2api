@@ -138,7 +138,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button, CloseButton, DrawerShell, OVERLAY_LAYER, SideDock } from 'nanocat-ui'
+import { Button, CloseButton, DrawerShell, OVERLAY_LAYER, SideDock } from '@/components/ui'
 import type {
   OperationProgressTone,
   OperationSummaryItem,

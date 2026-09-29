@@ -4,37 +4,37 @@
  */
 // 主题色板
 export const chartColors = {
-  primary: '#0ea5e9',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  info: '#3b82f6',
-  purple: '#a855f7',
-  pink: '#ec4899',
-  slate: '#64748b',
-  gray: '#94a3b8',
-  lightGreen: '#4ade80',
-  cyan: '#22d3ee',
-  emerald: '#34d399',
+  primary: '#6d5bd0',
+  success: '#429d83',
+  warning: '#d5ab35',
+  danger: '#bf3752',
+  info: '#8173bb',
+  purple: '#9279b7',
+  pink: '#d982a7',
+  slate: '#81758f',
+  gray: '#a69bae',
+  lightGreen: '#9bbd87',
+  cyan: '#7baeb8',
+  emerald: '#70b3a2',
 }
 
 // 模型图表专用色板，参考 new-api 的固定 palette 思路，保持明亮、干净、稳定。
 export const modelColorPalette = [
-  '#5B8FF9',
-  '#5AD8A6',
-  '#F6BD16',
-  '#6DC8EC',
-  '#269A99',
-  '#5D7092',
-  '#73C0DE',
-  '#3BA272',
-  '#91CC75',
-  '#2F80ED',
+  '#8173bb',
+  '#6d5bd0',
+  '#d7c49e',
+  '#7baeb8',
+  '#429d83',
+  '#9279b7',
+  '#d982a7',
+  '#70b3a2',
+  '#9bbd87',
+  '#b39168',
 ]
 
 // 当前实际模型显式绑定，避免主力模型在不同图表中颜色漂移。
 export const modelColors: Record<string, string> = {
-  auto: '#64748B',
+  auto: '#81758f',
   'gpt-5.5': modelColorPalette[0],
   'gpt-5-5': modelColorPalette[0],
   'gpt-5-5-thinking': modelColorPalette[9],
@@ -126,7 +126,7 @@ export function filterValidModels(modelRequests: Record<string, number[]>): Reco
 // 文本样式
 const textStyle = {
   fontFamily: 'Noto Sans SC, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-  color: '#6b6b6b',      // text-muted-foreground
+  color: '#656777',      // text-muted-foreground
   fontSize: 11,
 }
 
@@ -142,10 +142,10 @@ const gridConfig = {
 // 工具提示配置
 const tooltipConfig = {
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  borderColor: '#e5e5e5',
+  borderColor: '#e5e5eb',
   borderWidth: 1,
   textStyle: {
-    color: '#1a1a1a',
+    color: '#20212b',
     fontSize: 12,
   },
   padding: [8, 12],
@@ -180,7 +180,7 @@ export function getLineChartTheme() {
       axisPointer: {
         type: 'line',
         lineStyle: {
-          color: '#d4d4d4',
+          color: '#d0d1db',
           type: 'dashed',
         },
       },
@@ -196,7 +196,7 @@ export function getLineChartTheme() {
       boundaryGap: false,
       axisLine: {
         lineStyle: {
-          color: '#d4d4d4',
+          color: '#d0d1db',
         },
       },
       axisTick: {
@@ -221,7 +221,7 @@ export function getLineChartTheme() {
       },
       splitLine: {
         lineStyle: {
-          color: '#e5e5e5',
+          color: '#e5e5eb',
           type: 'solid',
         },
       },
@@ -275,14 +275,14 @@ export function getPieChartTheme(isMobile = false) {
       label: {
         show: true,
         fontSize: 11,
-        color: '#6b6b6b',
+        color: '#656777',
       },
       labelLine: {
         show: true,
         length: 12,
         length2: 10,
         lineStyle: {
-          color: '#d4d4d4',
+          color: '#d0d1db',
         },
       },
       itemStyle: {

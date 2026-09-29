@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { CloseButton, DrawerShell, LoadingState, SideDock } from 'nanocat-ui'
+import { CloseButton, DrawerShell, LoadingState, SideDock } from '@/components/ui'
 
 import ModalHeader from '@/components/ai/ModalHeader.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'

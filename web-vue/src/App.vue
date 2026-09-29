@@ -1,10 +1,11 @@
 <template>
-  <RouterView />
-  <Toast :toasts="toastState.toasts" @remove="removeToast" />
+  <ElConfigProvider :locale="zhCn" :z-index="4000">
+    <RouterView />
+  </ElConfigProvider>
 </template>
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { Toast } from 'nanocat-ui'
-import { removeToast, toastState } from '@/composables/useToast'
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>

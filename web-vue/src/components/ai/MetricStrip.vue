@@ -19,17 +19,8 @@
           class="metric-strip-icon"
           :class="[item.iconBgClass || item.iconBg || '', item.iconClass || item.iconColor || '']"
         >
-          <svg
-            v-if="isSvgPathIcon(item)"
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            class="metric-strip-svg"
-            fill="currentColor"
-          >
-            <path :d="item.svgPath || item.icon" />
-          </svg>
           <Icon
-            v-else-if="item.icon"
+            v-if="item.icon"
             aria-hidden="true"
             :icon="item.icon"
             class="metric-strip-svg"
@@ -65,8 +56,6 @@ type MetricStripItem = {
   valueStyle?: Record<string, string>
   cardClass?: string
   icon?: string
-  iconType?: 'iconify' | 'svgPath'
-  svgPath?: string
   iconClass?: string
   iconColor?: string
   iconBg?: string
@@ -85,13 +74,9 @@ withDefaults(defineProps<{
 })
 
 function hasIcon(item: MetricStripItem) {
-  return Boolean(item.icon || item.svgPath)
+  return Boolean(item.icon)
 }
 
-function isSvgPathIcon(item: MetricStripItem) {
-  if (item.iconType === 'svgPath' || item.svgPath) return true
-  return Boolean(item.icon && !item.icon.includes(':'))
-}
 </script>
 
 <style scoped>
@@ -106,7 +91,7 @@ function isSvgPathIcon(item: MetricStripItem) {
   min-height: 76px;
   padding: 16px;
   border: 1px solid hsl(var(--border) / 0.82);
-  border-radius: 16px;
+  border-radius: 12px;
   background: hsl(var(--card));
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }

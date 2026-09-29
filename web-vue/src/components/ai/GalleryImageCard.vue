@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Checkbox, Tooltip } from 'nanocat-ui'
+import { Checkbox, Tooltip } from '@/components/ui'
 import type { GalleryFile } from '@/api/gallery'
 
 const props = defineProps<{
