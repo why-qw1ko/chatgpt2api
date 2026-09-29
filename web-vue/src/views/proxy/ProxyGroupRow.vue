@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import type { ProxyGroup, ProxyNode } from '@/api/proxy'
 import FloatingActionMenu from '@/components/ai/FloatingActionMenu.vue'
 import ProxyNodeSummaryCard from '@/components/ai/ProxyNodeSummaryCard.vue'

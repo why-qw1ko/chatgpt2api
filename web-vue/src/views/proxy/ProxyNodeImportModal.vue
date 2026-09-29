@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 
 import {
   proxyApi,

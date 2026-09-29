@@ -382,7 +382,7 @@ import {
   GroupedSelectMenu,
   Input,
   TableShell,
-} from 'nanocat-ui'
+} from '@/components/ui'
 import ActionRow from '@/components/ai/ActionRow.vue'
 import ListLayoutControl from '@/components/ai/ListLayoutControl.vue'
 import FormSection from '@/components/ai/FormSection.vue'

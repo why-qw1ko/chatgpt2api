@@ -1,62 +1,50 @@
 <template>
-  <div class="min-h-screen px-4">
-    <div class="flex min-h-screen items-center justify-center">
-      <div class="w-full max-w-md rounded-[2.5rem] border border-border bg-card p-10 shadow-2xl shadow-black/10">
-        <div class="text-center">
-          <h1 class="text-3xl font-semibold text-foreground">ChatGPT2API</h1>
-          <p class="mt-2 text-sm text-muted-foreground">控制台登录</p>
-        </div>
-
+  <main class="login-page">
+    <section class="login-story" aria-label="LuxuryImage">
+      <a class="login-brand" href="#/login"><img src="/logo.svg" alt="" /><span>LuxuryImage</span></a>
+      <div class="login-story-copy">
+        <p class="login-eyebrow">YOUR CREATIVE WORKSPACE</p>
+        <h1>让灵感，<br />成为图像。</h1>
+        <p class="login-story-description">从对话到创作，从灵感到管理。<br />在一个工作空间里，有序展开。</p>
+      </div>
+      <svg class="login-art" viewBox="0 0 520 290" fill="none" aria-hidden="true">
+        <rect x="66" y="64" width="278" height="182" rx="16" fill="#696078" transform="rotate(-8 66 64)" />
+        <rect x="154" y="46" width="278" height="190" rx="16" fill="white" stroke="#252632" stroke-width="2" transform="rotate(6 154 46)" />
+        <circle cx="349" cy="108" r="27" fill="#d7c49e" />
+        <path d="m173 203 67-76 38 43 26-24 93 75-224-18Z" fill="#9d8de3" stroke="#252632" stroke-width="2" stroke-linejoin="round" />
+        <path d="m430 24 7 20 21 7-21 7-7 20-7-20-20-7 20-7Z" fill="#d7c49e" stroke="#252632" stroke-width="2" />
+        <circle cx="78" cy="250" r="8" fill="#9d8de3" /><path d="M109 268h80" stroke="#252632" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <p class="login-story-footer">对话 · 图像 · 工作空间</p>
+    </section>
+    <section class="login-form-side">
+      <div class="login-form-card">
+        <div class="login-mobile-brand"><img src="/logo.svg" alt="" /><span>LuxuryImage</span></div>
+        <p class="login-eyebrow">WELCOME BACK</p>
+        <h2>登录工作空间</h2>
+        <p class="login-form-description">输入管理密钥，继续你的创作与管理。</p>
         <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
-          <div class="space-y-2">
-            <label for="password" class="ui-field-label text-sm font-medium text-foreground">
-              管理密钥
-            </label>
-            <Input
-              id="password"
-              v-model="password"
-              type="password"
-              size="md"
-              block
-              placeholder="输入 Bearer key"
-              :disabled="isLoading"
-            />
+          <div class="space-y-2.5">
+            <label for="password" class="ui-field-label">管理密钥</label>
+            <Input id="password" v-model="password" type="password" size="md" block
+              placeholder="输入 Bearer key" :disabled="isLoading" />
           </div>
-
-          <Button
-            type="submit"
-            size="md"
-            variant="primary"
-            block
-            :disabled="isLoading || !password"
-          >
+          <Button type="submit" size="md" variant="primary" block :disabled="isLoading || !password">
             {{ isLoading ? '登录中...' : '登录' }}
+            <Icon v-if="!isLoading" icon="lucide:arrow-right" class="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
-
-        <div class="mt-8 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-          <a
-            href="https://github.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 transition-colors hover:text-foreground"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.419 2.865 8.166 6.839 9.489.5.09.682-.217.682-.483 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.341-3.369-1.341-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.071 1.532 1.031 1.532 1.031.892 1.529 2.341 1.087 2.91.832.091-.647.349-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.944 0-1.092.39-1.987 1.029-2.687-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.026 2.748-1.026.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.687 0 3.842-2.338 4.687-4.566 4.936.359.309.678.919.678 1.852 0 1.337-.012 2.418-.012 2.747 0 .268.18.577.688.479A10.002 10.002 0 0 0 22 12c0-5.523-4.477-10-10-10z" />
-            </svg>
-            GitHub
-          </a>
-          <span>Powered by Tofu</span>
-        </div>
+        <div class="login-footer"><a href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub <Icon icon="lucide:arrow-up-right" class="inline h-3 w-3" aria-hidden="true" /></a><span>LuxuryImage Console</span></div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Button, Input } from 'nanocat-ui'
+import { Button, Input } from '@/components/ui'
 import { useToast } from '@/composables/useToast'
 import { resolveLoginRedirect } from '@/router/routes'
 import { useAuthStore } from '@/stores/auth'
@@ -88,3 +76,33 @@ async function handleLogin() {
   }
 }
 </script>
+
+<style scoped>
+.login-page { display: grid; min-height: 100dvh; grid-template-columns: 1fr 1fr; padding: 20px; gap: 20px; background: hsl(var(--background)); }
+.login-story { position: relative; min-height: calc(100dvh - 40px); overflow: hidden; display: flex; flex-direction: column; padding: 42px 52px 30px; border-radius: 20px; background: #f2f0f8; color: #252632; }
+.login-brand, .login-mobile-brand { display: flex; align-items: center; gap: 12px; font-size: 23px; font-weight: 700; letter-spacing: -0.06em; }
+.login-brand img, .login-mobile-brand img { width: 38px; height: 38px; }
+.login-story-copy { margin-top: clamp(46px, 8vh, 110px); position: relative; z-index: 1; }
+.login-eyebrow { font-size: 10px; font-weight: 650; letter-spacing: 0.18em; color: #696078; }
+.login-story h1 { margin: 22px 0; font-size: clamp(36px, 4.5vw, 68px); font-weight: 650; line-height: 1.25; color: #252632; }
+.login-story-description { font-size: 14px; line-height: 1.95; color: #696078; }
+.login-art { width: min(100%, 520px); margin: auto auto 0; flex-shrink: 1; min-height: 0; max-height: 32vh; }
+.login-story-footer { margin-top: 18px; font-size: 11px; letter-spacing: 0.15em; color: #696078; }
+.login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-form-card { width: 100%; max-width: 360px; }
+.login-form-card h2 { margin-top: 14px; font-size: 28px; font-weight: 650; line-height: 1.4; }
+.login-form-description { margin-top: 12px; font-size: 13px; line-height: 1.7; color: hsl(var(--muted-foreground)); }
+.login-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 42px; padding-top: 24px; border-top: 1px solid hsl(var(--border)); font-size: 11px; color: hsl(var(--muted-foreground)); }
+.login-footer a:hover { color: hsl(var(--foreground)); }
+.login-mobile-brand { display: none; }
+:global(html[data-theme="dark"]) .login-story { background: #22232e; }
+:global(html[data-theme="dark"]) .login-story h1, :global(html[data-theme="dark"]) .login-brand { color: #efeff5; }
+:global(html[data-theme="dark"]) .login-eyebrow, :global(html[data-theme="dark"]) .login-story-description, :global(html[data-theme="dark"]) .login-story-footer { color: #b9b2d1; }
+@media (max-width: 767px) {
+  .login-page { display: flex; padding: 24px; }
+  .login-story { display: none; }
+  .login-form-side { width: 100%; padding: 20px 0; }
+  .login-mobile-brand { display: flex; margin-bottom: 56px; color: hsl(var(--foreground)); }
+  .login-form-card h2 { font-size: 25px; }
+}
+</style>

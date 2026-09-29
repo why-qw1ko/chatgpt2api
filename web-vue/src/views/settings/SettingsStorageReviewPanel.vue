@@ -145,9 +145,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, Checkbox, FormField, FormSection, Input } from 'nanocat-ui'
+import { Button, Checkbox, FormField, FormSection, Input } from '@/components/ui'
 import type { ImageStorageTestResult } from '@/api/settings'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import type { Settings } from '@/types/api'
 import {
   settingsFieldOptions,

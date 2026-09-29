@@ -319,7 +319,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import type { CSSProperties } from 'vue'
 import type { EditableFileTask } from '@/api/editableFileTasks'
 import type { ImageTask } from '@/api/imageTasks'

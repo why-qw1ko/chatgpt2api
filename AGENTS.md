@@ -20,7 +20,7 @@
 | 所有任务 | `.codex/rules/workflow.md` |
 | 架构、契约、跨层重构、存储 | `.codex/rules/architecture.md` |
 | `api/`、`contracts/`、`services/`、`repository/`、Python 运行时 | `.codex/rules/backend.md` |
-| `web-vue/`、页面、交互、样式、Nanocat 接入 | `.codex/rules/frontend.md` |
+| `web-vue/`、页面、交互、样式、组件库接入 | `.codex/rules/frontend.md` |
 | 文档、PRD、架构地图、runbook、外部参考 | `.codex/rules/documentation.md` |
 | Review、测试、回归、验收 | `.codex/rules/testing-and-review.md` |
 | 暂存、提交、推送、版本、Nanocat 发布 | `.codex/rules/git-and-release.md` |
@@ -33,7 +33,7 @@
 - 不因“顺便优化”扩大任务范围。发现范围外问题时记录并汇报，不直接修改。
 - 不在没有明确授权和新 ADR 的情况下改变持久化所有权或统一数据库。
 - 后端输出业务语义和稳定 JSON 投影；Vue 负责传输校验、交互状态、布局和渲染。这不是后端 HTML 渲染。
-- 通用 UI 能力优先评估 Nanocat；产品业务、页面组合和仅单页使用的实现留在本仓库。
+- 通用 UI 控件使用 Element Plus；品牌主题、产品业务、页面组合和仅单页使用的实现留在本仓库。
 - `D:\nanocat` 是独立 Git 仓库。两个仓库分别检查、测试、提交和发布。
 - 不执行 `git push`、创建发布、打 tag 或 `npm publish`，除非用户明确授权该动作。
 - 用户反复纠正且具有长期价值的要求，应写入最相关规则，内容必须明确、可执行且不重复。

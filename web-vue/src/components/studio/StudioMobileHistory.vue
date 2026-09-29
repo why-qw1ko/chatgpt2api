@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, ref, watch } from 'vue'
-import { CloseButton } from 'nanocat-ui'
+import { CloseButton } from '@/components/ui'
 import { useWindowedList } from '@/composables/useWindowedList'
 import type { StudioConversation, StudioConversationBadge } from './types'
 

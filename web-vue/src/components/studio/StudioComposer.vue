@@ -277,10 +277,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Button } from 'nanocat-ui'
-import type { ActionMenuItem } from 'nanocat-ui'
+import { Button } from '@/components/ui'
+import type { ActionMenuItem } from '@/components/ui'
 import FloatingActionMenu from '@/components/ai/FloatingActionMenu.vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import StudioToolbarSelectButton from '@/components/studio/StudioToolbarSelectButton.vue'
 import {
   DEFAULT_IMAGE_SIZE,
@@ -994,8 +994,8 @@ onBeforeUnmount(() => {
 }
 
 .chat-input-send-ready {
-  background: hsl(var(--foreground));
-  color: hsl(var(--background));
+  background: var(--brand-accent);
+  color: #fff;
 }
 
 .chat-input-send-idle {
@@ -1007,9 +1007,8 @@ onBeforeUnmount(() => {
 
 .chat-input-send-ready:hover,
 .chat-input-send-ready:focus-visible {
-  background: hsl(var(--foreground) / 0.88);
-  box-shadow: 0 14px 28px -18px rgb(15 23 42 / 0.96);
-  transform: translateY(-1px);
+  background: #ff8583;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
 }
 
 .chat-input-send-danger {

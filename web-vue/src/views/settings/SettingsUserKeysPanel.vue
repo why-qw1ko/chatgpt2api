@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import type { UserKey } from '@/api/userKeys'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import StateBadge from '@/components/ai/StateBadge.vue'

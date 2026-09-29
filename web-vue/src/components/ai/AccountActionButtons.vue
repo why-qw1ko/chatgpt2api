@@ -24,8 +24,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button } from 'nanocat-ui'
-import type { ActionMenuItem } from 'nanocat-ui'
+import { Button } from '@/components/ui'
+import type { ActionMenuItem } from '@/components/ui'
 import type { Account } from '@/api/accounts'
 import FloatingActionMenu from './FloatingActionMenu.vue'
 import { actionMenuGroups } from './menuItems'

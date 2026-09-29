@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import { computed, ref, watch } from 'vue'
 import CodeBlock from '@/components/ai/CodeBlock.vue'
 import ConsoleSegmentedTabs from '@/components/ai/ConsoleSegmentedTabs.vue'

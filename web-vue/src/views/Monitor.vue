@@ -239,8 +239,8 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue'
-import { Button, EmptyState, Input, TableShell } from 'nanocat-ui'
-import type { SegmentedOption, SegmentedValue } from 'nanocat-ui'
+import { Button, EmptyState, Input, TableShell } from '@/components/ui'
+import type { SegmentedOption, SegmentedValue } from '@/components/ui'
 import {
   monitorApi,
   type RealtimeMonitorResponse,

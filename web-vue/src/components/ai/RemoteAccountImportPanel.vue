@@ -184,7 +184,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Button, Checkbox } from 'nanocat-ui'
+import { Button, Checkbox } from '@/components/ui'
 import { Icon } from '@iconify/vue'
 import { accountImportsApi, remoteImportJobIsActive } from '@/api/accountImports'
 import type {
@@ -200,7 +200,7 @@ import type {
 } from '@/api/accountImports'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useToast } from '@/composables/useToast'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import ImportModePanel from './ImportModePanel.vue'
 import SelectableListPanel from './SelectableListPanel.vue'
 

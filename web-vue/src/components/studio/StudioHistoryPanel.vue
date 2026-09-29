@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useWindowedList } from '@/composables/useWindowedList'
 import type { StudioConversation, StudioConversationBadge } from './types'
