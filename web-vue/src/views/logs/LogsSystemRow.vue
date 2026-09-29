@@ -76,8 +76,8 @@
           :tone="durationTone"
           chip-class="font-mono tabular-nums"
         >
-          <Icon icon="lucide:clock-3" class="mr-1 h-3 w-3" />
-          {{ durationDisplay.total }}
+          <Icon icon="lucide:clock-3" class="h-3 w-3" />
+          <span>{{ durationDisplay.total }}</span>
         </MetaChip>
         <span v-else>-</span>
         <p

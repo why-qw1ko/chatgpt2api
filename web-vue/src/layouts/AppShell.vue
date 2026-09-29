@@ -35,7 +35,7 @@
         <div class="flex h-16 items-center px-5 pt-4 lg:h-20 lg:pt-5">
           <div class="flex min-w-0 items-center">
             <div class="shell-sidebar-brand shrink-0">
-              <img src="/logo.svg" alt="" class="h-9 w-9" />
+              <img src="/logo.svg" alt="" class="h-9 w-9 rounded-[10px] shadow-[0_6px_16px_rgba(20,157,255,0.28)]" />
             </div>
             <div class="sidebar-label sidebar-brand-label">
               <p class="shell-wordmark">LuxuryImage</p>

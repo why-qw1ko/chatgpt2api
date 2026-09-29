@@ -4,37 +4,37 @@
  */
 // 主题色板
 export const chartColors = {
-  primary: '#6d5bd0',
-  success: '#429d83',
-  warning: '#d5ab35',
-  danger: '#bf3752',
-  info: '#8173bb',
-  purple: '#9279b7',
-  pink: '#d982a7',
-  slate: '#81758f',
-  gray: '#a69bae',
-  lightGreen: '#9bbd87',
-  cyan: '#7baeb8',
-  emerald: '#70b3a2',
+  primary: '#149dff',
+  success: '#1f9d72',
+  warning: '#e09b2d',
+  danger: '#e23d5c',
+  info: '#4f9cf0',
+  purple: '#7b7ff0',
+  pink: '#ef7eb3',
+  slate: '#5b7c90',
+  gray: '#8fa3b3',
+  lightGreen: '#7bc47f',
+  cyan: '#3cb8c9',
+  emerald: '#2fb49a',
 }
 
-// 模型图表专用色板，参考 new-api 的固定 palette 思路，保持明亮、干净、稳定。
+// 模型图表专用色板，保持明亮、干净、稳定。
 export const modelColorPalette = [
-  '#8173bb',
-  '#6d5bd0',
-  '#d7c49e',
-  '#7baeb8',
-  '#429d83',
-  '#9279b7',
-  '#d982a7',
-  '#70b3a2',
-  '#9bbd87',
-  '#b39168',
+  '#149dff',
+  '#ffb375',
+  '#1f9d72',
+  '#7b7ff0',
+  '#3cb8c9',
+  '#ef7eb3',
+  '#e09b2d',
+  '#5b7c90',
+  '#b9e56a',
+  '#8d6cf0',
 ]
 
 // 当前实际模型显式绑定，避免主力模型在不同图表中颜色漂移。
 export const modelColors: Record<string, string> = {
-  auto: '#81758f',
+  auto: '#5b7c90',
   'gpt-5.5': modelColorPalette[0],
   'gpt-5-5': modelColorPalette[0],
   'gpt-5-5-thinking': modelColorPalette[9],
@@ -125,8 +125,8 @@ export function filterValidModels(modelRequests: Record<string, number[]>): Reco
 
 // 文本样式
 const textStyle = {
-  fontFamily: 'Noto Sans SC, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-  color: '#656777',      // text-muted-foreground
+  fontFamily: 'Amiko, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+  color: '#5a7180',      // text-muted-foreground
   fontSize: 11,
 }
 
@@ -145,11 +145,11 @@ const tooltipConfig = {
   borderColor: '#e5e5eb',
   borderWidth: 1,
   textStyle: {
-    color: '#20212b',
+    color: '#00141f',
     fontSize: 12,
   },
   padding: [8, 12],
-  extraCssText: 'border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);',
+  extraCssText: 'border-radius: 10px; box-shadow: 0 8px 24px rgba(8, 48, 82, 0.12);',
 }
 
 // 图例配置

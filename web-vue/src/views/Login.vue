@@ -8,12 +8,12 @@
         <p class="login-story-description">从对话到创作，从灵感到管理。<br />在一个工作空间里，有序展开。</p>
       </div>
       <svg class="login-art" viewBox="0 0 520 290" fill="none" aria-hidden="true">
-        <rect x="66" y="64" width="278" height="182" rx="16" fill="#696078" transform="rotate(-8 66 64)" />
-        <rect x="154" y="46" width="278" height="190" rx="16" fill="white" stroke="#252632" stroke-width="2" transform="rotate(6 154 46)" />
-        <circle cx="349" cy="108" r="27" fill="#d7c49e" />
-        <path d="m173 203 67-76 38 43 26-24 93 75-224-18Z" fill="#9d8de3" stroke="#252632" stroke-width="2" stroke-linejoin="round" />
-        <path d="m430 24 7 20 21 7-21 7-7 20-7-20-20-7 20-7Z" fill="#d7c49e" stroke="#252632" stroke-width="2" />
-        <circle cx="78" cy="250" r="8" fill="#9d8de3" /><path d="M109 268h80" stroke="#252632" stroke-width="2" stroke-linecap="round" />
+        <rect x="66" y="64" width="278" height="182" rx="16" fill="#8ecfff" transform="rotate(-8 66 64)" />
+        <rect x="154" y="46" width="278" height="190" rx="16" fill="white" stroke="#0b3a58" stroke-width="2" transform="rotate(6 154 46)" />
+        <circle cx="349" cy="108" r="27" fill="#ffb375" />
+        <path d="m173 203 67-76 38 43 26-24 93 75-224-18Z" fill="#149dff" stroke="#0b3a58" stroke-width="2" stroke-linejoin="round" />
+        <path d="m430 24 7 20 21 7-21 7-7 20-7-20-20-7 20-7Z" fill="#b9ff47" stroke="#0b3a58" stroke-width="2" />
+        <circle cx="78" cy="250" r="8" fill="#149dff" /><path d="M109 268h80" stroke="#0b3a58" stroke-width="2" stroke-linecap="round" />
       </svg>
       <p class="login-story-footer">对话 · 图像 · 工作空间</p>
     </section>
@@ -79,25 +79,52 @@ async function handleLogin() {
 
 <style scoped>
 .login-page { display: grid; min-height: 100dvh; grid-template-columns: 1fr 1fr; padding: 20px; gap: 20px; background: hsl(var(--background)); }
-.login-story { position: relative; min-height: calc(100dvh - 40px); overflow: hidden; display: flex; flex-direction: column; padding: 42px 52px 30px; border-radius: 20px; background: #f2f0f8; color: #252632; }
-.login-brand, .login-mobile-brand { display: flex; align-items: center; gap: 12px; font-size: 23px; font-weight: 700; letter-spacing: -0.06em; }
-.login-brand img, .login-mobile-brand img { width: 38px; height: 38px; }
+.login-story {
+  position: relative;
+  min-height: calc(100dvh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 42px 52px 30px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 82% 18%, rgb(185 255 71 / 0.35), transparent 28%),
+    radial-gradient(circle at 18% 82%, rgb(255 179 117 / 0.32), transparent 32%),
+    linear-gradient(155deg, #dff3ff 0%, #f5fbff 48%, #e8f7ff 100%);
+  color: #00141f;
+}
+.login-brand, .login-mobile-brand { display: flex; align-items: center; gap: 12px; font-size: 23px; font-weight: 700; letter-spacing: -0.05em; }
+.login-brand img, .login-mobile-brand img { width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 8px 20px rgb(20 157 255 / 0.28); }
 .login-story-copy { margin-top: clamp(46px, 8vh, 110px); position: relative; z-index: 1; }
-.login-eyebrow { font-size: 10px; font-weight: 650; letter-spacing: 0.18em; color: #696078; }
-.login-story h1 { margin: 22px 0; font-size: clamp(36px, 4.5vw, 68px); font-weight: 650; line-height: 1.25; color: #252632; }
-.login-story-description { font-size: 14px; line-height: 1.95; color: #696078; }
-.login-art { width: min(100%, 520px); margin: auto auto 0; flex-shrink: 1; min-height: 0; max-height: 32vh; }
-.login-story-footer { margin-top: 18px; font-size: 11px; letter-spacing: 0.15em; color: #696078; }
+.login-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; color: #0a72c9; }
+.login-story h1 { margin: 22px 0; font-size: clamp(36px, 4.5vw, 68px); font-weight: 700; line-height: 1.2; color: #00141f; }
+.login-story-description { font-size: 14px; line-height: 1.95; color: #334552; }
+.login-art { width: min(100%, 520px); margin: auto auto 0; flex-shrink: 1; min-height: 0; max-height: 32vh; filter: drop-shadow(0 18px 30px rgb(8 48 82 / 0.12)); }
+.login-story-footer { margin-top: 18px; font-size: 11px; letter-spacing: 0.15em; color: #5a7180; }
 .login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
-.login-form-card { width: 100%; max-width: 360px; }
-.login-form-card h2 { margin-top: 14px; font-size: 28px; font-weight: 650; line-height: 1.4; }
+.login-form-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 28px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-floating);
+}
+.login-form-card h2 { margin-top: 14px; font-size: 28px; font-weight: 700; line-height: 1.35; }
 .login-form-description { margin-top: 12px; font-size: 13px; line-height: 1.7; color: hsl(var(--muted-foreground)); }
 .login-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 42px; padding-top: 24px; border-top: 1px solid hsl(var(--border)); font-size: 11px; color: hsl(var(--muted-foreground)); }
-.login-footer a:hover { color: hsl(var(--foreground)); }
+.login-footer a:hover { color: hsl(var(--primary)); }
 .login-mobile-brand { display: none; }
-:global(html[data-theme="dark"]) .login-story { background: #22232e; }
-:global(html[data-theme="dark"]) .login-story h1, :global(html[data-theme="dark"]) .login-brand { color: #efeff5; }
-:global(html[data-theme="dark"]) .login-eyebrow, :global(html[data-theme="dark"]) .login-story-description, :global(html[data-theme="dark"]) .login-story-footer { color: #b9b2d1; }
+:global(html[data-theme="dark"]) .login-story {
+  background:
+    radial-gradient(circle at 82% 18%, rgb(185 255 71 / 0.12), transparent 28%),
+    radial-gradient(circle at 18% 82%, rgb(20 157 255 / 0.18), transparent 32%),
+    linear-gradient(155deg, #0d2230 0%, #132b3a 50%, #0f2432 100%);
+}
+:global(html[data-theme="dark"]) .login-story h1, :global(html[data-theme="dark"]) .login-brand { color: #f2f8fc; }
+:global(html[data-theme="dark"]) .login-eyebrow { color: #7ec8ff; }
+:global(html[data-theme="dark"]) .login-story-description, :global(html[data-theme="dark"]) .login-story-footer { color: #a8c0cf; }
 @media (max-width: 767px) {
   .login-page { display: flex; padding: 24px; }
   .login-story { display: none; }

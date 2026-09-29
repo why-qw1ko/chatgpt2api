@@ -12,6 +12,9 @@ export default {
         }])),
       },
       borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' },
+      fontFamily: {
+        sans: ['Amiko', 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', 'sans-serif'],
+      },
     },
   },
   plugins: [],
