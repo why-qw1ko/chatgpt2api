@@ -56,7 +56,13 @@ flowchart LR
 semantic tones, model values, and overlay contracts. Page-specific code stays
 next to its page. `web-vue/src/style.css` owns the light/dark CSS tokens and
 maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns preference
-persistence for light/dark modes. Non-modal task panels use a non-blocking region
+persistence for light/dark modes. The authenticated shell imports
+`web-vue/src/styles/workspace.css` for console-only light/dark palettes, control density, responsive toolbars, and surface styling.
+`PanelHeader` provides an optional page eyebrow; controls in the same action group share
+a height, while primary/secondary emphasis is expressed through color.
+`useWorkspaceAtmosphere` owns the shell-scoped theme marker and delegated,
+frame-limited pointer lighting, with reduced-motion/touch gating and unmount cleanup.
+The login page keeps the base theme. Non-modal task panels use a non-blocking region
 because an Element Plus drawer traps focus even without a backdrop. Domain
 tables retain semantic HTML row slots and a single internal scroll container.
 

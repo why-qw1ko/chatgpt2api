@@ -1,5 +1,6 @@
 <template>
-  <div class="app-shell min-h-screen">
+  <div ref="workspaceRoot" class="app-shell min-h-screen">
+    <div class="workspace-ambient" aria-hidden="true"></div>
     <Transition name="route-progress">
       <div
         v-if="routeProgressPhase !== 'idle'"
@@ -241,7 +242,7 @@
         <div
           class="shell-content relative min-w-0 overflow-x-hidden"
           :class="[
-            isWorkspacePage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
+            isWorkspacePage ? 'shell-content--workspace flex min-h-0 flex-1 flex-col overflow-hidden' : '',
             isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
             isImmersivePage ? 'p-0' : 'px-4 py-5 sm:px-7 sm:py-7',
           ]"
@@ -585,6 +586,9 @@
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useWorkspaceAtmosphere } from '@/composables/useWorkspaceAtmosphere'
+import '@/styles/workspace.css'
+
 import {
   PUBLIC_SETTINGS_CHANGED_EVENT,
 } from '@/api/settings'
@@ -625,6 +629,9 @@ import {
 } from '@/lib/release'
 import type { UpdateTaskResponse, VersionCheckResponse } from '@/types/api'
 import localVersion from '../../../VERSION?raw'
+
+const workspaceRoot = ref<HTMLElement | null>(null)
+useWorkspaceAtmosphere(workspaceRoot)
 
 const route = useRoute()
 const router = useRouter()

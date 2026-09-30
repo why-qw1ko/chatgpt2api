@@ -1,20 +1,19 @@
 <template>
   <div class="space-y-6">
     <PagePanel v-if="localSettings" class="settings-page-panel space-y-5">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p class="ui-section-title">设置</p>
+      <PanelHeader eyebrow="PREFERENCES / SETTINGS" title="系统设置" align="start">
+        <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">集中管理服务配置、存储与访问密钥。</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
+        </template>
+        <template #actions>
           <Button size="sm" variant="outline" :disabled="settingsStore.isLoading || isSaving" @click="reloadSettings">
             {{ settingsStore.isLoading ? '刷新中...' : '刷新' }}
           </Button>
           <Button size="sm" variant="primary" :disabled="settingsStore.isLoading || isSaving || !localSettings || hasInvalidNumberSettings" @click="handleSave">
             {{ isSaving ? '保存中...' : '保存设置' }}
           </Button>
-        </div>
-      </div>
+        </template>
+      </PanelHeader>
 
       <ConsoleSegmentedTabs v-model="activeSettingsTab" :options="settingsTabs" aria-label="设置分组" />
 
@@ -302,6 +301,7 @@ import AccountImportTargetGroupField from '@/views/accounts/AccountImportTargetG
 import AccountOperationDrawer from '@/views/accounts/AccountOperationDrawer.vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import PanelHeader from '@/components/ai/PanelHeader.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'
 import SurfaceBox from '@/components/ai/SurfaceBox.vue'
 import {

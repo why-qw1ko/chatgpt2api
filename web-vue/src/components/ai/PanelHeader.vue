@@ -1,6 +1,7 @@
 <template>
-  <div class="panel-header" :class="`panel-header--align-${align}`">
+  <div class="panel-header" :class="[`panel-header--align-${align}`, { 'panel-header--page': eyebrow }]">
     <div class="panel-header-copy">
+      <p v-if="eyebrow" class="panel-header-eyebrow">{{ eyebrow }}</p>
       <p v-if="title" class="ui-section-title">{{ title }}</p>
       <slot name="copy" />
     </div>
@@ -12,6 +13,7 @@
 
 <script setup lang="ts">
 withDefaults(defineProps<{
+  eyebrow?: string
   title?: string
   align?: 'center' | 'start'
 }>(), {
