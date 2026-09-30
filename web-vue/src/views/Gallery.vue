@@ -1,7 +1,7 @@
 <template>
   <div class="gallery-page" :class="{ 'gallery-page--contained': isWorkspaceLayout }">
     <PagePanel class="gallery-hero">
-      <PanelHeader title="图片管理">
+      <PanelHeader eyebrow="LIBRARY / IMAGES" title="图片管理">
         <template #actions>
           <Button size="sm" variant="outline" :disabled="isLoading" @click="openStorageModal">
             存储管理
@@ -557,6 +557,8 @@ pageRuntime.onShow(() => {
   flex: 0 0 9rem;
   min-width: 8rem;
 }
+
+.gallery-filter-field :deep(.lux-select) { width: 100%; }
 
 .gallery-filter-field--tag {
   flex-basis: 9rem;

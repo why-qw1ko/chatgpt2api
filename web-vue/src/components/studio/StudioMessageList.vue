@@ -1,11 +1,12 @@
 <template>
   <section class="studio-chat-panel" :class="{ 'is-fullscreen': fullscreen }">
     <div ref="scrollEl" class="studio-chat-scroll custom-scrollbar" @scroll="handleScroll">
-      <div v-if="!displayedConversation || !displayedConversation.messages.length" class="studio-chat-empty">
-        <img src="/logo.svg" alt="" class="studio-empty-logo" />
+      <div v-if="!displayedConversation || !displayedConversation.messages.length" class="studio-chat-empty" data-spotlight>
+        <div class="studio-inspiration-mark" aria-hidden="true"><i></i><i></i><img src="/logo.svg" alt="" /></div>
         <span class="studio-empty-eyebrow">LUXURYIMAGE STUDIO</span>
-        <h1>从一个想法开始</h1>
-        <p>输入文字可以直接对话；切到画图后，在同一个窗口里生成图片、上传参考图和继续编辑。</p>
+        <h1>把想象，<span>带到眼前。</span></h1>
+        <p>从一句话开始，让灵感有形。<br />对话、生成图像、继续编辑，都在这里。</p>
+        <div class="studio-capability-labels" aria-label="工作空间能力"><span>文字对话</span><span>图像创作</span><span>连续编辑</span></div>
       </div>
 
       <div v-else ref="turnsEl" class="studio-turns">
@@ -613,7 +614,6 @@ defineExpose({
 </script>
 
 <style scoped>
-.studio-empty-logo { width: 52px; height: 52px; margin: 0 auto 20px; }
 .studio-empty-eyebrow { color: hsl(var(--secondary-foreground)); font-size: 10px; letter-spacing: 0.16em; }
 .studio-chat-panel {
   position: relative;

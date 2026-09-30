@@ -1,6 +1,14 @@
 <template>
   <div class="dashboard-page space-y-5">
-    <div class="page-intro"><div><p class="page-eyebrow">OVERVIEW</p><h1>工作空间概览</h1><p>账号资源、调用趋势与运行状态。</p></div><span class="page-intro-mark" aria-hidden="true"><Icon icon="lucide:chart-no-axes-combined" /></span></div>
+    <div class="page-intro workspace-hero" data-spotlight>
+      <div class="workspace-hero-copy">
+        <p class="page-eyebrow"><span class="workspace-eyebrow-line" aria-hidden="true"></span>LUXURYIMAGE / OVERVIEW</p>
+        <h1>工作空间概览<span class="workspace-title-dot">.</span></h1>
+        <p>把创作交给灵感，把运行状态尽收眼底。</p>
+        <div class="workspace-hero-caption"><span>账号资源</span><span>调用趋势</span><span>运行状态</span></div>
+      </div>
+      <div class="workspace-orbit" aria-hidden="true"><i></i><i></i><i></i><div class="workspace-orbit-core"><img src="/logo.svg" alt="" /></div><span>CREATIVE OPERATIONS</span></div>
+    </div>
     <PageLoadingState
       v-if="!dashboardDataReady && !dashboardLoadError"
       title="正在加载概览"
@@ -29,7 +37,7 @@
 
     <section
       aria-label="账号概览"
-      class="motion-stagger grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
+      class="workspace-account-strip motion-stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
     >
       <StatCard
         v-for="stat in accountStats"

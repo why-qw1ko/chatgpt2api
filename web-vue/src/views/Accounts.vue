@@ -7,6 +7,9 @@
       class="accounts-panel flex flex-col gap-5"
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
+      <PanelHeader eyebrow="RESOURCES / ACCOUNTS" title="账号管理">
+        <template #copy><p class="mt-1 text-xs text-muted-foreground">管理账号、分组与可用额度。</p></template>
+      </PanelHeader>
       <div class="accounts-toolbar">
         <div class="accounts-toolbar-row accounts-toolbar-row-main">
           <FilterToolbar class="accounts-toolbar-filters" :bordered="false">
@@ -783,6 +786,7 @@ import ModalHeader from '@/components/ai/ModalHeader.vue'
 import ModalShell from '@/components/ai/ModalShell.vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import PanelHeader from '@/components/ai/PanelHeader.vue'
 import StateBadge from '@/components/ai/StateBadge.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'
 import SurfaceBox from '@/components/ai/SurfaceBox.vue'

@@ -8,7 +8,7 @@
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
       <div class="log-control-panel">
-        <PanelHeader title="日志管理" align="start">
+        <PanelHeader eyebrow="ACTIVITY / LOGS" title="日志管理" align="start">
           <template #actions>
             <Button size="sm" variant="outline" :disabled="isFetching" @click="fetchLogs">
               {{ isFetching ? '刷新中...' : '刷新' }}
