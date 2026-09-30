@@ -320,6 +320,8 @@ export function useProxyDefaultRuntime(options: ProxyDefaultRuntimeOptions) {
   }
 
   return {
+    loadError: proxyDataQuery.error,
+    hasSnapshot: proxyDataQuery.hasSnapshot,
     loading,
     savingDefaultProxy,
     defaultProxyMode,

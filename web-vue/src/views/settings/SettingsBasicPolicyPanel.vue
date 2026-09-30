@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <FormSection title="账号策略">
+    <FormSection body-class="space-y-4" title="账号策略">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -41,7 +41,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="图片确认">
+    <FormSection body-class="space-y-4" title="图片确认">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -70,7 +70,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="图片放大">
+    <FormSection body-class="space-y-4" title="图片放大">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -94,7 +94,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="控制台日志级别">
+    <FormSection body-class="space-y-4" title="控制台日志级别">
       <div class="settings-check-grid settings-check-grid--single mt-3">
         <div
           v-for="level in logLevelOptions"

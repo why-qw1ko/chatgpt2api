@@ -23,7 +23,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
 </script>
 <template>
   <ElSelect :model-value="modelValue" :multiple="multiple" :disabled="disabled" :suffix-icon="ChevronDownIcon"
-    :placeholder="placeholder" :aria-label="ariaLabel || placeholder" :collapse-tags="multiple"
+    :show-arrow="false" popper-class="lux-select-menu" :placeholder="placeholder" :aria-label="ariaLabel || placeholder" :collapse-tags="multiple"
     collapse-tags-tooltip :max-collapse-tags="maxVisibleLabels"
     :placement="placement === 'up' || placement === 'top' ? 'top-start' : 'bottom-start'"
     class="lux-select" :class="{ 'lux-select--block': block }" :style="{ textAlign: valueAlign as 'left' | 'center' | 'right' }"

@@ -70,9 +70,6 @@ export function useAccountsPage() {
       accounts.value = res.accounts || []
       accountSelection.pruneToCurrentAccounts()
     },
-    onError: (_message, error) => {
-      setError('加载失败', error)
-    },
   })
   const visibleAccounts = computed(() => accounts.value)
 
@@ -275,7 +272,10 @@ export function useAccountsPage() {
   }
 
   async function loadData(options?: { silentErrorToast?: boolean }) {
-    await accountListQuery.load({ silentError: options?.silentErrorToast })
+    await accountListQuery.load()
+    if (accountListQuery.error.value && !options?.silentErrorToast) {
+      setError('加载失败', accountListQuery.error.value)
+    }
     await reconcileScopedSelection(false)
   }
 
@@ -382,6 +382,8 @@ export function useAccountsPage() {
   const setViewMode = pageLifecycle.setViewMode
 
   return {
+    listError: accountListQuery.error,
+    hasListSnapshot: accountListQuery.hasSnapshot,
     loading,
     saving,
     showModal,

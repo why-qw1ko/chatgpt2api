@@ -1,5 +1,12 @@
 <template>
   <div class="space-y-6">
+    <StateBlock v-if="loadError && !hasSnapshot" title="代理配置加载失败" :description="loadError">
+      <Button variant="outline" root-class="mt-4" :loading="loading" @click="loadData">重新加载</Button>
+    </StateBlock>
+    <template v-else>
+    <div v-if="loadError" class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+      刷新失败，当前保留上次配置。{{ loadError }}
+    </div>
     <PagePanel class="space-y-5">
       <PanelHeader eyebrow="NETWORK / PROXY" title="代理管理" align="start">
         <template #copy>
@@ -11,7 +18,7 @@
           <Button size="sm" variant="outline" :disabled="loading" @click="loadData">
             {{ loading ? '刷新中...' : '刷新' }}
           </Button>
-          <Button size="sm" variant="primary" :disabled="savingDefaultProxy || loading" @click="saveDefaultProxy">
+          <Button size="sm" variant="primary" :disabled="loading" :loading="savingDefaultProxy" @click="saveDefaultProxy">
             {{ savingDefaultProxy ? '保存中...' : '保存出口配置' }}
           </Button>
         </template>
@@ -149,6 +156,7 @@
         </template>
       </PanelHeader>
       <TableShell
+        :class="{ 'h-[clamp(20rem,52dvh,40rem)]': isWorkspaceLayout }"
         unframed
         hover-rows
         sticky-header
@@ -202,6 +210,8 @@
         </template>
       </TableShell>
     </PagePanel>
+
+    </template>
 
     <ModalShell
       :open="showGroupModal"
@@ -392,6 +402,7 @@ import ModalHeader from '@/components/ai/ModalHeader.vue'
 import ModalShell from '@/components/ai/ModalShell.vue'
 import OperationProgressDrawer from '@/components/ai/OperationProgressDrawer.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import StateBlock from '@/components/ai/StateBlock.vue'
 import PanelHeader from '@/components/ai/PanelHeader.vue'
 import { usePageVisibilityReload } from '@/composables/usePageQuery'
 import { usePageRuntime } from '@/composables/usePageRuntime'
@@ -452,6 +463,8 @@ const proxyDefaultRuntime = useProxyDefaultRuntime({
   testingKey,
   updateGroups,
 })
+const loadError = proxyDefaultRuntime.loadError
+const hasSnapshot = proxyDefaultRuntime.hasSnapshot
 const loading = proxyDefaultRuntime.loading
 const savingDefaultProxy = proxyDefaultRuntime.savingDefaultProxy
 const defaultProxyMode = proxyDefaultRuntime.defaultProxyMode

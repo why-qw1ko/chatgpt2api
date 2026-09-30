@@ -1,11 +1,13 @@
 <template>
   <div class="dashboard-page space-y-5">
     <div class="page-intro workspace-hero" data-spotlight>
+      <div class="workspace-pendulum" aria-hidden="true"><span></span><i></i></div>
       <div class="workspace-hero-copy">
         <p class="page-eyebrow"><span class="workspace-eyebrow-line" aria-hidden="true"></span>LUXURYIMAGE / OVERVIEW</p>
         <h1>工作空间概览<span class="workspace-title-dot">.</span></h1>
-        <p>把创作交给灵感，把运行状态尽收眼底。</p>
+        <p><TypewriterText text="把创作交给灵感，把运行状态尽收眼底。" /></p>
         <div class="workspace-hero-caption"><span>账号资源</span><span>调用趋势</span><span>运行状态</span></div>
+        <div class="workspace-reveal-note"><i aria-hidden="true"></i> 灵感有序，创作自由。</div>
       </div>
       <div class="workspace-orbit" aria-hidden="true"><i></i><i></i><i></i><div class="workspace-orbit-core"><img src="/logo.svg" alt="" /></div><span>CREATIVE OPERATIONS</span></div>
     </div>
@@ -37,11 +39,13 @@
 
     <section
       aria-label="账号概览"
-      class="workspace-account-strip motion-stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+      class="motion-stagger grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
     >
       <StatCard
         v-for="stat in accountStats"
         :key="stat.label"
+        animate
+        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -57,6 +61,8 @@
       <StatCard
         v-for="stat in callStats"
         :key="stat.label"
+        animate
+        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -231,6 +237,7 @@
 </template>
 
 <script setup lang="ts">
+import TypewriterText from '@/components/ui/TypewriterText.vue'
 import { computed } from 'vue'
 import { Button, ChartCard, HelpTip, HoverCard, StatCard } from '@/components/ui'
 import { Icon } from '@iconify/vue'

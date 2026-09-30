@@ -53,7 +53,8 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     input.conversations.value = [conversation, ...input.conversations.value]
     input.activeConversationId.value = conversation.id
     input.hooks.scheduleScrollToBottom()
-    return conversation
+    // Return the stored reactive object so the first reply updates the view.
+    return input.conversations.value[0]
   }
 
   function selectConversation(conversationId: string) {

@@ -53,7 +53,7 @@ defineEmits<{
 
 <style scoped>
 .detail-image-preview {
-  border: 1px solid hsl(var(--border));
+  border: 0;
   border-radius: 8px;
   background: hsl(var(--card));
 }
@@ -88,16 +88,16 @@ defineEmits<{
   display: block;
   width: 100%;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
+  border: 0;
   border-radius: 8px;
   background: hsl(var(--muted) / 0.3);
   color: inherit;
   text-align: left;
-  transition: border-color 0.18s ease;
+  transition: background-color 0.18s ease;
 }
 
 .detail-image-preview__item:hover {
-  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--muted) / 0.6);
 }
 
 .detail-image-preview__media {

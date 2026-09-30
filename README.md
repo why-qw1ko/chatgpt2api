@@ -14,7 +14,7 @@
 
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v3.3.5-111827" alt="Version v3.3.5" />
+  <img src="https://img.shields.io/github/v/release/why-qw1ko/chatgpt2api?label=version&amp;color=111827" alt="Latest release version" />
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white" alt="Python 3.13" />
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" alt="Vue 3" />
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 18" />

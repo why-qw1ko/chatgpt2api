@@ -9,7 +9,7 @@
           <Button size="sm" variant="outline" :disabled="settingsStore.isLoading || isSaving" @click="reloadSettings">
             {{ settingsStore.isLoading ? '刷新中...' : '刷新' }}
           </Button>
-          <Button size="sm" variant="primary" :disabled="settingsStore.isLoading || isSaving || !localSettings || hasInvalidNumberSettings" @click="handleSave">
+          <Button size="sm" variant="primary" :loading="isSaving" :disabled="settingsStore.isLoading || !localSettings || hasInvalidNumberSettings" @click="handleSave">
             {{ isSaving ? '保存中...' : '保存设置' }}
           </Button>
         </template>
