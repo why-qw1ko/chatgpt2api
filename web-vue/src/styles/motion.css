@@ -1,4 +1,4 @@
-/* Controls own their transitions; data surfaces remain stationary. */
+/* Control and ornamental transitions; operational tables remain stationary. */
 :root {
   --motion-fast: 140ms;
   --motion-base: 220ms;
@@ -18,6 +18,47 @@
 }
 .ui-panel:hover, .ui-card:hover, .ui-card-sm:hover {
   box-shadow: var(--shadow-floating);
+}
+/* Only animate route entry, never polling updates or table row positions. */
+html[data-workspace] .route-view-enter-active { transition: opacity 260ms var(--ease-spring), transform 360ms var(--ease-spring); }
+html[data-workspace] .route-view-enter-from { opacity: 0; transform: translateY(8px); }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-workspace] .motion-stagger > .lux-stat-card { animation: console-card-enter 440ms var(--ease-spring) backwards; }
+  html[data-workspace] .motion-stagger > .lux-stat-card:nth-child(2) { animation-delay: 35ms; }
+  html[data-workspace] .motion-stagger > .lux-stat-card:nth-child(3) { animation-delay: 70ms; }
+  html[data-workspace] .motion-stagger > .lux-stat-card:nth-child(4) { animation-delay: 105ms; }
+  html[data-workspace] .motion-stagger > .lux-stat-card:nth-child(5) { animation-delay: 140ms; }
+  html[data-workspace] .motion-stagger > .lux-stat-card:nth-child(6) { animation-delay: 175ms; }
+  html[data-workspace] .lux-dialog:not(.lightbox-dialog) { animation: console-dialog-enter 280ms var(--ease-spring); }
+  html[data-workspace] .lux-detached-drawer { animation: console-drawer-enter 300ms var(--ease-spring); }
+  html[data-workspace] :is(.lux-select-menu, .lux-action-popover) { transform-origin: top center; }
+  html[data-workspace] .el-select__caret { transition: transform 240ms var(--ease-spring); }
+  html[data-workspace] .workspace-orbit > i { animation: orbit-arrive 1100ms var(--ease-spring) both; }
+  html[data-workspace] .workspace-orbit > i:nth-child(2) { animation-delay: 90ms; }
+  html[data-workspace] .workspace-orbit > i:nth-child(3) { animation-delay: 180ms; }
+  html[data-workspace] .studio-size-popover { animation: motion-rise-in 200ms var(--ease-spring); }
+  html[data-workspace] .lux-stat-card .lux-stat-icon { transition: transform 240ms var(--ease-spring); }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html[data-workspace] .lux-stat-card:hover .lux-stat-icon { transform: rotate(-6deg) scale(1.06); }
+}
+@keyframes orbit-arrive { from { opacity: 0; scale: 0.85; } to { opacity: 1; scale: 1; } }
+@keyframes console-card-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes console-dialog-enter { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes console-drawer-enter { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+
+.console-spinner { display: inline-block; width: 32px; height: 32px; flex-shrink: 0; border: 2px solid hsl(var(--foreground) / 0.12); border-top-color: hsl(var(--foreground) / 0.7); border-radius: 50%; animation: console-spin 800ms linear infinite; }
+@keyframes console-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.workspace-pendulum { position: absolute; top: 0; left: 20px; width: 14px; height: 35px; transform-origin: top center; animation: workspace-swing 1.6s ease-in-out infinite; pointer-events: none; }
+.workspace-pendulum span { display: block; width: 1px; height: 24px; margin: auto; background: var(--workspace-hero-muted); opacity: 0.5; }
+.workspace-pendulum i { display: block; width: 10px; height: 10px; margin: auto; border-radius: 3px; background: hsl(var(--accent-foreground)); box-shadow: 0 0 12px hsl(var(--accent-foreground) / 0.18); }
+@keyframes workspace-swing { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(-24deg); } }
+.workspace-reveal-note { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 6px 10px; border-radius: 6px; background: hsl(var(--card) / 0.35); color: var(--workspace-hero-muted); font-size: 10px; animation: workspace-wipe 1100ms var(--ease-spring) 400ms both; }
+.workspace-reveal-note > i { width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--accent-foreground)); }
+@keyframes workspace-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html[data-workspace] .app-shell .lux-stat-card[data-tilt] { transform: perspective(800px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)); transition: transform 280ms var(--ease-spring), box-shadow 220ms, border-color 220ms; }
+  html[data-workspace] .app-shell .lux-stat-card[data-tilt][data-lit] { transition: transform 100ms linear, box-shadow 220ms, border-color 220ms; z-index: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

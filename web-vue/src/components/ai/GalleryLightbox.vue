@@ -111,8 +111,9 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
   overflow: visible;
 }
 
-:global(.lightbox .el-dialog__body) {
+:global(.lightbox .lightbox-dialog > .el-dialog__body) {
   padding: 0;
+  overflow: visible;
   display: flex;
   width: 100%;
   justify-content: center;
@@ -147,7 +148,8 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
   height: auto;
   max-width: min(88vw, 80rem);
   max-height: min(78vh, 80rem);
-  border-radius: 16px;
+  border: 0;
+  border-radius: 12px;
   object-fit: contain;
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
@@ -162,7 +164,7 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
   margin-top: 14px;
   padding: 10px 14px;
   max-width: min(88vw, 80rem);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 0;
   border-radius: 999px;
   background: rgba(8, 22, 34, 0.55);
   backdrop-filter: blur(12px);
@@ -196,7 +198,7 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
   align-items: center;
   gap: 5px;
   padding: 5px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: white;
@@ -207,7 +209,6 @@ function emitFile(event: 'download' | 'copy' | 'edit-tags') {
 }
 
 .lightbox-btn:hover {
-  border-color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
 }

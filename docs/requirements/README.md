@@ -29,7 +29,7 @@ requirements may move to `archive/` after links and this index are updated.
 
 ## Active requirements
 
-No active PRDs are currently tracked.
+- [Console interaction and visual redesign](0001-console-interaction-redesign.md)
 
 PRDs are planning evidence, never proof that the product already behaves as
 described.

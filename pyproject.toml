@@ -1,6 +1,7 @@
 [project]
 name = "chatgpt2api"
-version = "3.3.5"
+# Private application metadata; the user-facing release version is read from VERSION.
+version = "0.0.0"
 description = "Add your description here"
 readme = "README.md"
 license = "AGPL-3.0-only"

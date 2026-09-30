@@ -57,11 +57,20 @@ semantic tones, model values, and overlay contracts. Page-specific code stays
 next to its page. `web-vue/src/style.css` owns the light/dark CSS tokens and
 maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns preference
 persistence for light/dark modes. The authenticated shell imports
-`web-vue/src/styles/workspace.css` for console-only light/dark palettes, control density, responsive toolbars, and surface styling.
+`web-vue/src/styles/workspace.css` for console-only light/dark palettes, responsive toolbars and surface styling; its `controls.css` import owns shared
+console control sizing, filled surfaces, neutral focus states and teleported menus.
 `PanelHeader` provides an optional page eyebrow; controls in the same action group share
 a height, while primary/secondary emphasis is expressed through color.
 `useWorkspaceAtmosphere` owns the shell-scoped theme marker and delegated,
-frame-limited pointer lighting, with reduced-motion/touch gating and unmount cleanup.
+frame-limited pointer lighting and opt-in metric-card tilt, with reduced-motion/touch
+gating and unmount cleanup. It also records keyboard versus pointer input for focus
+presentation. `App.vue` mounts `AmbientCursor` for a fine-pointer dot and interpolated
+ring; native text/resize/disabled affordances remain available. `StatCard` can animate
+numeric display values without altering the underlying metrics. `TypewriterText`
+reserves its final dimensions and accessible text while revealing a visual copy.
+Motion timers/frames stop on teardown, and reduced motion shows final content.
+`styles/motion.css` owns spinner, metric entrance, modal/drawer, overview pendulum
+and reveal animations; the login page owns its floating gradient circles.
 The login page keeps the base theme. Non-modal task panels use a non-blocking region
 because an Element Plus drawer traps focus even without a backdrop. Domain
 tables retain semantic HTML row slots and a single internal scroll container.
@@ -69,7 +78,9 @@ tables retain semantic HTML row slots and a single internal scroll container.
 ## Lifecycle rules
 
 - Initial load, background refresh with a retained snapshot, true empty state,
-  and error state are distinct.
+  and error state are distinct. Accounts and Proxy expose query errors inline
+  even when background-refresh toasts are suppressed. Proxy bounds its group
+  table height in contained-scroll mode.
 - Entering a page may fetch immediately; refresh timers have one owner and are
   disposed with that owner.
 - Closing an overlay returns focus according to the shared overlay contract and
@@ -77,6 +88,8 @@ tables retain semantic HTML row slots and a single internal scroll container.
 - A container that owns scrolling must have a bounded size in fixed-layout mode.
   In natural-height mode, document scrolling is the owner and nested regions do
   not claim the same axis.
+- New Studio conversations return the object stored in the reactive collection,
+  so the first asynchronous reply updates the same object rendered by the view.
 - Single-item and batch actions call the same bulk Interface with one ID when
   their business semantics are identical.
 

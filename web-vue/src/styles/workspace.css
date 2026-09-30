@@ -1,25 +1,27 @@
+@import './controls.css';
+
 /* Console-only art direction. Login keeps its own palette; teleports inherit these tokens. */
 html[data-workspace] {
-  --background: 225 30% 97%;
-  --foreground: 226 29% 15%;
+  --background: 220 18% 97%;
+  --foreground: 222 22% 15%;
   --card: 0 0% 100%;
   --card-foreground: 226 29% 15%;
-  --primary: 238 68% 56%;
+  --primary: 215 55% 43%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 230 36% 95%;
-  --secondary-foreground: 238 45% 43%;
+  --secondary: 220 18% 94%;
+  --secondary-foreground: 215 35% 34%;
   --muted: 225 22% 95%;
   --muted-foreground: 224 12% 44%;
   --accent: 174 55% 91%;
   --accent-foreground: 176 55% 24%;
-  --border: 226 22% 89%;
-  --input: 226 18% 81%;
-  --ring: 238 68% 56%;
+  --border: 220 14% 89%;
+  --input: 226 18% 88%;
+  --ring: 224 18% 48%;
   --headline-color: #1c2334;
   --body-color: #465169;
-  --brand-accent: #494ddc;
-  --brand-blue-deep: #3b3fc2;
-  --shadow-soft: 0 2px 4px rgb(25 35 60 / 0.025);
+  --brand-accent: #252d3d;
+  --brand-blue-deep: #39465e;
+  --shadow-soft: 0 2px 3px -2px rgb(25 35 60 / 0.05), 0 8px 24px -16px rgb(25 35 60 / 0.14);
   --shadow-floating: 0 8px 28px rgb(25 35 60 / 0.07);
   --shadow-elevated: 0 20px 64px -16px rgb(25 35 60 / 0.18);
   --workspace-glass: hsl(var(--card) / 0.86);
@@ -33,29 +35,29 @@ html[data-workspace] {
   --workspace-hero-text: #202c49;
   --workspace-hero-muted: #536885;
   --workspace-hero-glow: 0.35;
-  --workspace-control: 30px;
-  --workspace-control-compact: 26px;
-  --workspace-control-large: 34px;
+  --workspace-surface: hsl(var(--card));
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --el-border-radius-base: 10px;
 }
 html[data-workspace][data-theme="dark"] {
   --background: 224 31% 7%;
   --foreground: 222 25% 94%;
   --card: 224 25% 11%;
   --card-foreground: 222 25% 94%;
-  --primary: 236 90% 77%;
+  --primary: 213 70% 76%;
   --secondary: 228 23% 17%;
-  --secondary-foreground: 234 65% 81%;
+  --secondary-foreground: 215 32% 81%;
   --muted: 225 22% 14%;
   --muted-foreground: 224 17% 66%;
   --accent: 175 25% 16%;
   --accent-foreground: 171 53% 73%;
   --border: 224 21% 21%;
   --input: 224 19% 30%;
-  --ring: 236 70% 73%;
+  --ring: 224 22% 70%;
   --headline-color: #edf0f8;
   --body-color: #b7c0d3;
-  --brand-accent: #6162e8;
-  --brand-blue-deep: #7274f1;
+  --brand-accent: #dce6f4;
+  --brand-blue-deep: #ffffff;
   --shadow-soft: 0 2px 4px rgb(0 0 0 / 0.1);
   --shadow-floating: 0 10px 28px rgb(0 0 0 / 0.2);
   --shadow-elevated: 0 20px 60px -16px rgb(0 0 0 / 0.45);
@@ -76,8 +78,9 @@ html[data-workspace] .app-shell .shell-main, html[data-workspace] .app-shell .sh
 html[data-workspace] .app-shell .shell-header { background: var(--workspace-glass); backdrop-filter: blur(14px); border-bottom-color: hsl(var(--border) / 0.7); }
 html[data-workspace] .app-shell .shell-header h2 { font-weight: 650; letter-spacing: -0.02em; }
 html[data-workspace] .app-shell .shell-sidebar {
-  background: var(--workspace-nav-bg); border-color: hsl(var(--border));
+  --primary: 238 68% 56%; background: var(--workspace-nav-bg); border-color: hsl(var(--border));
 }
+html[data-workspace][data-theme="dark"] .app-shell .shell-sidebar { --primary: 236 90% 77%; }
 html[data-workspace] .app-shell .shell-sidebar-brand { filter: drop-shadow(0 4px 12px rgb(64 154 255 / 0.22)); }
 html[data-workspace] .app-shell .shell-brand-caption { color: hsl(var(--muted-foreground)); }
 html[data-workspace] .app-shell .shell-sidebar .shell-nav-item { position: relative; min-height: 44px; margin-block: 4px; border-radius: 7px; color: var(--workspace-nav-text); transition: color 160ms, background-color 160ms; }
@@ -88,16 +91,13 @@ html[data-workspace] .app-shell .shell-sidebar .shell-nav-icon { background: tra
 html[data-workspace] .app-shell .shell-nav-item--active .shell-nav-icon { color: hsl(var(--primary)); }
 html[data-workspace] .app-shell .shell-sidebar-footer .el-button { color: var(--workspace-nav-text); }
 html[data-workspace] .app-shell .shell-sidebar-section-label { color: hsl(var(--muted-foreground)); }
-html[data-workspace] .app-shell .el-button--primary { box-shadow: 0 3px 8px hsl(var(--primary) / 0.16); --el-button-active-bg-color: var(--brand-blue-deep); --el-button-active-border-color: var(--brand-blue-deep); }
-html[data-workspace] .app-shell .el-button--primary:not(.is-disabled):hover { transform: translateY(-1px); box-shadow: 0 5px 14px hsl(var(--primary) / 0.24); }
-html[data-workspace] .app-shell .el-button:not(.is-disabled):active { transform: translateY(0); }
-html[data-workspace] .app-shell .ui-panel, html[data-workspace] .app-shell .ui-card, html[data-workspace] .app-shell .ui-card-sm { border-radius: 10px; box-shadow: var(--shadow-soft); }
+html[data-workspace] .app-shell .ui-panel, html[data-workspace] .app-shell .ui-card, html[data-workspace] .app-shell .ui-card-sm { border-radius: 16px; border-color: hsl(var(--border) / 0.6); background: var(--workspace-surface); box-shadow: var(--shadow-soft); }
 html[data-workspace] .app-shell .ui-panel:hover, html[data-workspace] .app-shell .ui-card:hover, html[data-workspace] .app-shell .ui-card-sm:hover { box-shadow: var(--shadow-soft); }
 html[data-workspace] .app-shell .lux-table-shell { border-radius: 8px; }
-html[data-workspace] .app-shell .lux-table th { background: hsl(var(--muted)); font-size: 11px; letter-spacing: 0.02em; }
+html[data-workspace] .app-shell .lux-table th { background: hsl(var(--muted)); font-size: 12px; letter-spacing: 0; }
 html[data-workspace] .app-shell .lux-table td { transition: background-color 130ms; }
 html[data-workspace] .app-shell .lux-table tbody tr:hover td { background: hsl(var(--primary) / 0.025); }
-html[data-workspace] .app-shell .lux-form-card, html[data-workspace] .app-shell .lux-chart-card { --el-card-border-radius: 10px; box-shadow: var(--shadow-soft); }
+html[data-workspace] .app-shell .lux-form-card, html[data-workspace] .app-shell .lux-chart-card { --el-card-border-radius: 16px; border-color: hsl(var(--border) / 0.8); background: var(--workspace-surface); box-shadow: var(--shadow-soft); }
 html[data-workspace] .app-shell .lux-chart-card > .el-card__header { border-bottom-color: hsl(var(--border) / 0.6); }
 html[data-workspace] .app-shell .lux-segmented-scroll .el-segmented { box-shadow: none; }
 
@@ -122,15 +122,11 @@ html[data-workspace] .app-shell .workspace-hero h1 + p { color: var(--workspace-
 .workspace-orbit-core { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 18px; transform: rotate(-10deg); background: rgb(210 223 255 / 0.08); border: 1px solid rgb(226 238 255 / 0.25); box-shadow: 0 0 54px rgb(133 148 255 / 0.2); backdrop-filter: blur(8px); }
 .workspace-orbit-core img { width: 40px; height: 40px; transform: rotate(10deg); }
 .workspace-orbit > span { position: absolute; bottom: -10px; color: var(--workspace-hero-muted); font-size: 8px; letter-spacing: 0.23em; }
-.workspace-account-strip { overflow: hidden; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(var(--card)); }
-html[data-workspace] .app-shell .workspace-account-strip .lux-stat-card { border: 0; border-radius: 0; box-shadow: none; border-right: 1px solid hsl(var(--border) / 0.65); }
-html[data-workspace] .app-shell .workspace-account-strip .lux-stat-card:last-child { border-right: 0; }
-html[data-workspace] .app-shell .lux-stat-card { position: relative; border-radius: 10px; box-shadow: var(--shadow-soft); transition: border-color 180ms; }
-html[data-workspace] .app-shell .lux-stat-card:hover { border-color: hsl(var(--primary) / 0.32); }
-html[data-workspace] .app-shell .lux-stat-label { font-weight: 500; font-size: 11px; }
-html[data-workspace] .app-shell .lux-stat-icon { width: 26px; height: 26px; border-radius: 7px; }
+html[data-workspace] .app-shell .lux-stat-card { position: relative; border-radius: 14px; border-color: hsl(var(--border) / 0.8); background: var(--workspace-surface); box-shadow: var(--shadow-soft); transition: border-color 220ms, box-shadow 220ms; }
+html[data-workspace] .app-shell .lux-stat-card:hover { border-color: hsl(var(--primary) / 0.2); box-shadow: var(--shadow-floating); }
+html[data-workspace] .app-shell .lux-stat-label { font-weight: 500; font-size: 12px; }
+html[data-workspace] .app-shell .lux-stat-icon { width: 30px; height: 30px; border-radius: 9px; }
 html[data-workspace] .app-shell .lux-stat-value, html[data-workspace] .app-shell .lux-stat-card .el-statistic__content { font-size: 27px; font-weight: 550; letter-spacing: -0.045em; }
-html[data-workspace] .app-shell .workspace-account-strip .lux-stat-value, html[data-workspace] .app-shell .workspace-account-strip .el-statistic__content { font-size: 25px; }
 html[data-workspace] .app-shell [data-spotlight]::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; opacity: 0; background: radial-gradient(280px circle at var(--light-x, 50%) var(--light-y, 50%), rgb(var(--workspace-light) / 0.1), transparent 75%); transition: opacity 220ms; }
 html[data-workspace] .app-shell [data-spotlight][data-lit]::after { opacity: 1; }
 
@@ -159,63 +155,26 @@ html[data-workspace] .app-shell .studio-chat-empty p { font-size: 12px; line-hei
 .studio-capability-labels span { display: flex; align-items: center; gap: 7px; }
 .studio-capability-labels span::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: hsl(var(--primary) / 0.5); }
 html[data-workspace] .app-shell .chat-input-panel-shell { border-radius: 16px; background: var(--workspace-glass); backdrop-filter: blur(18px); border-color: hsl(var(--border)); box-shadow: 0 12px 32px -12px rgb(22 32 64 / 0.18), 0 0 0 4px hsl(var(--card) / 0.5); transition: border-color 180ms, box-shadow 180ms; }
-html[data-workspace] .app-shell .chat-input-panel-shell:focus-within { border-color: hsl(var(--primary) / 0.55); box-shadow: 0 12px 32px -12px rgb(22 32 64 / 0.18), 0 0 0 3px hsl(var(--primary) / 0.07); }
+html[data-workspace] .app-shell .chat-input-panel-shell:focus-within { border-color: hsl(var(--muted-foreground) / 0.4); box-shadow: var(--shadow-floating); }
 html[data-workspace] .app-shell .chat-input-actions { border-top-color: hsl(var(--border) / 0.5); }
 html[data-workspace] .app-shell .chat-message-bubble { border-radius: 12px; box-shadow: none; }
 html[data-workspace] .app-shell .chat-message-container:not(.is-file-message) .chat-message-bubble-user:not(.chat-message-bubble-error):not(.chat-message-bubble-image):not(.chat-message-bubble-image-pending) { border-color: hsl(var(--primary) / 0.12); background: hsl(var(--primary) / 0.06); border-top-right-radius: 3px; }
 html[data-workspace] .app-shell .chat-message-container:not(.is-file-message) .chat-message-bubble-assistant:not(.chat-message-bubble-error):not(.chat-message-bubble-image):not(.chat-message-bubble-image-pending) { background: transparent; border-color: transparent; }
 
-/* Consistent control density also covers menus and dialogs teleported to body. */
-html[data-workspace] .lux-button { height: var(--workspace-control); padding-inline: 11px; font-size: 12px; border-radius: 7px; font-weight: 500; }
-html[data-workspace] .lux-button.el-button--small { height: var(--workspace-control-compact); padding-inline: 8px; font-size: 11px; border-radius: 6px; }
-html[data-workspace] .lux-button.el-button--large { height: var(--workspace-control-large); padding-inline: 18px; font-size: 14px; }
-html[data-workspace] .lux-button--icon { width: var(--workspace-control); padding: 0; }
-html[data-workspace] .lux-button--icon.el-button--small { width: var(--workspace-control-compact); padding: 0; }
-html[data-workspace] .lux-button--icon.el-button--large { width: var(--workspace-control-large); padding: 0; }
-html[data-workspace] .shell-header .lux-button { height: var(--workspace-control); }
-html[data-workspace] .shell-header .lux-button--icon { width: var(--workspace-control); }
-html[data-workspace] .lux-close { width: var(--workspace-control); height: var(--workspace-control); }
-html[data-workspace] .lux-input .el-input__wrapper,
-html[data-workspace] .lux-select .el-select__wrapper { min-height: var(--workspace-control); background: hsl(var(--card)); }
-html[data-workspace] .lux-input.el-input--large .el-input__wrapper { min-height: var(--workspace-control-large); }
-html[data-workspace] .lux-input .el-input__inner,
-html[data-workspace] .lux-select .el-select__wrapper { font-size: 13px; }
-html[data-workspace] .lux-input .el-input__wrapper:hover,
-html[data-workspace] .lux-select .el-select__wrapper:hover { --el-border-color-hover: hsl(var(--primary) / 0.45); }
-html[data-workspace] .lux-button:focus-visible,
-html[data-workspace] .lux-close:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
-html[data-workspace] .lux-action-menu.el-menu { --el-menu-item-height: 32px; --el-menu-sub-item-height: 30px; }
-html[data-workspace] .lux-action-popover.el-popover { border-color: hsl(var(--border)); box-shadow: var(--shadow-elevated); }
-html[data-workspace] .lux-dialog { border: 1px solid hsl(var(--border)); --el-dialog-border-radius: 14px; }
-html[data-workspace] .lux-drawer.el-drawer { border: 1px solid hsl(var(--border)); border-radius: 12px; }
-html[data-workspace] .modal-header { background: linear-gradient(105deg, hsl(var(--secondary) / 0.65), hsl(var(--card))); }
-html[data-workspace] .modal-header__subtitle { color: hsl(var(--muted-foreground)); }
-
-html[data-workspace] .lux-input.is-disabled .el-input__wrapper,
-html[data-workspace] .lux-select .el-select__wrapper.is-disabled { background: hsl(var(--muted)); }
-html[data-workspace] .action-row .lux-button { height: var(--workspace-control); }
-html[data-workspace] .action-row .lux-button--icon { width: var(--workspace-control); }
-html[data-workspace] .panel-header-actions .lux-button,
-html[data-workspace] .modal-footer .lux-button { height: var(--workspace-control); }
-html[data-workspace] .panel-header-actions .lux-button--icon,
-html[data-workspace] .modal-footer .lux-button--icon { width: var(--workspace-control); }
-html[data-workspace] .panel-header-actions .el-input__wrapper,
-html[data-workspace] .panel-header-actions .el-select__wrapper { min-height: var(--workspace-control); }
-html[data-workspace] .lux-table .lux-button { height: var(--workspace-control-compact); padding-inline: 8px; font-size: 11px; }
-html[data-workspace] .lux-table .lux-button--icon { width: var(--workspace-control-compact); padding: 0; }
-
-html[data-workspace] .app-shell .chat-header-actions .lux-button { height: var(--workspace-control); }
-html[data-workspace] .app-shell .chat-header-actions .lux-button--icon { width: var(--workspace-control); padding: 0; }
-html[data-workspace] .app-shell .studio-toolbar-select-button { height: var(--workspace-control); min-height: var(--workspace-control); border-radius: 8px; }
-html[data-workspace] .app-shell .chat-input-send { width: var(--workspace-control); height: var(--workspace-control); flex-basis: var(--workspace-control); }
-html[data-workspace] .app-shell .studio-toolbar-select-button:focus-visible,
-html[data-workspace] .app-shell .chat-input-send:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
-
 /* Page hierarchy: identity, controls, then the working surface. */
-html[data-workspace] .app-shell .panel-header--page { align-items: center; gap: 18px; padding-bottom: 4px; }
+html[data-workspace] .app-shell .panel-header--page {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+  gap: 18px;
+  padding: 6px 0 22px;
+  border-radius: 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  background: transparent;
+}
 html[data-workspace] .app-shell .panel-header-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 9px; font-weight: 600; letter-spacing: 0.17em; color: hsl(var(--muted-foreground)); }
 html[data-workspace] .app-shell .panel-header-eyebrow::before { content: ''; width: 16px; height: 2px; background: hsl(var(--primary)); }
-html[data-workspace] .app-shell .panel-header--page .ui-section-title { font-size: 23px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.4; }
+html[data-workspace] .app-shell .panel-header--page .ui-section-title { font-size: 26px; font-weight: 650; letter-spacing: -0.04em; line-height: 1.4; }
 html[data-workspace] .app-shell .panel-header--page .panel-header-copy { flex: 1 1 22rem; }
 html[data-workspace] .app-shell .panel-header--page .panel-header-copy > p:last-child:not(.ui-section-title) { line-height: 1.75; }
 html[data-workspace] .app-shell .panel-header-actions { row-gap: 10px; }
@@ -226,15 +185,15 @@ html[data-workspace] .app-shell .lux-table { font-size: 13px; }
 html[data-workspace] .app-shell .lux-table th { padding-block: 13px; font-weight: 600; }
 html[data-workspace] .app-shell .lux-table-shell--unframed { border-radius: 0; }
 html[data-workspace] .app-shell .lux-table-footer { border-top: 1px solid hsl(var(--border) / 0.7); background: hsl(var(--card)); }
-html[data-workspace] .app-shell .metric-strip { gap: 1px; padding: 1px; overflow: hidden; border-radius: 10px; background: hsl(var(--border) / 0.75); }
-html[data-workspace] .app-shell .metric-strip-card { padding: 14px 16px; border: 0; border-radius: 0; background: hsl(var(--card)); box-shadow: none; }
+html[data-workspace] .app-shell .metric-strip { gap: 12px; padding: 0; background: transparent; }
+html[data-workspace] .app-shell .metric-strip-card { padding: 16px; border: 1px solid hsl(var(--border) / 0.8); border-radius: 14px; background: var(--workspace-surface); box-shadow: var(--shadow-soft); }
 html[data-workspace] .app-shell .metric-strip-label { font-size: 11px; color: hsl(var(--muted-foreground)); }
 html[data-workspace] .app-shell .metric-strip-value { font-size: 23px; font-weight: 600; letter-spacing: -0.04em; }
 html[data-workspace] .app-shell .lux-empty .el-empty__image { display: grid; place-items: center; padding: 12px; border-radius: 18px; background: linear-gradient(145deg, hsl(var(--secondary)), hsl(var(--card))); color: hsl(var(--primary) / 0.5); }
 html[data-workspace] .app-shell .lux-empty .el-empty__description { color: hsl(var(--muted-foreground)); }
 
 /* Configuration pages share a quieter form rhythm, with clear section headings. */
-html[data-workspace] .app-shell .lux-form-card > .el-card__header { padding: 17px 20px; background: linear-gradient(110deg, hsl(var(--secondary) / 0.5), transparent); border-bottom: 1px solid hsl(var(--border) / 0.65); }
+html[data-workspace] .app-shell .lux-form-card > .el-card__header { padding: 17px 20px; background: transparent; border-bottom: 1px solid hsl(var(--border) / 0.65); }
 html[data-workspace] .app-shell .lux-form-card > .el-card__header .ui-section-title { font-size: 14px; font-weight: 600; }
 html[data-workspace] .app-shell .lux-form-card .ui-field-label,
 html[data-workspace] .app-shell .lux-field .el-form-item__label { font-size: 13px; font-weight: 500; }
@@ -242,19 +201,18 @@ html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs {
 html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented { min-height: 44px; --el-segmented-bg-color: transparent; --el-segmented-item-selected-bg-color: transparent; --el-segmented-item-selected-color: hsl(var(--primary)); --el-border-radius-base: 0; }
 html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented__item { min-height: 40px; }
 html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented__item-selected { border-bottom: 2px solid hsl(var(--primary)); }
-html[data-workspace] .app-shell .monitor-metric-group { border-radius: 10px; background: hsl(var(--card)); box-shadow: none; }
+html[data-workspace] .app-shell .monitor-metric-group { border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
 html[data-workspace] .app-shell .monitor-metric-group:hover,
 html[data-workspace] .app-shell .monitor-metric-cell:hover { transform: none; box-shadow: none; }
-html[data-workspace] .app-shell .monitor-metric-cell { border-radius: 6px; background: hsl(var(--muted) / 0.5); border-color: transparent; }
+html[data-workspace] .app-shell .monitor-metric-cell { border-radius: 12px; background: var(--workspace-surface); border-color: hsl(var(--border) / 0.8); padding: 14px; }
 html[data-workspace] .app-shell .monitor-overview-panel .panel-header-actions .lux-input { width: 72px; }
 html[data-workspace] .app-shell .gallery-page { --gallery-radius: 10px; }
 
 @media (max-width: 640px) {
-  html[data-workspace] { --workspace-control: 34px; --workspace-control-compact: 30px; --workspace-control-large: 36px; }
   html[data-workspace] .app-shell .panel-header--page .ui-section-title { font-size: 21px; }
   html[data-workspace] .app-shell .panel-header-eyebrow { display: none; }
   html[data-workspace] .app-shell .chat-prompt-button { width: var(--workspace-control); min-width: var(--workspace-control); }
-  html[data-workspace] .app-shell .panel-header--page { gap: 12px; padding-bottom: 0; }
+  html[data-workspace] .app-shell .panel-header--page { gap: 12px; padding: 0 0 16px; }
   html[data-workspace] .app-shell .accounts-panel { gap: 12px; }
   html[data-workspace] .app-shell .accounts-panel > .panel-header .panel-header-copy > p:last-child:not(.ui-section-title) { display: none; }
   html[data-workspace] .app-shell .accounts-toolbar { gap: 10px; }
@@ -264,7 +222,7 @@ html[data-workspace] .app-shell .gallery-page { --gallery-radius: 10px; }
   html[data-workspace] .app-shell .accounts-toolbar-row-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   html[data-workspace] .app-shell .accounts-toolbar-action-cluster,
   html[data-workspace] .app-shell .accounts-toolbar-group { display: contents; }
-  html[data-workspace] .app-shell .accounts-toolbar-row-actions .lux-button { width: 100%; padding-inline: 8px; font-size: 12px; }
+  html[data-workspace] .app-shell .accounts-toolbar-row-actions .lux-button { width: 100%; padding-inline: 8px; }
   html[data-workspace] .app-shell .logs-page .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   html[data-workspace] .app-shell .gallery-hero .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   html[data-workspace] .app-shell .log-control-panel { gap: 12px; }
@@ -283,11 +241,8 @@ html[data-workspace] .app-shell .gallery-page { --gallery-radius: 10px; }
   html[data-workspace] .app-shell .metric-strip-value { font-size: 21px; }
 }
 @media (pointer: coarse) {
-  html[data-workspace] { --workspace-control: 36px; --workspace-control-compact: 32px; --workspace-control-large: 38px; }
-  html[data-workspace] .lux-action-menu.el-menu { --el-menu-item-height: 36px; --el-menu-sub-item-height: 36px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-workspace] .app-shell .el-button:not(.is-disabled):hover { transform: none; }
 }
 
 @keyframes workspace-aurora { to { transform: translate(4%, -3%) rotate(8deg); } }
@@ -296,7 +251,6 @@ html[data-workspace] .app-shell .gallery-page { --gallery-radius: 10px; }
   .workspace-orbit { display: none; }
   .workspace-hero-caption { gap: 12px; }
   .workspace-hero-caption span + span { padding-left: 12px; }
-  html[data-workspace] .app-shell .workspace-account-strip .lux-stat-card { border-bottom: 1px solid hsl(var(--border) / 0.65); }
   html[data-workspace] .app-shell .chat-header-bar { padding-inline: 12px; min-height: 58px; }
   html[data-workspace] .app-shell .chat-input-panel-shell { border-radius: 12px; backdrop-filter: none; background: hsl(var(--card)); }
   html[data-workspace] .app-shell .studio-chat-empty { padding-inline: 14px; }

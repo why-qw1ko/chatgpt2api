@@ -42,6 +42,8 @@
 
 ## 版本与文档
 
+- 本仓库产品版本只在根目录 `VERSION` 维护；私有 Python 和 Vue 项目的包元数据版本固定为 `0.0.0`，发版时不得同步提升。`CHANGELOG.md` 的发布记录仍需人工维护。
+- 发布 tag 必须等于 `v` 加 `VERSION` 的内容；发布 workflow 在构建前校验，不匹配时停止。
 - GitHub 发布 workflow 的 push 触发器只监听 `v*` 标签；不得因 `main` 推送启动。`pull_request` 与 `workflow_dispatch` 可以保留用于仅验证，但 Release、镜像与其他发布 job 必须显式限制为 `v*` 标签。
 - 用户可感知的功能、Interface 或行为变化更新 `CHANGELOG.md` 的 Unreleased；纯内部重构无需逐条记录。
 - 同一版本的 `CHANGELOG.md` 条目必须按 `[新增]`、`[优化]`、`[修复]` 的顺序分组，同类条目保持连续，不得交叉排列。

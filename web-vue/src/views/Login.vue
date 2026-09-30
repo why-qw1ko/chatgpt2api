@@ -1,10 +1,11 @@
 <template>
   <main class="login-page">
+    <div class="login-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <section class="login-story" aria-label="LuxuryImage">
       <a class="login-brand" href="#/login"><img src="/logo.svg" alt="" /><span>LuxuryImage</span></a>
       <div class="login-story-copy">
         <p class="login-eyebrow">YOUR CREATIVE WORKSPACE</p>
-        <h1>让灵感，<br />成为图像。</h1>
+        <h1>让灵感，<br /><TypewriterText text="成为图像。" /></h1>
         <p class="login-story-description">从对话到创作，从灵感到管理。<br />在一个工作空间里，有序展开。</p>
       </div>
       <svg class="login-art" viewBox="0 0 520 290" fill="none" aria-hidden="true">
@@ -29,7 +30,7 @@
             <Input id="password" v-model="password" type="password" size="md" block
               placeholder="输入 Bearer key" :disabled="isLoading" />
           </div>
-          <Button type="submit" size="md" variant="primary" block :disabled="isLoading || !password">
+          <Button type="submit" size="md" variant="primary" block :loading="isLoading" :disabled="isLoading || !password">
             {{ isLoading ? '登录中...' : '登录' }}
             <Icon v-if="!isLoading" icon="lucide:arrow-right" class="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -41,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import TypewriterText from '@/components/ui/TypewriterText.vue'
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -78,8 +80,10 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page { display: grid; min-height: 100dvh; grid-template-columns: 1fr 1fr; padding: 20px; gap: 20px; background: hsl(var(--background)); }
+.login-page { position: relative; isolation: isolate; overflow: clip; display: grid; min-height: 100dvh; grid-template-columns: 1fr 1fr; padding: 20px; gap: 20px; background: hsl(var(--background)); }
 .login-story {
+  z-index: 1;
+  isolation: isolate;
   position: relative;
   min-height: calc(100dvh - 40px);
   overflow: hidden;
@@ -101,7 +105,7 @@ async function handleLogin() {
 .login-story-description { font-size: 14px; line-height: 1.95; color: #334552; }
 .login-art { width: min(100%, 520px); margin: auto auto 0; flex-shrink: 1; min-height: 0; max-height: 32vh; filter: drop-shadow(0 18px 30px rgb(8 48 82 / 0.12)); }
 .login-story-footer { margin-top: 18px; font-size: 11px; letter-spacing: 0.15em; color: #5a7180; }
-.login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-form-side { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 40px; }
 .login-form-card {
   width: 100%;
   max-width: 360px;
@@ -132,4 +136,13 @@ async function handleLogin() {
   .login-mobile-brand { display: flex; margin-bottom: 56px; color: hsl(var(--foreground)); }
   .login-form-card h2 { font-size: 25px; }
 }
+
+.login-orbs { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.login-orbs i { position: absolute; display: block; width: 38vw; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgb(104 172 255 / 0.28), rgb(104 172 255 / 0.06) 55%, transparent 70%); animation: login-float 16s ease-in-out infinite alternate; }
+.login-orbs i:nth-child(1) { top: -18%; right: -8%; }
+.login-orbs i:nth-child(2) { width: 30vw; bottom: -10%; right: 20%; background: radial-gradient(circle, rgb(74 210 180 / 0.2), transparent 70%); animation-duration: 21s; animation-delay: -7s; }
+.login-orbs i:nth-child(3) { width: 22vw; top: 30%; right: 1%; background: radial-gradient(circle, rgb(255 179 117 / 0.22), transparent 70%); animation-duration: 13s; animation-delay: -4s; }
+.login-orbs i:nth-child(4) { width: 42vw; top: 40%; left: -10%; animation-duration: 25s; animation-delay: -12s; }
+@keyframes login-float { from { transform: translate(-18px, -26px) scale(0.92); } to { transform: translate(30px, 34px) scale(1.08); } }
+@media (max-width: 767px) { .login-orbs i { width: 90vw; } .login-orbs i:nth-child(n+2) { width: 70vw; } }
 </style>

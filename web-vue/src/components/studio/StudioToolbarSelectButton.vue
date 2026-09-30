@@ -1,15 +1,15 @@
 <template>
-  <button
-    type="button"
-    class="ui-input-sm ui-select-trigger studio-toolbar-select-button text-left"
+  <Button
+    class="studio-toolbar-select-button"
     :aria-expanded="expanded"
     :disabled="disabled"
   >
     <slot />
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui'
 defineProps<{
   disabled?: boolean
   expanded?: boolean

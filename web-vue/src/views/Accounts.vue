@@ -108,8 +108,14 @@
         </div>
       </div>
 
+      <div v-if="listError && hasListSnapshot" class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+        刷新失败，当前保留上次数据。{{ listError }}
+      </div>
+      <StateBlock v-if="listError && !hasListSnapshot" title="账号加载失败" :description="listError">
+        <Button variant="outline" root-class="mt-4" :loading="loading" @click="loadData">重新加载</Button>
+      </StateBlock>
       <PageLoadingState
-        v-if="viewMode === 'cards' && loading && visibleAccounts.length === 0"
+        v-else-if="viewMode === 'cards' && loading && visibleAccounts.length === 0"
         title="正在加载账号"
         description="读取账号列表、分组和分页状态。"
       />
@@ -130,14 +136,13 @@
       >
         <template #head>
           <tr>
-              <th class="w-12 py-2.5 pr-4">
+              <th class="lux-table-selection">
                 <Checkbox
+                  aria-label="全选当前页账号"
                   :model-value="allVisibleSelected"
                   :indeterminate="someVisibleSelected"
                   @update:model-value="toggleSelectAllVisible"
-                >
-                  <span class="sr-only">全选当前页账号</span>
-                </Checkbox>
+                />
               </th>
               <th class="py-2.5 pr-5">AT / RT</th>
               <th class="py-2.5 pr-5">来源 / 套餐</th>
@@ -419,7 +424,7 @@
             </ModalBody>
 
             <ModalFooter :bordered="false">
-              <Button size="xs" variant="primary" root-class="min-w-14 justify-center" :disabled="saving" @click="saveAccount">
+              <Button size="xs" variant="primary" root-class="min-w-14 justify-center" :loading="saving" @click="saveAccount">
                 {{ saving ? '保存中...' : '保存' }}
               </Button>
             </ModalFooter>
@@ -812,6 +817,8 @@ defineOptions({ name: 'Accounts' })
 const RemoteAccountImportPanel = defineAsyncComponent(() => import('@/components/ai/RemoteAccountImportPanel.vue'))
 
 const {
+  listError,
+  hasListSnapshot,
   loading,
   saving,
   showModal,

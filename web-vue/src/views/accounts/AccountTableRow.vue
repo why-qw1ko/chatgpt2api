@@ -4,7 +4,7 @@
     :class="accountSurfaceClass(item, selected, 'row')"
     :aria-selected="selected || undefined"
   >
-    <td class="py-3 pr-4 align-middle">
+    <td class="lux-table-selection">
       <Checkbox
         :model-value="selected"
         :aria-label="`选择账号 ${accountPrimaryText(item)}`"

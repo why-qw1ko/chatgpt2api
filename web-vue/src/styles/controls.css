@@ -1,0 +1,160 @@
+/* Console controls: one size/state system, including teleported overlays. */
+html[data-workspace] {
+  --workspace-control: 38px;
+  --workspace-control-compact: 32px;
+  --workspace-control-large: 44px;
+  --workspace-button-ink: #fff;
+  --control-fill: hsl(220 16% 95%);
+  --control-hover: hsl(220 17% 91%);
+  --control-line: hsl(220 15% 35% / 0.07);
+  --control-focus: hsl(220 20% 38% / 0.45);
+  --control-radius: 11px;
+  --el-menu-hover-bg-color: var(--control-fill);
+  --el-fill-color-light: var(--control-fill);
+}
+html[data-workspace][data-theme="dark"] {
+  --workspace-button-ink: #1c2535;
+  --control-fill: hsl(222 18% 17%);
+  --control-hover: hsl(222 18% 22%);
+  --control-line: hsl(220 30% 75% / 0.07);
+  --control-focus: hsl(220 30% 75% / 0.45);
+}
+html[data-workspace] body,
+html[data-workspace] :is(h1, h2, h3, h4, h5) { font-family: var(--el-font-family); }
+
+html[data-workspace] .lux-button {
+  height: var(--workspace-control);
+  padding: 0 15px;
+  border-radius: var(--control-radius);
+  font-size: var(--el-font-size-base);
+  font-weight: 500;
+  letter-spacing: normal;
+  --el-button-hover-link-text-color: hsl(var(--foreground));
+  transition: background-color 180ms, color 180ms, box-shadow 180ms, transform 180ms var(--ease-spring);
+}
+html[data-workspace] .lux-button > span { display: inline-flex; align-items: center; gap: 7px; min-width: 0; line-height: 1.25; }
+html[data-workspace] .lux-button.el-button--small { height: var(--workspace-control-compact); padding-inline: 11px; font-size: 12px; border-radius: 9px; }
+html[data-workspace] .lux-button.el-button--large { height: var(--workspace-control-large); padding-inline: 20px; font-size: 14px; border-radius: 12px; }
+html[data-workspace] .lux-button--icon { width: var(--workspace-control); padding: 0; }
+html[data-workspace] .lux-button--icon.el-button--small { width: var(--workspace-control-compact); padding: 0; }
+html[data-workspace] .lux-button--icon.el-button--large { width: var(--workspace-control-large); padding: 0; }
+html[data-workspace] .lux-button--outline {
+  --el-button-text-color: hsl(var(--foreground));
+  --el-button-bg-color: var(--control-fill);
+  --el-button-border-color: transparent;
+  --el-button-hover-text-color: hsl(var(--foreground));
+  --el-button-hover-bg-color: var(--control-hover);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-text-color: hsl(var(--foreground));
+  --el-button-active-bg-color: var(--control-hover);
+  --el-button-active-border-color: transparent;
+  box-shadow: none;
+}
+html[data-workspace] .lux-button--primary {
+  --el-button-text-color: var(--workspace-button-ink);
+  --el-button-bg-color: var(--brand-accent);
+  --el-button-border-color: transparent;
+  --el-button-hover-text-color: var(--workspace-button-ink);
+  --el-button-hover-bg-color: var(--brand-blue-deep);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-text-color: var(--workspace-button-ink);
+  --el-button-active-bg-color: var(--brand-accent);
+  --el-button-active-border-color: transparent;
+  box-shadow: 0 2px 4px rgb(15 23 42 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+html[data-workspace] .lux-button--ghost { color: hsl(var(--muted-foreground)); background: transparent; box-shadow: none; }
+html[data-workspace] .lux-button--ghost:not(.is-disabled):hover { color: hsl(var(--foreground)); background: var(--control-fill); }
+html[data-workspace] .lux-button--danger { box-shadow: none; --el-button-border-color: transparent; --el-button-bg-color: hsl(var(--tone-error-bg)); }
+html[data-workspace] .lux-button:is(.is-disabled, .is-loading) { box-shadow: none; transform: none; opacity: 0.55; }
+html[data-workspace] .lux-button.is-disabled { --el-button-disabled-border-color: transparent; --el-button-disabled-bg-color: var(--control-fill); --el-button-disabled-text-color: hsl(var(--muted-foreground)); }
+html[data-workspace] .lux-button:not(.is-disabled):not(.is-loading):active { transform: scale(0.97); }
+html[data-workspace] :is(.lux-button, .lux-close):focus-visible { outline: 2px solid var(--control-focus); outline-offset: 3px; }
+html[data-workspace] .lux-close { width: 34px; height: 34px; padding: 0; border-radius: 50%; color: hsl(var(--muted-foreground)); }
+html[data-workspace] .lux-close--dark { color: #fff; background: rgb(0 0 0 / 0.25); }
+
+html[data-workspace] .lux-input .el-input__wrapper,
+html[data-workspace] .lux-select .el-select__wrapper {
+  min-height: var(--workspace-control);
+  padding-inline: 12px;
+  border-radius: var(--control-radius);
+  background: var(--control-fill);
+  box-shadow: inset 0 0 0 1px var(--control-line);
+  font-size: 14px;
+  transition: background-color 180ms, box-shadow 180ms;
+}
+html[data-workspace] .lux-input .el-input__inner { font-size: 14px; }
+html[data-workspace] .lux-input.el-input--large .el-input__wrapper { min-height: var(--workspace-control-large); }
+html[data-workspace] .lux-input .el-input__wrapper:hover,
+html[data-workspace] .lux-select .el-select__wrapper:hover { background: var(--control-hover); box-shadow: inset 0 0 0 1px var(--control-line); }
+html[data-workspace] .lux-input .el-input__wrapper.is-focus,
+html[data-workspace] .lux-select .el-select__wrapper.is-focused { background: hsl(var(--card)); box-shadow: inset 0 0 0 1px var(--control-focus); }
+html[data-workspace] .lux-input.is-disabled .el-input__wrapper,
+html[data-workspace] .lux-select .el-select__wrapper.is-disabled { background: var(--control-fill); box-shadow: none; opacity: 0.55; }
+html[data-workspace] :is(.ui-input-sm, .ui-input-md, .ui-textarea-sm, .el-textarea__inner) {
+  min-height: var(--workspace-control);
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  padding: 9px 12px;
+  background: var(--control-fill);
+  color: hsl(var(--foreground));
+  box-shadow: inset 0 0 0 1px var(--control-line);
+  font: 14px/1.5 var(--el-font-family);
+}
+html[data-workspace] :is(.ui-textarea-sm, .el-textarea__inner) { min-height: 96px; }
+html[data-workspace] :is(.ui-input-sm, .ui-input-md, .ui-textarea-sm, .el-textarea__inner):focus { outline: none; border-color: transparent; background: hsl(var(--card)); box-shadow: inset 0 0 0 1px var(--control-focus); }
+html[data-workspace] .lux-select .el-select__input:focus-visible { outline: none; }
+html[data-workspace][data-input-mode="keyboard"] .lux-select:focus-within { outline: 2px solid var(--control-focus); outline-offset: 3px; border-radius: var(--control-radius); }
+html[data-workspace] .lux-field.is-error :is(.el-input__wrapper, .el-textarea__inner),
+html[data-workspace] [aria-invalid="true"] { box-shadow: inset 0 0 0 1px hsl(var(--tone-error-strong)); }
+html[data-workspace] .el-select__caret { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+
+html[data-workspace] :is(.lux-select-menu, .lux-action-popover.el-popover) {
+  padding: 6px;
+  border: 1px solid hsl(var(--border) / 0.65);
+  border-radius: 14px;
+  background: hsl(var(--card));
+  box-shadow: 0 16px 44px -12px rgb(15 23 42 / 0.24), 0 2px 6px rgb(15 23 42 / 0.04);
+}
+html[data-workspace] .lux-select-menu .el-select-dropdown__list { padding: 0; }
+html[data-workspace] .el-select-dropdown__item { display: flex; align-items: center; min-height: 38px; padding-inline: 12px 30px; border-radius: 9px; font-size: 14px; transition: background-color 130ms; }
+html[data-workspace] .el-select-dropdown__item.is-selected { background: var(--control-fill); color: hsl(var(--foreground)); font-weight: 600; }
+html[data-workspace] .el-select-dropdown__item.is-selected::after { content: ''; position: absolute; right: 14px; width: 5px; height: 9px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+html[data-workspace] .el-select-dropdown__item.is-hovering { background: var(--control-hover); }
+html[data-workspace] .el-select-dropdown__item.is-disabled { color: var(--el-text-color-disabled); background: transparent; }
+html[data-workspace] .lux-action-menu.el-menu { --el-menu-item-height: 38px; --el-menu-sub-item-height: 36px; --el-menu-base-level-padding: 12px; }
+html[data-workspace] .lux-action-menu :is(.el-menu-item, .el-sub-menu__title) { border-radius: 9px; font-size: 13px; }
+html[data-workspace] .lux-action-menu .el-menu-item.is-active:not(.lux-menu-danger) { color: hsl(var(--foreground)); background: var(--control-fill); }
+html[data-workspace] .lux-action-menu .el-menu-item:focus-visible { outline: 2px solid var(--control-focus); outline-offset: -2px; }
+html[data-workspace] .lux-action-menu .el-sub-menu__icon-arrow { transition: transform 200ms; }
+
+html[data-workspace] .el-checkbox { min-height: 28px; }
+html[data-workspace] .el-checkbox__inner { width: 17px; height: 17px; border-radius: 5px; border-color: hsl(var(--input)); background: hsl(var(--card)); }
+html[data-workspace] .el-checkbox__inner::after { left: 5px; top: 2px; }
+html[data-workspace] .el-checkbox__input.is-indeterminate .el-checkbox__inner::before { top: 7px; background: var(--workspace-button-ink); }
+html[data-workspace] .el-checkbox__input:is(.is-checked, .is-indeterminate) .el-checkbox__inner { background: var(--brand-accent); border-color: transparent; }
+html[data-workspace] .el-checkbox__input.is-checked .el-checkbox__inner::after { border-color: var(--workspace-button-ink); }
+html[data-workspace] .el-checkbox__input.is-disabled .el-checkbox__inner { background: var(--control-fill); opacity: 0.5; }
+html[data-workspace] .el-checkbox__input.is-checked + .el-checkbox__label { color: hsl(var(--foreground)); }
+html[data-workspace] .el-checkbox__label { font-size: 13px; }
+html[data-workspace] .lux-table .lux-table-selection { width: 60px; min-width: 60px; padding: 12px 20px; text-align: center; vertical-align: middle; }
+html[data-workspace] .lux-segmented-scroll .el-segmented { padding: 4px; min-height: 36px; border-radius: 11px; --el-segmented-bg-color: var(--control-fill); }
+html[data-workspace] .lux-segmented-scroll .el-segmented__item-selected { box-shadow: 0 2px 6px rgb(15 23 42 / 0.07); border-radius: 8px; }
+html[data-workspace] .el-radio-button { --el-radio-button-checked-bg-color: var(--brand-accent); --el-radio-button-checked-border-color: transparent; --el-radio-button-checked-text-color: var(--workspace-button-ink); }
+html[data-workspace] .el-radio-button__inner { display: inline-flex; align-items: center; justify-content: center; min-height: var(--workspace-control); background: var(--control-fill); border-color: transparent; }
+
+html[data-workspace] .lux-dialog:not(.lightbox-dialog) { --el-dialog-border-radius: 20px; border: 1px solid hsl(var(--border) / 0.6); box-shadow: var(--shadow-elevated); }
+html[data-workspace] .lux-dialog:not(.lightbox-dialog) .modal-header { padding: 22px 24px; background: transparent; }
+html[data-workspace] .modal-footer { padding: 16px 24px; background: hsl(var(--muted) / 0.3); }
+html[data-workspace] .lux-drawer.el-drawer { border: 1px solid hsl(var(--border) / 0.6); border-radius: 18px; }
+html[data-workspace] .lightbox-dialog.lux-dialog { border: 0; background: transparent; box-shadow: none; }
+html[data-workspace] .chat-input-send { width: var(--workspace-control); height: var(--workspace-control); flex-basis: var(--workspace-control); }
+html[data-workspace] .studio-toolbar-select-button { height: var(--workspace-control); min-height: var(--workspace-control); padding-inline: 8px; }
+html[data-workspace] .studio-toolbar-select-button:focus-visible,
+html[data-workspace] .chat-input-send:focus-visible { outline: 2px solid var(--control-focus); outline-offset: 3px; }
+html[data-workspace] .lux-table .lux-button { height: var(--workspace-control-compact); padding-inline: 10px; font-size: 12px; }
+html[data-workspace] .lux-table .lux-button--icon { width: var(--workspace-control-compact); padding: 0; }
+html[data-workspace] :is(.action-row, .panel-header-actions, .modal-footer) .lux-button { height: var(--workspace-control); }
+html[data-workspace] :is(.action-row, .panel-header-actions, .modal-footer) .lux-button--icon { width: var(--workspace-control); }
+@media (pointer: coarse) {
+  html[data-workspace] { --workspace-control: 40px; --workspace-control-compact: 36px; }
+}
