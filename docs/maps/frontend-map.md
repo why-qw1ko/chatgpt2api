@@ -64,8 +64,8 @@ a height, while primary/secondary emphasis is expressed through color.
 `useWorkspaceAtmosphere` owns the shell-scoped theme marker and delegated,
 frame-limited pointer lighting and opt-in metric-card tilt, with reduced-motion/touch
 gating and unmount cleanup. It also records keyboard versus pointer input for focus
-presentation. `App.vue` mounts `AmbientCursor` for a fine-pointer dot and interpolated
-ring; native text/resize/disabled affordances remain available. `StatCard` can animate
+presentation. Pointer appearance uses native browser cursors, including text, resize,
+and disabled-control affordances. `StatCard` can animate
 numeric display values without altering the underlying metrics. `TypewriterText`
 reserves its final dimensions and accessible text while revealing a visual copy.
 Motion timers/frames stop on teardown, and reduced motion shows final content.
