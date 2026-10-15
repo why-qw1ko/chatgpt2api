@@ -4,7 +4,7 @@ Status: pending-verification
 
 - Owner: console frontend
 - Created: 2026-09-30
-- Updated: 2026-09-30
+- Updated: 2026-10-15
 
 ## Problem and outcome
 
@@ -31,8 +31,10 @@ and busy states. Menus and drawers must fit the viewport. Preserve one scroll
 owner per region and retained snapshots during background refresh. Transitions
 must not move a running task's data or replay on polling. Honor reduced motion.
 
-Requested decorative motion: a direct pointer dot and requestAnimationFrame ring
-with 0.15 interpolation; requestAnimationFrame/easeOutCubic metric counters;
+The pointer dot and interpolated ring were removed from scope at the user's
+request on 2026-10-15; the browser now uses native cursors.
+
+Requested decorative motion: requestAnimationFrame/easeOutCubic metric counters;
 setInterval character reveal with a step-end border cursor; overview-card
 perspective of 800px and rotations clamped to ±15 degrees with radial highlights;
 independently timed login circles; pure CSS linear infinite loading rotation;
