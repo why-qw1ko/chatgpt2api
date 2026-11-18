@@ -38,7 +38,6 @@
         v-for="{ item: conversation } in visibleConversationEntries"
         :key="conversation.id"
         class="studio-history-window-row"
-        :class="{ 'has-badge': badges[conversation.id] }"
       >
         <div
           v-memo="historyItemMemo(conversation)"
@@ -79,18 +78,14 @@
             @click="handleSelect(conversation.id)"
             @dblclick.stop="beginRename(conversation)"
           >
-            <span class="studio-history-title">{{ conversation.title || '未命名对话' }}</span>
+            <span class="studio-history-heading-line">
+              <span class="studio-history-title" :title="conversation.title">{{ conversation.title || '未命名对话' }}</span>
+              <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" />
+            </span>
             <span class="studio-history-meta">
               <span>{{ conversation.messages.length ? `${conversation.messages.length} 条` : '空对话' }}</span>
               <span aria-hidden="true">·</span>
               <span>{{ formatConversationTime(conversation) }}</span>
-            </span>
-            <span
-              v-if="badges[conversation.id]"
-              class="studio-history-badge"
-              :class="`is-${badges[conversation.id].state}`"
-            >
-              {{ badges[conversation.id].label }}
             </span>
           </button>
           <div v-if="editingId !== conversation.id" class="studio-history-row-actions">
@@ -135,6 +130,7 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useWindowedList } from '@/composables/useWindowedList'
+import StudioConversationStatus from './StudioConversationStatus.vue'
 import type { StudioConversation, StudioConversationBadge } from './types'
 
 const props = defineProps<{
@@ -204,7 +200,6 @@ const {
 } = useWindowedList({
   items: filteredConversations,
   itemHeight: 58,
-  getItemHeight: (conversation) => props.badges[conversation.id] ? 76 : 58,
   overscan: 8,
   disabled: computed(() => !shouldWindowHistory.value),
 })
@@ -435,11 +430,6 @@ function formatConversationTime(conversation: StudioConversation) {
   padding-bottom: 0.25rem;
 }
 
-.studio-history-window-row.has-badge {
-  height: 4.75rem;
-  flex-basis: 4.75rem;
-}
-
 .studio-history-item {
   position: relative;
   display: flex;
@@ -453,10 +443,6 @@ function formatConversationTime(conversation: StudioConversation) {
   padding: 0.5rem 0.625rem;
   color: hsl(var(--foreground));
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.studio-history-window-row.has-badge .studio-history-item {
-  min-height: 4.25rem;
 }
 
 .studio-history-item.is-draggable {
@@ -515,6 +501,14 @@ function formatConversationTime(conversation: StudioConversation) {
   font-weight: 650;
   outline: none;
   box-shadow: 0 0 0 3px hsl(var(--foreground) / 0.06);
+}
+
+.studio-history-heading-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
 }
 
 .studio-history-title {
@@ -602,37 +596,6 @@ function formatConversationTime(conversation: StudioConversation) {
 .studio-history-icon.is-danger:hover {
   background: hsl(var(--tone-error-bg));
   color: hsl(var(--tone-error-foreground));
-}
-
-.studio-history-badge {
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 999px;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 650;
-  line-height: 1rem;
-  white-space: nowrap;
-}
-
-.studio-history-badge.is-running {
-  background: hsl(var(--tone-info-bg));
-  color: hsl(var(--tone-info-foreground));
-}
-
-.studio-history-badge.is-done {
-  background: hsl(var(--tone-success-bg));
-  color: hsl(var(--tone-success-foreground));
-}
-
-.studio-history-badge.is-error {
-  background: hsl(var(--tone-error-bg));
-  color: hsl(var(--tone-error-foreground));
-}
-
-.studio-history-badge.is-expired {
-  background: hsl(var(--tone-warning-bg));
-  color: hsl(var(--tone-warning-foreground));
 }
 
 .studio-history-empty {

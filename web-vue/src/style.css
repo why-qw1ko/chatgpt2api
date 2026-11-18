@@ -288,21 +288,6 @@ html[data-theme="dark"] {
 }
 .lux-menu-danger.el-menu-item { color: hsl(var(--tone-error-foreground)); }
 .lux-menu-divider { border-top: 1px solid hsl(var(--border)); margin-top: 5px; }
-.lux-segmented-scroll { max-width: 100%; min-width: 0; overflow-x: auto; padding: 2px; }
-.lux-segmented-scroll .el-segmented {
-  --el-segmented-item-selected-color: hsl(var(--foreground));
-  --el-segmented-item-selected-bg-color: hsl(var(--card));
-  --el-segmented-bg-color: hsl(var(--secondary));
-  --el-border-radius-base: var(--control-radius);
-  min-height: 32px;
-  font-size: 0.75rem;
-  box-shadow: var(--shadow-soft);
-}
-.lux-segmented-scroll .el-segmented__item { min-height: 28px; flex: 1 0 auto; }
-.lux-segmented-scroll .el-segmented.is-block .el-segmented__item { min-width: max-content; }
-.lux-segmented-scroll .el-segmented__group { min-width: max-content; }
-.lux-segmented-scroll .el-segmented__item-label { overflow: visible; }
-.lux-segment-count { margin-left: 7px; font-variant-numeric: tabular-nums; opacity: 0.7; }
 .lux-field.el-form-item { margin-bottom: 0; }
 .lux-field .el-form-item__label {
   display: flex;

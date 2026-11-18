@@ -753,22 +753,6 @@ onBeforeUnmount(() => {
 
 .chat-mode-control {
   width: fit-content;
-  padding: 0;
-  overflow: visible;
-}
-
-.chat-mode-control :deep(.el-segmented) {
-  --el-segmented-bg-color: var(--control-fill, hsl(var(--muted)));
-  --el-segmented-item-selected-color: hsl(var(--primary));
-  --el-segmented-item-selected-bg-color: hsl(var(--card));
-  --el-segmented-item-color: hsl(var(--muted-foreground));
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-.chat-mode-control :deep(.el-segmented__item) {
-  padding-inline: 12px;
-  font-weight: 600;
 }
 
 .chat-editing-bar {

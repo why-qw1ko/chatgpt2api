@@ -55,7 +55,7 @@
             <div class="recent-file-task-info">
               <div class="recent-file-task-heading">
                 <strong>{{ task.kind.toUpperCase() }} 文件任务</strong>
-                <MetaChip size="xs" :tone="task.status_tone">
+                <MetaChip size="xs" radius="rounded" :bordered="false" :tone="task.status_tone">
                   {{ task.status_label }}
                 </MetaChip>
               </div>
@@ -300,13 +300,13 @@ onBeforeUnmount(stopPolling)
 }
 
 .recent-file-task-icon.is-success {
-  background: rgb(34 197 94 / 0.1);
-  color: rgb(22 163 74);
+  background: hsl(var(--tone-success-bg));
+  color: hsl(var(--tone-success-foreground));
 }
 
 .recent-file-task-icon.is-error {
-  background: rgb(239 68 68 / 0.1);
-  color: rgb(220 38 38);
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
 }
 
 .recent-file-task-info {
@@ -348,7 +348,7 @@ onBeforeUnmount(stopPolling)
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  color: rgb(220 38 38);
+  color: hsl(var(--tone-error-foreground));
   font-size: 0.74rem;
   line-height: 1.45;
 }

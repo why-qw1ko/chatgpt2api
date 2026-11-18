@@ -1,22 +1,13 @@
 /* Console page layouts share the tokens defined in style.css. */
 .app-shell .page-panel { padding: 20px; }
-.app-shell .dashboard-intro { padding-block: 4px; }
 html[data-workspace] .app-shell .lux-table-shell { border-radius: var(--radius); }
 html[data-workspace] .app-shell .lux-table th { background: hsl(var(--muted)); font-size: 12px; letter-spacing: 0; }
 html[data-workspace] .app-shell .lux-table td { transition: background-color 130ms; }
 html[data-workspace] .app-shell .lux-table tbody tr:hover td { background: hsl(var(--primary) / 0.025); }
 html[data-workspace] .app-shell .lux-form-card, html[data-workspace] .app-shell .lux-chart-card { border-color: hsl(var(--border) / 0.8); background: hsl(var(--card)); }
 html[data-workspace] .app-shell .lux-chart-card > .el-card__header { border-bottom-color: hsl(var(--border) / 0.6); }
-html[data-workspace] .app-shell .lux-segmented-scroll .el-segmented { box-shadow: none; }
 
 html[data-workspace] .app-shell .shell-content--workspace { padding: 0; }
-
-.app-shell .lux-stat-card { transition: border-color var(--motion-fast) var(--ease-out-soft); }
-.app-shell .lux-stat-card:hover { border-color: hsl(var(--primary) / 0.4); }
-.app-shell .lux-stat-label { font-weight: 500; font-size: 13px; }
-.app-shell .lux-stat-icon { border-radius: var(--control-radius); }
-.app-shell .lux-stat-value,
-.app-shell .lux-stat-card .el-statistic__content { font-size: 24px; font-weight: 600; letter-spacing: normal; }
 
 /* Page hierarchy: identity, controls, then the working surface. */
 html[data-workspace] .app-shell .panel-header--page {
@@ -52,10 +43,6 @@ html[data-workspace] .app-shell .lux-form-card > .el-card__header { padding: 17p
 html[data-workspace] .app-shell .lux-form-card > .el-card__header .ui-section-title { font-size: 14px; font-weight: 600; }
 html[data-workspace] .app-shell .lux-form-card .ui-field-label,
 html[data-workspace] .app-shell .lux-field .el-form-item__label { font-size: 13px; font-weight: 500; }
-html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs { border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0; }
-html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented { min-height: 44px; --el-segmented-bg-color: transparent; --el-segmented-item-selected-bg-color: transparent; --el-segmented-item-selected-color: hsl(var(--primary)); --el-border-radius-base: 0; }
-html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented__item { min-height: 40px; }
-html[data-workspace] .app-shell .settings-page-panel > .console-segmented-tabs .el-segmented__item-selected { border-bottom: 2px solid hsl(var(--primary)); }
 html[data-workspace] .app-shell .monitor-metric-group { border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
 html[data-workspace] .app-shell .monitor-metric-group:hover,
 html[data-workspace] .app-shell .monitor-metric-cell:hover { transform: none; box-shadow: none; }

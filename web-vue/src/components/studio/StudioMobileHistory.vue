@@ -11,7 +11,6 @@
         v-for="{ item: conversation } in visibleConversationEntries"
         :key="conversation.id"
         class="studio-mobile-history-window-row"
-        :style="{ height: `${historyRowHeight(conversation)}px` }"
       >
         <div
           class="studio-mobile-history-item"
@@ -23,16 +22,12 @@
             :aria-current="conversation.id === activeConversationId ? 'true' : undefined"
             @click="$emit('select', conversation.id); $emit('close')"
           >
-            <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
+            <span class="studio-mobile-history-heading-line">
+              <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
+              <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" />
+            </span>
             <span class="studio-mobile-history-meta">
               {{ conversation.messages.length }} 条 · {{ formatTime(conversation.updatedAt) }}
-            </span>
-            <span
-              v-if="badges[conversation.id]"
-              class="studio-mobile-history-badge"
-              :class="`is-${badges[conversation.id].state}`"
-            >
-              {{ badges[conversation.id].label }}
             </span>
           </button>
           <button
@@ -62,6 +57,7 @@ import { Icon } from '@iconify/vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { DrawerShell } from '@/components/ui'
 import { useWindowedList } from '@/composables/useWindowedList'
+import StudioConversationStatus from './StudioConversationStatus.vue'
 import type { StudioConversation, StudioConversationBadge } from './types'
 
 const props = defineProps<{
@@ -85,7 +81,6 @@ const historyTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
 })
 const historyListRef = ref<HTMLElement | null>(null)
 const shouldWindowHistory = computed(() => props.open && props.conversations.length > 36)
-const historyRowHeight = (conversation: StudioConversation) => props.badges[conversation.id] ? 96 : 72
 const {
   visibleItems: visibleConversationEntries,
   topSpacerHeight,
@@ -96,7 +91,6 @@ const {
 } = useWindowedList({
   items: computed(() => props.conversations),
   itemHeight: 72,
-  getItemHeight: historyRowHeight,
   overscan: 8,
   disabled: computed(() => !shouldWindowHistory.value),
 })
@@ -148,7 +142,7 @@ function formatTime(value: string) {
 .studio-mobile-history-window-row {
   display: flex;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 0 0 72px;
   padding-bottom: 0.25rem;
 }
 
@@ -188,7 +182,16 @@ function formatTime(value: string) {
   background: hsl(var(--tone-error-bg));
 }
 
+.studio-mobile-history-heading-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .studio-mobile-history-title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -203,32 +206,4 @@ function formatTime(value: string) {
   color: hsl(var(--muted-foreground));
 }
 
-.studio-mobile-history-badge {
-  width: fit-content;
-  border-radius: 999px;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 1rem;
-}
-
-.studio-mobile-history-badge.is-running {
-  background: hsl(var(--tone-info-bg));
-  color: hsl(var(--tone-info-foreground));
-}
-
-.studio-mobile-history-badge.is-done {
-  background: hsl(var(--tone-success-bg));
-  color: hsl(var(--tone-success-foreground));
-}
-
-.studio-mobile-history-badge.is-error {
-  background: hsl(var(--tone-error-bg));
-  color: hsl(var(--tone-error-foreground));
-}
-
-.studio-mobile-history-badge.is-expired {
-  background: hsl(var(--tone-warning-bg));
-  color: hsl(var(--tone-warning-foreground));
-}
 </style>

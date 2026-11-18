@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/why-qw1ko/chatgpt2api">当前仓库</a> ·
+  <a href="#界面预览">界面预览</a> ·
   <a href="./CHANGELOG.md">更新说明</a> ·
   <a href="./docs/README.md">维护文档</a> ·
   <a href="./LICENSE">AGPL-3.0-only</a>
@@ -19,7 +20,7 @@ Status: current
 
 本仓库 [why-qw1ko/chatgpt2api](https://github.com/why-qw1ko/chatgpt2api) 基于 [yukkcat/chatgpt2api](https://github.com/yukkcat/chatgpt2api) 修改，后者是本仓库的直接上游。更早的代码来源为 [basketikun/chatgpt2api](https://github.com/basketikun/chatgpt2api)，对应的 MIT 版权与许可声明保留在 [NOTICE](./NOTICE)。感谢上游作者与贡献者。
 
-本仓库重构了 **LuxuryImage** 管理与创作控制台。前端基于 Vue 3 和 TypeScript，通用 UI 组件已从 Nanocat 迁移至 **Element Plus**，页面样式由 Tailwind CSS 和项目主题共同实现。界面参考字节跳动产品的视觉风格，采用中性底色、蓝色主操作和紧凑导航，并重新设计了对话画图页的会话历史、消息区和创作输入区。
+**LuxuryImage** 是本仓库的管理与创作控制台。前端使用 Vue 3、TypeScript、Element Plus 和 Tailwind CSS。新版界面借鉴 Arco Design 的视觉风格，统一亮色与暗色主题、侧栏导航和表单控件。对话画图页重新组织了会话历史、消息区与创作输入区，可在输入区切换对话、画图、搜索和文件模式。
 
 后端使用 Python 3.13+ 和 FastAPI，Docker 构建使用 Python 3.13 与 Node.js 22。
 
@@ -30,13 +31,28 @@ Status: current
 | 模块 | 已实现的能力 |
 | --- | --- |
 | 兼容 API | Chat Completions、Responses、Anthropic Messages、搜索、图片生成与编辑、PPT / PSD 异步文件任务 |
-| 对话画图 | 文本对话、搜索、文生图、多参考图编辑、局部编辑、图片任务轮询、按用户密钥保存会话 |
+| 对话画图 | 文本对话、搜索、文生图、多参考图编辑、局部编辑、PPT / PSD 文件任务、图片任务进度和按用户密钥同步会话 |
 | 账号管理 | Access Token / Refresh Token 管理、OAuth、Session JSON、CPA / 远程 CPA / Sub2API 导入、账号分组、批量操作、额度同步和账号测试 |
 | 密钥与权限 | 管理员启动密钥、用户密钥、管理控制台与创作工作区能力控制 |
 | 代理与调度 | 账号和账号组代理、多节点代理组、默认与备用出口、连通性检测、账号处理并发与图片并发控制 |
 | 日志与监控 | 调用记录、请求详情、实时请求、图片执行阶段、失败诊断、账号切换与调用统计 |
 | 图片与文件 | 图库、标签、缩略图、批量下载、压缩与清理、本地 / WebDAV 图片存储、可选图片放大与 GenBox 推送 |
 | 设置与维护 | 提示词库及来源同步、SQLite / PostgreSQL、R2 备份、保留策略、亮色 / 暗色主题 |
+
+## 界面预览
+
+截图来自新版 LuxuryImage 控制台，使用演示账号、会话和统计数据。登录页默认显示经典模式，右上角可切换为简约模式，浏览器会记住选择。
+
+<table width="100%">
+  <tr><th width="50%">概览 · 亮色</th><th width="50%">概览 · 暗色</th></tr>
+  <tr><td><img src="docs/images/1.png" alt="亮色主题的工作空间概览，展示账号资源、运行环境和模型请求分布"></td><td><img src="docs/images/2.png" alt="暗色主题的工作空间概览"></td></tr>
+  <tr><th>对话画图</th><th>账号管理</th></tr>
+  <tr><td><img src="docs/images/3.png" alt="对话画图工作区，展示会话历史、图片结果和创作输入区"></td><td><img src="docs/images/4.png" alt="账号列表，展示凭据状态、套餐、图片额度和批量操作"></td></tr>
+  <tr><th>实时监控</th><th>系统设置</th></tr>
+  <tr><td><img src="docs/images/5.png" alt="实时监控页面，展示请求阶段和运行指标"></td><td><img src="docs/images/6.png" alt="系统设置页面，展示设置分组和基础配置"></td></tr>
+  <tr><th>登录 · 经典模式</th><th>登录 · 简约模式</th></tr>
+  <tr><td><img src="docs/images/login-classic.png" alt="带品牌插画的经典登录页"></td><td><img src="docs/images/login-simple.png" alt="简约登录页，显示访问密钥输入框"></td></tr>
+</table>
 
 ## 部署本仓库
 
@@ -175,19 +191,6 @@ curl http://localhost:8000/v1/images/generations \
 Application Database 保存账号、用户密钥、设置、代理、调用记录、统计投影、提示词库、Studio 会话和可编辑文件任务元数据。图片任务、图片索引、图库文件与生成文件另有存储；实时监控状态在进程内。详见 [存储架构](./docs/storage-architecture.md)，具体默认值和约束见 [设置规范](./contracts/settings_specification.py)。
 
 不要提交 `.env`、`config.json`、`data/` 或真实账号凭证。
-
-## 界面示例
-
-以下为较早版本在隔离演示环境中的浏览器截图，供参考页面结构。演示数据仅用于说明界面。
-
-<table width="100%">
-  <tr><th width="50%">概览 · 亮色</th><th width="50%">概览 · 暗色</th></tr>
-  <tr><td><img src="docs/images/1.png" alt="控制台概览亮色主题"></td><td><img src="docs/images/2.png" alt="控制台概览暗色主题"></td></tr>
-  <tr><th>对话画图</th><th>账号管理</th></tr>
-  <tr><td><img src="docs/images/3.png" alt="对话画图工作区"></td><td><img src="docs/images/4.png" alt="账号管理页面"></td></tr>
-  <tr><th>实时监控</th><th>系统设置</th></tr>
-  <tr><td><img src="docs/images/5.png" alt="实时监控页面"></td><td><img src="docs/images/6.png" alt="系统设置页面"></td></tr>
-</table>
 
 ## 本地开发
 
