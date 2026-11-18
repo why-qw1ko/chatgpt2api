@@ -611,6 +611,10 @@ class OpenAIBackendAPI:
             "restore_at": restore_at,
             "status": "正常" if image_quota_unknown or quota > 0 else "限流",
         }
+        raw_account_id = default_account.get("account_id")
+        account_id = raw_account_id.strip() if isinstance(raw_account_id, str) else ""
+        if account_id:
+            result["account_id"] = account_id
         if plan_type:
             result["type"] = plan_type
         logger.debug({
