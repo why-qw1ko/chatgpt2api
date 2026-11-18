@@ -38,7 +38,7 @@
                 <p class="truncate font-medium text-foreground">{{ pool.name || pool.id }}</p>
                 <p class="mt-1 truncate font-mono text-muted-foreground">{{ pool.base_url }}</p>
               </div>
-              <div class="flex gap-1.5">
+              <div class="flex flex-wrap justify-end gap-1.5">
                 <Button size="xs" variant="outline" root-class="w-14 justify-center whitespace-nowrap" :disabled="remoteImportActive" @click="$emit('importCpa', pool)">导入</Button>
                 <Button size="xs" variant="outline" root-class="w-14 justify-center whitespace-nowrap" :disabled="testingExternalSource === pool.id" @click="$emit('testCpa', pool)">
                   {{ testingExternalSource === pool.id ? '测试中' : '测试' }}

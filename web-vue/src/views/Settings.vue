@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <PagePanel v-if="localSettings" class="settings-page-panel space-y-5">
-      <PanelHeader eyebrow="PREFERENCES / SETTINGS" title="系统设置" align="start">
+      <PanelHeader page title="系统设置" align="start">
         <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">集中管理服务配置、存储与访问密钥。</p>
         </template>

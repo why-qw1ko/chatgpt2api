@@ -7,7 +7,7 @@
       class="accounts-panel flex flex-col gap-5"
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
-      <PanelHeader eyebrow="RESOURCES / ACCOUNTS" title="账号管理">
+      <PanelHeader page title="账号管理">
         <template #copy><p class="mt-1 text-xs text-muted-foreground">管理账号、分组与可用额度。</p></template>
       </PanelHeader>
       <div class="accounts-toolbar">

@@ -1,7 +1,7 @@
 <template>
   <div class="gallery-page" :class="{ 'gallery-page--contained': isWorkspaceLayout }">
     <PagePanel class="gallery-hero">
-      <PanelHeader eyebrow="LIBRARY / IMAGES" title="图片管理">
+      <PanelHeader page title="图片管理">
         <template #actions>
           <Button size="sm" variant="outline" :disabled="isLoading" @click="openStorageModal">
             存储管理
@@ -565,9 +565,9 @@ pageRuntime.onShow(() => {
 }
 
 .gallery-date-range {
-  --date-range-flex: 0 1 17rem;
-  --date-range-min-width: min(100%, 16rem);
-  --date-range-input-min-width: 7.25rem;
+  --date-range-flex: 0 1 20rem;
+  --date-range-min-width: min(100%, 20rem);
+  --date-range-input-min-width: 0px;
 }
 
 @media (max-width: 640px) {

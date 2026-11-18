@@ -1,6 +1,5 @@
 <template>
   <div ref="workspaceRoot" class="app-shell min-h-screen">
-    <div class="workspace-ambient" aria-hidden="true"></div>
     <Transition name="route-progress">
       <div
         v-if="routeProgressPhase !== 'idle'"
@@ -17,130 +16,98 @@
     <div class="flex min-h-screen flex-col lg:flex-row">
       <div
         v-if="isSidebarOpen && isMobileViewport"
-        class="fixed inset-0 z-30 bg-black/20 lg:hidden"
+        class="shell-sidebar-scrim fixed inset-0 z-30 lg:hidden"
         aria-hidden="true"
-        @click="closeSidebar"
+        @click="closeSidebar()"
       ></div>
       <aside
         ref="sidebarRef"
-        class="shell-sidebar fixed inset-y-0 left-0 z-40 w-64 -translate-x-full overflow-hidden bg-card border-r border-border
-               transition-[transform,width] duration-200 ease-out will-change-[transform,width] transform-gpu flex flex-col lg:static lg:translate-x-0 lg:w-[var(--sidebar-width)] lg:bg-card
-               lg:border-b-0 lg:border-r lg:sticky lg:top-0 lg:h-screen"
-        :class="[isSidebarOpen ? 'translate-x-0' : '', { 'sidebar--rail': isSidebarRail }]"
-        :style="sidebarStyle"
-        :aria-hidden="isMobileViewport && !isSidebarOpen ? 'true' : undefined"
+        class="shell-sidebar fixed inset-y-0 left-0 z-40 flex w-64 max-w-full shrink-0 -translate-x-full flex-col overflow-hidden border-r border-border bg-card
+               lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:translate-x-0"
+        :class="{ 'shell-sidebar--open': isSidebarOpen, 'sidebar--rail': isSidebarRail }"
+        :role="isMobileSidebarActive ? 'dialog' : undefined"
+        :aria-modal="isMobileSidebarActive ? true : undefined"
+        :aria-label="isMobileSidebarActive ? '导航菜单' : undefined"
         :inert="isMobileViewport && !isSidebarOpen"
         tabindex="-1"
         @keydown="handleSidebarKeydown"
       >
-        <div class="flex h-16 items-center px-5 pt-4 lg:h-20 lg:pt-5">
-          <div class="flex min-w-0 items-center">
-            <div class="shell-sidebar-brand shrink-0">
-              <img src="/logo.svg" alt="" class="h-9 w-9 rounded-[10px] shadow-[0_6px_16px_rgba(20,157,255,0.28)]" />
-            </div>
-            <div class="sidebar-label sidebar-brand-label">
-              <p class="shell-wordmark">LuxuryImage</p>
-              <p class="shell-brand-caption">创作与管理控制台</p>
-            </div>
-          </div>
+        <div class="shell-sidebar-brand">
+          <img src="/logo.svg" alt="" class="h-8 w-8 shrink-0 rounded-md" />
+          <span class="sidebar-label shell-wordmark">LuxuryImage</span>
+          <Button v-if="isMobileSidebarActive" size="sm" variant="ghost" icon-only root-class="ml-auto" aria-label="关闭导航" @click="closeSidebar()">
+            <Icon icon="lucide:x" class="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
 
-        <nav id="app-sidebar-navigation" class="sidebar-nav-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 pb-2 pt-3 lg:pt-4">
-          <p class="shell-sidebar-section-label sidebar-section-label px-3 text-xs uppercase tracking-[0.28em] text-muted-foreground">
-            导航
-          </p>
-          <div class="space-y-1">
-            <RouterLink
-              v-for="item in visibleMenuItems"
-              :key="item.path"
-              :to="item.path"
-              class="shell-nav-item group flex items-center overflow-hidden rounded-lg border border-transparent py-1.5 text-sm font-medium transition-colors"
-              :class="navItemClassMap[item.path]"
-              :aria-label="item.label"
-              :aria-current="isNavActive(item.path) ? 'page' : undefined"
-              :aria-busy="isNavPending(item.path) ? 'true' : undefined"
-              @mouseenter="prefetchRouteView(item.path)"
-              @focus="prefetchRouteView(item.path)"
-              @click="handleNavClick(item.path)"
-            >
-              <Tooltip v-if="isSidebarRail" :text="item.label" placement="right">
-                <span
-                  class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors"
-                  :class="navIconClassMap[item.path]"
-                >
-                  <Icon :icon="item.icon" class="h-4 w-4" aria-hidden="true" />
-                </span>
-              </Tooltip>
-              <span
-                v-else
-                class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors"
-                :class="navIconClassMap[item.path]"
-              >
-                <Icon :icon="item.icon" class="h-4 w-4" aria-hidden="true" />
-              </span>
-              <span class="sidebar-label">{{ item.label }}</span>
-            </RouterLink>
-          </div>
+        <nav id="app-sidebar-navigation" class="sidebar-nav-scroll" aria-label="主导航">
+          <RouterLink
+            v-for="item in visibleMenuItems"
+            :key="item.path"
+            :to="item.path"
+            class="shell-nav-item"
+            :class="{ 'shell-nav-item--active': isNavVisuallyActive(item.path) }"
+            :aria-label="item.label"
+            :aria-current="isNavActive(item.path) ? 'page' : undefined"
+            :aria-busy="isNavPending(item.path) ? 'true' : undefined"
+            @mouseenter="prefetchRouteView(item.path)"
+            @focus="prefetchRouteView(item.path)"
+            @click="handleNavClick(item.path, $event)"
+          >
+            <Tooltip v-if="isSidebarRail" :text="item.label" placement="right">
+              <Icon :icon="item.icon" class="shell-nav-icon" aria-hidden="true" />
+            </Tooltip>
+            <Icon v-else :icon="item.icon" class="shell-nav-icon" aria-hidden="true" />
+            <span class="sidebar-label">{{ item.label }}</span>
+          </RouterLink>
         </nav>
 
-        <div class="shell-sidebar-footer mt-auto border-t border-border px-2 py-3">
-          <div class="sidebar-footer-actions">
+        <div class="sidebar-footer-actions mt-auto shrink-0 border-t border-border p-3">
+          <Button
+            size="sm"
+            variant="ghost"
+            :icon-only="isSidebarRail"
+            root-class="sidebar-logout"
+            aria-label="退出登录"
+            @click="handleLogout"
+          >
+            <Tooltip v-if="isSidebarRail" text="退出登录" placement="right">
+              <Icon icon="lucide:log-out" class="h-4 w-4" aria-hidden="true" />
+            </Tooltip>
+            <Icon v-else icon="lucide:log-out" class="h-4 w-4" aria-hidden="true" />
+            <span v-if="!isSidebarRail">退出登录</span>
+          </Button>
+          <Tooltip v-if="!isMobileViewport" :text="sidebarCollapseLabel" :placement="isSidebarRail ? 'right' : 'top'">
             <Button
               size="sm"
-              variant="outline"
-              :icon-only="isSidebarRail"
-              root-class="sidebar-logout shell-sidebar-footer-button text-muted-foreground"
-              aria-label="退出登录"
-              @click="handleLogout"
-            >
-              <Tooltip v-if="isSidebarRail" text="退出登录" placement="right">
-                <span class="sidebar-footer-tooltip-trigger">
-                  <Icon icon="lucide:log-out" class="h-4 w-4 shrink-0" aria-hidden="true" />
-                </span>
-              </Tooltip>
-              <span class="sidebar-label sidebar-logout-label">退出登录</span>
-            </Button>
-            <Button
-              v-if="!isImmersivePage"
-              size="sm"
-              variant="outline"
+              variant="ghost"
               icon-only
-              root-class="sidebar-collapse-button shell-sidebar-footer-button shrink-0 text-muted-foreground"
-              @click="isSidebarCollapsed = !isSidebarCollapsed"
-              :aria-label="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+              :aria-label="sidebarCollapseLabel"
               :aria-expanded="!isSidebarCollapsed"
               aria-controls="app-sidebar-navigation"
+              @click="isSidebarCollapsed = !isSidebarCollapsed"
             >
-              <Tooltip v-if="isSidebarRail" :text="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" placement="right">
-                <span class="sidebar-footer-tooltip-trigger">
-                  <Icon icon="lucide:panel-left-close" class="h-4 w-4 shrink-0" aria-hidden="true" />
-                </span>
-              </Tooltip>
-              <Icon v-else icon="lucide:panel-left-close" class="h-4 w-4 shrink-0" aria-hidden="true" />
+              <Icon :icon="isSidebarRail ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" class="h-4 w-4" aria-hidden="true" />
             </Button>
-          </div>
+          </Tooltip>
         </div>
       </aside>
 
       <main
-        class="shell-main relative min-w-0 flex-1 lg:ml-0"
-        :class="[
-          { 'flex h-dvh min-h-0 flex-col overflow-hidden': isWorkspacePage },
-          { 'flex h-dvh min-h-0 flex-col overflow-hidden': isContainedManagementPage },
-        ]"
-        :aria-hidden="isMobileSidebarActive ? 'true' : undefined"
+        class="relative min-w-0 bg-background"
+        :class="usesViewportLayout ? 'flex h-dvh min-h-0 flex-none flex-col overflow-hidden lg:flex-1' : 'flex-1'"
         :inert="isMobileSidebarActive"
       >
         <header
           v-if="!isImmersivePage"
-          class="shell-header min-w-0 flex h-14 items-center gap-2.5 border-b border-border bg-card px-4 sm:px-6 lg:h-16"
+          class="flex h-14 min-w-0 items-center gap-3 border-b border-border bg-card px-3 sm:px-4 lg:px-6"
           :class="{ 'shrink-0': usesViewportLayout }"
         >
-          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
             <Button
               ref="sidebarToggleRef"
-              size="xs"
-              variant="outline"
+              size="sm"
+              variant="ghost"
               icon-only
               root-class="lg:hidden"
               @click="openSidebar"
@@ -150,19 +117,16 @@
             >
               <Icon icon="lucide:menu" class="h-4 w-4 shrink-0" aria-hidden="true" />
             </Button>
-            <span class="shell-breadcrumb hidden sm:inline">工作空间 <span aria-hidden="true">/</span></span>
-            <div class="min-w-0">
-              <h2 class="truncate text-base font-semibold text-foreground sm:text-lg lg:text-xl">
-                {{ currentPageTitle }}
-              </h2>
-            </div>
+            <h2 class="truncate text-sm font-semibold tracking-normal text-foreground">
+              {{ currentPageTitle }}
+            </h2>
           </div>
-          <div class="ml-auto flex shrink-0 items-center gap-[12px]">
-            <div class="flex items-center gap-[8px]">
+          <div class="ml-auto flex shrink-0 items-center gap-2">
+            <div class="flex items-center gap-2">
               <Tooltip :text="themeButtonTitle" placement="bottom">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   icon-only
                   :aria-label="themeButtonTitle"
                   @click="cycleThemeMode"
@@ -185,7 +149,7 @@
               <Tooltip text="刷新当前页面" placement="bottom">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   icon-only
                   aria-label="刷新当前页面"
                   @click="refreshPage"
@@ -194,7 +158,7 @@
                 </Button>
               </Tooltip>
             </div>
-            <div class="flex items-center gap-[8px]">
+            <div class="flex items-center gap-2">
               <span v-if="authStore.isAdmin" class="hidden lg:inline-flex">
                 <Tooltip text="查看接口信息" placement="bottom">
                   <Button
@@ -213,10 +177,8 @@
                   <Button
                     size="sm"
                     variant="outline"
-                    :root-class="hasNewVersion
-                      ? '!border-amber-400/70 !bg-amber-50 !text-amber-800 hover:!border-amber-500 hover:!bg-amber-100 hover:!text-amber-900 dark:!border-amber-500/60 dark:!bg-amber-950/35 dark:!text-amber-300 dark:hover:!border-amber-400 dark:hover:!bg-amber-950/55 dark:hover:!text-amber-200'
-                      : ''"
-                    aria-label="查看版本更新"
+                    :root-class="hasNewVersion ? 'shell-header-update' : undefined"
+                    :aria-label="hasNewVersion ? '有新版本，查看版本更新' : '查看版本更新'"
                     @click="openUpdateDialog"
                   >
                     {{ currentVersionLabel || '版本' }}
@@ -285,6 +247,7 @@
       :title="confirmDialog.title.value"
       :message="confirmDialog.message.value"
       :confirm-text="confirmDialog.confirmText.value"
+      :confirm-variant="confirmDialog.confirmVariant.value"
       :cancel-text="confirmDialog.cancelText.value"
       @confirm="confirmDialog.confirm"
       @cancel="confirmDialog.cancel"
@@ -638,13 +601,14 @@ const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 const isSidebarOpen = ref(false)
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(getBooleanPreference(preferenceKeys.sidebarCollapsed))
 const isMobileViewport = ref(typeof window !== 'undefined'
   ? !window.matchMedia('(min-width: 1024px)').matches
   : false)
 const sidebarToggleRef = ref<ComponentPublicInstance | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const confirmDialog = useConfirmDialog()
+let isLogoutPending = false
 const isApiInfoOpen = ref(false)
 
 const isUpdateDialogOpen = ref(false)
@@ -761,14 +725,9 @@ const { isWorkspaceLayout } = useListLayoutPreference()
 const isContainedManagementPage = computed(() => isManagementPage.value && isWorkspaceLayout.value)
 const usesViewportLayout = computed(() => isWorkspacePage.value || isContainedManagementPage.value)
 const isMobileSidebarActive = computed(() => isMobileViewport.value && isSidebarOpen.value)
-const isSidebarRail = computed(() => (
-  !isMobileViewport.value && (isSidebarCollapsed.value || isImmersivePage.value)
-))
-const sidebarStyle = computed(() => ({
-  '--sidebar-width': isSidebarRail.value ? '4.75rem' : '15.75rem',
-}))
+const isSidebarRail = computed(() => !isMobileViewport.value && isSidebarCollapsed.value)
+const sidebarCollapseLabel = computed(() => isSidebarCollapsed.value ? '展开侧边栏' : '收起侧边栏')
 
-const navItemBaseClass = 'justify-start gap-0 px-1.5'
 const activeNavPathSet = computed(() => {
   const name = String(route.name || '')
   const currentPath = route.path
@@ -798,32 +757,6 @@ function isNavVisuallyActive(path: string) {
   if (pendingNavigationPath.value) return isNavPending(path)
   return isNavActive(path)
 }
-
-function buildNavItemClass(path: string) {
-  const base = navItemBaseClass
-  if (isNavVisuallyActive(path)) {
-    return `${base} shell-nav-item--active font-semibold`
-  }
-  return `${base} text-muted-foreground hover:bg-secondary hover:text-foreground`
-}
-
-function buildNavIconClass(path: string) {
-  if (isNavVisuallyActive(path)) {
-    return 'text-secondary-foreground'
-  }
-  return 'text-muted-foreground group-hover:text-foreground'
-}
-
-const navItemClassMap = computed<Record<string, string>>(() => {
-  const entries = visibleMenuItems.value.map((item) => [item.path, buildNavItemClass(item.path)])
-  return Object.fromEntries(entries)
-})
-
-const navIconClassMap = computed<Record<string, string>>(() => {
-  const entries = visibleMenuItems.value.map((item) => [item.path, buildNavIconClass(item.path)])
-  return Object.fromEntries(entries)
-})
-
 
 const apiSdkUrl = computed(() => `${apiBaseUrl.value}/v1`)
 const apiKeyDisplay = computed(() => currentAuthToken.value || '未登录')
@@ -994,8 +927,6 @@ watch(
   }
 )
 
-isSidebarCollapsed.value = getBooleanPreference(preferenceKeys.sidebarCollapsed, false)
-
 watch(isSidebarCollapsed, (value) => {
   setBooleanPreference(preferenceKeys.sidebarCollapsed, value)
 })
@@ -1017,9 +948,25 @@ function refreshPage() {
 }
 
 async function handleLogout() {
-  closeSidebar()
-  await authStore.logout()
-  await router.replace({ name: 'login' })
+  if (isLogoutPending || confirmDialog.open.value) return
+  isLogoutPending = true
+  try {
+    if (isMobileSidebarActive.value) {
+      closeSidebar()
+      await nextTick()
+    }
+    const confirmed = await confirmDialog.ask({
+      title: '确认退出登录',
+      message: '退出后，再次进入控制台需要重新输入访问密钥。',
+      confirmText: '退出登录',
+      confirmVariant: 'danger',
+    })
+    if (!confirmed) return
+    await authStore.logout()
+    await router.replace({ name: 'login' })
+  } finally {
+    isLogoutPending = false
+  }
 }
 
 async function openApiInfo() {
@@ -1304,7 +1251,8 @@ function prefetchRouteView(path: string) {
   })
 }
 
-function handleNavClick(path: string) {
+function handleNavClick(path: string, event: MouseEvent) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   beginRouteNavigation(path)
   closeSidebar()
 }
@@ -1333,6 +1281,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (confirmDialog.open.value) confirmDialog.cancel()
   window.removeEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.removeEventListener('keydown', handleWindowKeydown)
   teardownViewportListener()
@@ -1404,84 +1353,123 @@ onBeforeUnmount(() => {
   }
 }
 
-.sidebar-nav-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.shell-sidebar-scrim {
+  background: var(--overlay-backdrop);
 }
 
-.sidebar-nav-scroll::-webkit-scrollbar {
-  display: none;
+.shell-sidebar-brand {
+  display: flex;
+  height: 56px;
+  flex-shrink: 0;
+  align-items: center;
+  padding-inline: 16px;
+}
+
+.shell-wordmark {
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.shell-header-update.el-button {
+  --el-button-text-color: hsl(var(--tone-warning-foreground));
+  --el-button-bg-color: hsl(var(--tone-warning-bg));
+  --el-button-hover-text-color: hsl(var(--tone-warning-foreground));
+  --el-button-hover-bg-color: color-mix(in srgb, hsl(var(--tone-warning-bg)) 84%, hsl(var(--tone-warning-border)));
+  --el-button-active-text-color: var(--el-button-hover-text-color);
+  --el-button-active-bg-color: var(--el-button-hover-bg-color);
+}
+
+.sidebar-nav-scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.shell-nav-item {
+  display: flex;
+  min-height: 40px;
+  flex: none;
+  align-items: center;
+  padding-inline: 12px;
+  border-radius: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.shell-nav-item:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.shell-nav-item--active {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-weight: 600;
+}
+
+.shell-nav-item--active:hover {
+  background: color-mix(in srgb, hsl(var(--secondary)) 94%, hsl(var(--primary)));
+  color: hsl(var(--secondary-foreground));
+}
+
+.shell-nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.shell-nav-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
 }
 
 .sidebar-label {
-  display: flex;
-  align-items: center;
   min-width: 0;
   max-width: 11rem;
-  flex: 1 1 auto;
+  margin-inline-start: 8px;
   overflow: hidden;
-  margin-inline-start: 0.75rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    max-width 0.2s ease,
-    margin-inline-start 0.2s ease,
-    opacity 0.12s ease 0.04s,
-    transform 0.2s ease;
-}
-
-.sidebar-brand-label {
-  flex: 0 1 auto;
-}
-
-.sidebar-section-label {
-  max-height: 1.75rem;
-  overflow: hidden;
-  padding-bottom: 0.5rem;
-  white-space: nowrap;
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    max-height 0.2s ease,
-    padding-bottom 0.2s ease,
-    opacity 0.12s ease 0.04s,
-    transform 0.2s ease;
 }
 
 .sidebar-footer-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .sidebar-logout {
-  display: inline-flex;
   min-width: 0;
-  height: 2rem;
   flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+.sidebar--rail {
+  width: 4rem;
+}
+
+.sidebar--rail .shell-sidebar-brand,
+.sidebar--rail .shell-nav-item {
   justify-content: center;
-  overflow: hidden;
-  padding-inline: 0.75rem;
+  padding-inline: 0;
 }
 
-.sidebar-logout-label {
-  flex: 0 1 auto;
-  margin-inline-start: 0;
+.sidebar--rail .sidebar-nav-scroll {
+  padding-inline: 8px;
 }
 
-.sidebar-footer-tooltip-trigger {
-  display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: none;
-  align-items: center;
+.sidebar--rail .shell-nav-item :deep(.lux-tooltip-trigger) {
   justify-content: center;
-}
-
-.sidebar-collapse-button {
-  flex: none;
+  width: 100%;
+  align-self: stretch;
 }
 
 .sidebar--rail .sidebar-label {
@@ -1489,33 +1477,37 @@ onBeforeUnmount(() => {
   margin-inline-start: 0;
   opacity: 0;
   transform: translateX(-4px);
-  transition-delay: 0s;
-}
-
-.sidebar--rail .sidebar-section-label {
-  max-height: 0;
-  padding-bottom: 0;
-  opacity: 0;
-  transform: translateX(-4px);
-  transition-delay: 0s;
 }
 
 .sidebar--rail .sidebar-footer-actions {
   flex-direction: column;
-  gap: 0.5rem;
+  padding-inline: 8px;
 }
 
-.sidebar--rail .sidebar-logout {
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 2.25rem;
-  justify-content: center;
-  padding: 0;
+.shell-sidebar--open {
+  transform: translateX(0);
 }
 
-.sidebar--rail .sidebar-collapse-button {
-  width: 2.25rem;
-  height: 2.25rem;
+@media (prefers-reduced-motion: no-preference) {
+  .shell-sidebar {
+    transition: transform var(--motion-slow) var(--ease-spring);
+  }
+
+  .sidebar-label {
+    transition:
+      opacity var(--motion-fast) var(--ease-out-soft),
+      transform var(--motion-base) var(--ease-spring);
+  }
+
+  .shell-nav-item {
+    transition: background-color var(--motion-fast) var(--ease-out-soft), color var(--motion-fast) var(--ease-out-soft);
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .shell-sidebar {
+    transition: width var(--motion-base) var(--ease-spring);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1534,44 +1526,6 @@ onBeforeUnmount(() => {
 
   .shell-route-progress-bar--finishing {
     transform: scaleX(1);
-  }
-
-  .sidebar-label,
-  .sidebar-section-label {
-    transition: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  .sidebar--rail .sidebar-label {
-    max-width: 11rem;
-    margin-inline-start: 0.75rem;
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .sidebar--rail .sidebar-section-label {
-    max-height: 1.75rem;
-    padding-bottom: 0.5rem;
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .sidebar--rail .sidebar-footer-actions {
-    flex-direction: row;
-    gap: 0.75rem;
-  }
-
-  .sidebar--rail .sidebar-logout {
-    width: auto;
-    height: 2rem;
-    flex: 1 1 auto;
-    justify-content: center;
-    padding-inline: 0.75rem;
-  }
-
-  .sidebar-collapse-button {
-    display: none;
   }
 }
 </style>

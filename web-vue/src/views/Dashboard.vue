@@ -1,16 +1,9 @@
 <template>
   <div class="dashboard-page space-y-5">
-    <div class="page-intro workspace-hero" data-spotlight>
-      <div class="workspace-pendulum" aria-hidden="true"><span></span><i></i></div>
-      <div class="workspace-hero-copy">
-        <p class="page-eyebrow"><span class="workspace-eyebrow-line" aria-hidden="true"></span>LUXURYIMAGE / OVERVIEW</p>
-        <h1>工作空间概览<span class="workspace-title-dot">.</span></h1>
-        <p><TypewriterText text="把创作交给灵感，把运行状态尽收眼底。" /></p>
-        <div class="workspace-hero-caption"><span>账号资源</span><span>调用趋势</span><span>运行状态</span></div>
-        <div class="workspace-reveal-note"><i aria-hidden="true"></i> 灵感有序，创作自由。</div>
-      </div>
-      <div class="workspace-orbit" aria-hidden="true"><i></i><i></i><i></i><div class="workspace-orbit-core"><img src="/logo.svg" alt="" /></div><span>CREATIVE OPERATIONS</span></div>
-    </div>
+    <header class="dashboard-intro">
+      <h1 class="text-2xl font-semibold">工作空间概览</h1>
+      <p class="mt-1 text-sm text-muted-foreground">查看账号资源、调用趋势和运行状态。</p>
+    </header>
     <PageLoadingState
       v-if="!dashboardDataReady && !dashboardLoadError"
       title="正在加载概览"
@@ -45,7 +38,6 @@
         v-for="stat in accountStats"
         :key="stat.label"
         animate
-        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -62,7 +54,6 @@
         v-for="stat in callStats"
         :key="stat.label"
         animate
-        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -71,7 +62,7 @@
     </section>
 
     <section>
-      <PagePanel class="!rounded-xl">
+      <PagePanel>
         <PanelHeader title="运行环境" align="start" />
 
         <div class="mt-4 grid min-w-0 gap-5 xl:grid-cols-[minmax(20rem,0.9fr)_minmax(0,1.4fr)]">
@@ -237,7 +228,6 @@
 </template>
 
 <script setup lang="ts">
-import TypewriterText from '@/components/ui/TypewriterText.vue'
 import { computed } from 'vue'
 import { Button, ChartCard, HelpTip, HoverCard, StatCard } from '@/components/ui'
 import { Icon } from '@iconify/vue'

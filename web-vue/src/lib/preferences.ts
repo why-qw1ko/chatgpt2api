@@ -1,4 +1,5 @@
 export const preferenceKeys = {
+  loginSimpleMode: 'login-simple-mode',
   sidebarCollapsed: 'sidebar-collapsed',
   accountsViewMode: 'accounts-view-mode',
   accountsPageSize: 'accounts-page-size',

@@ -22,46 +22,54 @@
       ></div>
     </div>
 
-    <main class="studio-main">
-      <div class="chat-header-bar">
+    <section class="studio-main" aria-label="对话画图">
+      <header class="chat-header-bar">
         <div class="chat-header-title">
           <Button
             size="sm"
             variant="ghost"
             icon-only
-            root-class="chat-header-icon lg:hidden"
-            title="打开会话列表"
-            aria-label="打开会话列表"
+            root-class="lg:hidden"
+            title="打开对话历史"
+            aria-label="打开对话历史"
+            :aria-expanded="isMobileHistoryOpen"
             @click="openMobileHistory"
           >
             <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
           </Button>
           <div class="min-w-0">
             <div class="chat-header-name">{{ activeConversation?.title || '新对话' }}</div>
-            <div class="chat-header-subtitle">{{ activeHeaderSubtitle }}</div>
+            <div v-if="activeHeaderSubtitle" class="chat-header-subtitle">{{ activeHeaderSubtitle }}</div>
           </div>
         </div>
 
         <div class="chat-header-actions">
-          <Button size="sm" variant="outline" root-class="chat-header-action-button" @click="createConversation()">
-            <Icon icon="lucide:plus" class="h-3.5 w-3.5" />
-            <span class="chat-header-action-label hidden sm:inline">新对话</span>
-          </Button>
           <Button
             size="sm"
-            variant="outline"
-            root-class="chat-header-action-button"
-            :disabled="!activeConversation?.messages.length"
-            @click="clearCurrentConversation"
+            variant="ghost"
+            icon-only
+            root-class="chat-header-create"
+            title="新建对话"
+            aria-label="新建对话"
+            @click="createConversation()"
           >
-            <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
-            <span class="chat-header-action-label hidden sm:inline">清空</span>
+            <Icon icon="lucide:plus" class="h-4 w-4" />
           </Button>
           <Button
             size="sm"
             variant="ghost"
             icon-only
-            root-class="chat-header-action-button"
+            :disabled="!activeConversation?.messages.length"
+            title="清空当前对话"
+            aria-label="清空当前对话"
+            @click="clearCurrentConversation"
+          >
+            <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon-only
             :title="isFullscreen ? '退出全屏' : '全屏'"
             :aria-label="isFullscreen ? '退出全屏' : '全屏'"
             @click="toggleFullscreen"
@@ -69,20 +77,17 @@
             <Icon :icon="isFullscreen ? 'lucide:minimize-2' : 'lucide:maximize-2'" class="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </header>
 
       <div ref="studioContentRef" class="studio-content-layout">
-        <div class="studio-conversation-column">
+        <div class="studio-conversation-column" :class="{ 'is-empty': !activeConversation?.messages.length }">
           <StudioMessageList
             ref="messageListRef"
             :conversation="activeConversation"
-            :conversations-count="conversations.length"
             :task-by-id="taskById"
             :file-task-by-id="fileTaskById"
-            :fullscreen="isFullscreen"
-            @create="createConversation"
-            @open-history="openMobileHistory"
-            @toggle-fullscreen="toggleFullscreen"
+            :can-use-image-starter="canUseImageStarter"
+            @use-image-starter="useImageStarter"
             @retry="retryMessage"
             @edit="editMessage"
             @resend="resendMessage"
@@ -98,6 +103,7 @@
           />
 
           <StudioComposer
+            ref="composerRef"
             v-model:mode="composeMode"
             v-model:text="composerText"
             v-model:chat-model="chatModel"
@@ -145,7 +151,7 @@
           </aside>
         </Transition>
       </div>
-    </main>
+    </section>
 
     <DrawerShell
       :open="Boolean(activeSearchSourceMessage) && !isSearchSourceDocked"
@@ -213,7 +219,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { Button, DrawerShell } from '@/components/ui'
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { usePageRuntime } from '@/composables/usePageRuntime'
@@ -285,6 +291,7 @@ const modelFormRuntime = useStudioModelFormRuntime()
 
 const composeMode = composerRuntime.composeMode
 const composerText = composerRuntime.composerText
+const composerRef = ref<InstanceType<typeof StudioComposer> | null>(null)
 const fileKind = composerRuntime.fileKind
 const editingMessageId = composerRuntime.editingMessageId
 const isSending = composerRuntime.isSending
@@ -464,6 +471,10 @@ const chatStreamRuntime = useStudioChatStreamRuntime({
   scheduleScrollToBottom,
 })
 const isStreaming = chatStreamRuntime.isStreaming
+const canUseImageStarter = computed(() => (
+  !composerText.value && !referenceRuntime.references.value.length && !editingMessageId.value
+  && !isSending.value && !isStreaming.value
+))
 const activeHeaderSubtitle = computed(() => {
   if (isStreaming.value) return '正在回复'
   if (isSending.value) {
@@ -474,8 +485,15 @@ const activeHeaderSubtitle = computed(() => {
   }
   if (activeRunningTaskCount.value > 0) return `处理中 ${activeRunningTaskCount.value}`
   const count = activeConversation.value?.messages.length || 0
-  return count ? `${count} 条消息` : '准备就绪'
+  return count ? `${count} 条消息` : ''
 })
+
+function useImageStarter(prompt: string) {
+  if (!canUseImageStarter.value) return
+  composerRuntime.activateImageMode()
+  composerText.value = prompt
+  void nextTick(() => composerRef.value?.focusInput())
+}
 
 function clearSearchSourceHighlight() {
   highlightedSearchSourceIndex.value = null
@@ -620,6 +638,7 @@ async function deleteConversation(id: string) {
     title: '删除对话',
     message: `确定删除“${conversation.title || '未命名对话'}”吗？本地历史会被移除。`,
     confirmText: '删除',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
@@ -637,6 +656,7 @@ async function confirmClearHistory() {
     title: '清空历史',
     message: '确定清空本地对话画图历史吗？已生成的图片文件不会删除。',
     confirmText: '清空',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
@@ -656,6 +676,7 @@ async function clearCurrentConversation() {
     title: '清空当前对话',
     message: `确定清空“${conversation.title || '未命名对话'}”中的消息吗？`,
     confirmText: '清空',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
@@ -880,6 +901,7 @@ function cancelScheduledScroll() {
 
 function stopTransientStudioUi() {
   layoutRuntime.stopSidebarResize()
+  closeMobileHistory()
   conversationSelectionRuntime.cancel()
   closeSearchSourcePanel()
   isSearchSkillOpen.value = false
@@ -989,7 +1011,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .studio-workspace {
-  --studio-content-width: min(100%, clamp(48rem, 68vw, 78rem));
+  --studio-content-width: min(100%, 48rem);
+  --studio-content-gutter: 1.5rem;
   --ui-card-border: hsl(var(--border));
   --ui-card-bg: hsl(var(--card));
   --ui-panel-border: hsl(var(--border));
@@ -1011,9 +1034,9 @@ onBeforeUnmount(() => {
   --ui-active-bg: hsl(var(--secondary));
   --ui-active-fg: hsl(var(--foreground));
   --ui-divider: hsl(var(--border));
-  --ui-danger-fg: rgb(220 38 38);
-  --ui-danger-bg: rgb(254 242 242 / 0.88);
-  --ui-danger-border: rgb(248 113 113 / 0.35);
+  --ui-danger-fg: hsl(var(--tone-error-foreground));
+  --ui-danger-bg: hsl(var(--tone-error-bg));
+  --ui-danger-border: hsl(var(--tone-error-border));
   --ui-duration-fast: 150ms;
   --ui-duration-normal: 220ms;
   --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1023,7 +1046,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex: 1 1 0%;
   grid-template-columns: var(--studio-history-width) minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -1033,8 +1056,7 @@ onBeforeUnmount(() => {
   z-index: 180;
   height: 100dvh;
   min-height: 0;
-  background: hsl(var(--background));
-  padding: 1rem 1.25rem 1.25rem;
+  background: hsl(var(--card));
 }
 
 .studio-sidebar-wrap {
@@ -1047,20 +1069,18 @@ onBeforeUnmount(() => {
   display: none;
   position: absolute;
   top: 0;
-  right: -0.5rem;
+  right: -0.25rem;
   bottom: 0;
   z-index: 10;
-  width: 0.75rem;
-  /* 自定义双向箭头光标：深色箭头 + 浅色描边，明暗主题下都清晰 */
-  cursor: ew-resize;
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23000000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E") 12 12, ew-resize;
-  border-radius: 999px;
+  width: 0.5rem;
+  cursor: col-resize;
   touch-action: none;
-  transition: background 0.15s;
+  transition: background-color var(--motion-fast) var(--ease-out-soft);
 }
 
-.studio-history-resizer:hover {
-  background: transparent;
+.studio-history-resizer:hover,
+:global(.studio-resizing .studio-history-resizer) {
+  background-color: hsl(var(--primary) / 0.12);
 }
 
 .studio-main {
@@ -1070,10 +1090,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 14px;
   background: hsl(var(--card));
-  box-shadow: none;
 }
 
 .studio-content-layout {
@@ -1092,6 +1109,11 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   flex-direction: column;
   overflow: hidden;
+}
+
+.studio-conversation-column.is-empty::after {
+  flex: 0 1 min(24dvh, 14rem);
+  content: '';
 }
 
 .studio-search-sources-dock {
@@ -1143,10 +1165,10 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   border-bottom: 1px solid hsl(var(--border));
   background: hsl(var(--card));
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem var(--studio-content-gutter);
 }
 
 .chat-header-title {
@@ -1158,13 +1180,14 @@ onBeforeUnmount(() => {
 
 .chat-header-name {
   min-width: 0;
-  max-width: min(32rem, 48vw);
+  max-width: 36rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: hsl(var(--foreground));
   font-size: 0.875rem;
-  font-weight: 700;
+  line-height: 1.25rem;
+  font-weight: 600;
 }
 
 .chat-header-subtitle {
@@ -1178,12 +1201,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.375rem;
-}
-
-.chat-header-action-button,
-.chat-header-icon {
-  border-radius: 0.75rem;
+  gap: 0.25rem;
 }
 
 :global(.studio-resizing) {
@@ -1195,6 +1213,10 @@ onBeforeUnmount(() => {
   .studio-history-resizer {
     display: block;
   }
+
+  .chat-header-actions .chat-header-create {
+    display: none;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -1205,15 +1227,18 @@ onBeforeUnmount(() => {
   .studio-sidebar-wrap {
     display: none;
   }
+}
 
-  .studio-workspace.is-fullscreen {
-    height: 100dvh;
+@media (max-width: 639px) {
+  .studio-workspace {
+    --studio-content-gutter: 0.75rem;
   }
+}
 
-  .chat-header-name {
-    max-width: 42vw;
+@media (max-height: 620px) {
+  .studio-conversation-column.is-empty::after {
+    display: none;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {

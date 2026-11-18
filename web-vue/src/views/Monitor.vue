@@ -4,7 +4,7 @@
     :class="{ 'monitor-page--ready': Boolean(monitorData) }"
   >
     <PagePanel class="monitor-overview-panel space-y-5">
-      <PanelHeader eyebrow="LIVE / MONITOR" title="实时监控" align="start">
+      <PanelHeader page title="实时监控" align="start">
         <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">
             进程内实时窗口，用于观察入口、账号、出口、上游生成、断流和本地拒绝/繁忙；入口排队高时关注 CHATGPT2API_THREAD_TOKENS；最近更新：{{ monitorData?.updated_at || '未获取' }}

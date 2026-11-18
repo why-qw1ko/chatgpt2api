@@ -23,6 +23,7 @@
         >
           <Icon :icon="message.role === 'user' ? 'lucide:user' : 'lucide:bot'" class="h-4 w-4" />
         </div>
+        <span class="chat-message-speaker">{{ message.role === 'user' ? '你' : '助手' }}</span>
 
         <div class="chat-message-actions">
           <Button
@@ -533,6 +534,7 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-container.is-user {
+  max-width: min(88%, var(--studio-message-width, 44rem));
   align-items: flex-end;
 }
 
@@ -544,12 +546,20 @@ async function handleFileTaskDownload(
   display: flex;
   min-height: 1.75rem;
   align-items: center;
-  gap: 0.375rem;
-  margin-bottom: 0.25rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .chat-message-header.is-user {
   flex-direction: row-reverse;
+}
+
+.chat-message-speaker {
+  flex: none;
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
 }
 
 .chat-message-avatar {
@@ -559,18 +569,14 @@ async function handleFileTaskDownload(
   flex: 0 0 1.75rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--ui-control-border, hsl(var(--border)));
-  border-radius: 999px;
-  background: var(--ui-control-bg, hsl(var(--background)));
-  color: var(--ui-fg-muted, hsl(var(--muted-foreground)));
-  font-size: 0.6875rem;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  background: hsl(var(--secondary));
+  color: hsl(var(--primary));
 }
 
 .chat-message-avatar-user {
-  border-color: var(--ui-accent-border, hsl(var(--foreground) / 0.18));
-  background: var(--ui-accent-soft, hsl(var(--secondary)));
-  color: var(--ui-accent-strong, hsl(var(--foreground)));
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
 }
 
 .chat-message-actions {
@@ -584,7 +590,7 @@ async function handleFileTaskDownload(
   transition: opacity var(--ui-duration-normal, 180ms) var(--ui-ease-out, ease);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
   .chat-message-actions {
     pointer-events: none;
     opacity: 0;
@@ -608,13 +614,12 @@ async function handleFileTaskDownload(
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--ui-panel-border, hsl(var(--border)));
-  border-radius: 18px;
+  border-radius: 0.5rem;
   background: var(--ui-panel-bg, hsl(var(--card)));
-  box-shadow: var(--ui-panel-shadow, 0 8px 24px rgb(15 23 42 / 0.045));
   color: var(--ui-fg-strong, hsl(var(--foreground)));
-  padding: 0.625rem 0.875rem;
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  line-height: 1.75;
+  line-height: 1.5rem;
 }
 
 .chat-message-bubble-wrap {
@@ -634,10 +639,10 @@ async function handleFileTaskDownload(
   max-width: var(--studio-message-width, min(100%, 44rem));
   align-items: flex-start;
   gap: 0.55rem;
-  border: 1px solid rgb(254 202 202);
-  border-radius: 14px;
-  background: rgb(254 242 242);
-  color: rgb(190 18 60);
+  border: 1px solid hsl(var(--tone-error-border));
+  border-radius: 0.75rem;
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
   padding: 0.62rem 0.78rem;
   font-size: 0.835rem;
   line-height: 1.55;
@@ -727,14 +732,21 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-bubble-user {
-  --studio-bubble-fade-bg: hsl(var(--secondary));
-  border-color: var(--ui-accent-border, hsl(var(--foreground) / 0.16));
-  background: var(--ui-accent-soft, hsl(var(--secondary)));
+  --studio-bubble-fade-bg: color-mix(in srgb, hsl(var(--primary)) 8%, hsl(var(--card)));
+  border-color: transparent;
+  background: var(--studio-bubble-fade-bg);
 }
 
-.chat-message-bubble-assistant {
-  --studio-bubble-fade-bg: hsl(var(--card));
-  border-color: var(--ui-panel-border, hsl(var(--border)));
+.chat-message-bubble-assistant:not(.chat-message-bubble-image, .chat-message-bubble-error) {
+  border-color: transparent;
+  background: transparent;
+  padding-top: 0;
+  padding-left: 0;
+}
+
+.chat-message-container.is-file-message .chat-message-bubble-assistant:not(.chat-message-bubble-error) {
+  border-color: hsl(var(--border));
+  padding: 0.75rem 1rem;
 }
 
 .chat-message-bubble-image {
@@ -751,9 +763,9 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-bubble-error {
-  --studio-bubble-fade-bg: rgb(254 242 242);
-  border-color: rgb(254 202 202);
-  background: rgb(254 242 242);
+  --studio-bubble-fade-bg: hsl(var(--tone-error-bg));
+  border-color: hsl(var(--tone-error-border));
+  background: var(--studio-bubble-fade-bg);
 }
 
 .studio-user-prompt {
@@ -961,17 +973,15 @@ async function handleFileTaskDownload(
   align-items: center;
   gap: 0.42rem;
   margin-top: 0.65rem;
-  border: 1px solid hsl(var(--primary) / 0.18);
-  border-radius: 999px;
-  background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--muted) / 0.42));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--control-radius, 0.375rem);
+  background: hsl(var(--card));
   color: hsl(var(--foreground));
   padding: 0.34rem 0.68rem 0.34rem 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 720;
-  line-height: 1;
-  box-shadow: 0 8px 22px hsl(var(--primary) / 0.08);
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  transition: border-color var(--motion-fast) var(--ease-out-soft), background-color var(--motion-fast) var(--ease-out-soft);
 }
 
 .studio-search-source-chip-icon {
@@ -995,25 +1005,22 @@ async function handleFileTaskDownload(
   border-radius: 999px;
   background: hsl(var(--primary) / 0.13);
   color: hsl(var(--primary));
-  font-size: 0.68rem;
-  font-weight: 820;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .studio-search-source-chip small {
   border-left: 1px solid hsl(var(--primary) / 0.16);
   padding-left: 0.42rem;
   color: hsl(var(--muted-foreground));
-  font-size: 0.68rem;
-  font-weight: 780;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .studio-search-source-chip:hover,
 .studio-search-source-chip:focus-visible {
-  border-color: hsl(var(--primary) / 0.34);
-  background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.14), hsl(var(--secondary) / 0.72));
-  box-shadow: 0 10px 26px hsl(var(--primary) / 0.12);
-  transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.45);
+  background: hsl(var(--primary) / 0.08);
 }
 
 .studio-search-image-groups {
@@ -1297,7 +1304,7 @@ async function handleFileTaskDownload(
 
 .studio-error-text {
   margin-top: 0.45rem;
-  color: rgb(190 18 60);
+  color: hsl(var(--tone-error-foreground));
   font-size: 0.8125rem;
   line-height: 1.6;
 }
@@ -1330,7 +1337,7 @@ async function handleFileTaskDownload(
 
 .studio-image-status.is-error {
   align-items: flex-start;
-  color: rgb(185 28 28);
+  color: hsl(var(--tone-error-foreground));
 }
 
 .studio-result-block {
@@ -1499,10 +1506,7 @@ async function handleFileTaskDownload(
   }
 
   .chat-message-actions {
-    max-width: calc(100vw - 5.5rem);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 1px;
+    max-width: calc(100vw - 7.5rem);
   }
 
   .studio-message-reference-strip {

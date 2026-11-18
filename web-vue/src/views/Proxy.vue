@@ -8,7 +8,7 @@
       刷新失败，当前保留上次配置。{{ loadError }}
     </div>
     <PagePanel class="space-y-5">
-      <PanelHeader eyebrow="NETWORK / PROXY" title="代理管理" align="start">
+      <PanelHeader page title="代理管理" align="start">
         <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">
             出口优先级：账号个人代理 > 账号组代理/代理组 > 默认出口；默认出口可配置代理组、代理 URL 或直连。

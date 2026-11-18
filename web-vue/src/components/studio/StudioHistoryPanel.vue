@@ -2,29 +2,29 @@
   <aside class="studio-history-panel">
     <div class="studio-history-header">
       <div class="studio-history-title-row">
-        <span class="studio-history-heading">对话</span>
-        <div class="studio-history-actions">
-          <Button size="sm" variant="outline" icon-only root-class="rounded-xl" title="新对话" @click="$emit('create')">
-            <Icon icon="lucide:plus" class="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon-only
-            root-class="rounded-xl"
-            :disabled="!conversations.length"
-            title="清空历史记录"
-            @click="$emit('clear')"
-          >
-            <Icon icon="lucide:trash-2" class="h-4 w-4" />
-          </Button>
-        </div>
+        <h2 class="studio-history-heading">对话历史</h2>
+        <Button
+          size="xs"
+          variant="ghost"
+          icon-only
+          :disabled="!conversations.length"
+          title="清空历史记录"
+          aria-label="清空历史记录"
+          @click="$emit('clear')"
+        >
+          <Icon icon="lucide:trash-2" class="h-4 w-4" aria-hidden="true" />
+        </Button>
       </div>
     </div>
 
-    <label class="studio-history-search ui-input">
-      <Icon icon="lucide:search" class="h-3.5 w-3.5 shrink-0" />
-      <input v-model="query" placeholder="搜索对话" />
+    <Button variant="primary" block root-class="studio-history-create" @click="$emit('create')">
+      <Icon icon="lucide:plus" class="h-4 w-4" aria-hidden="true" />
+      新建对话
+    </Button>
+
+    <label class="studio-history-search">
+      <Icon icon="lucide:search" class="h-4 w-4 shrink-0" aria-hidden="true" />
+      <input v-model="query" placeholder="搜索对话" aria-label="搜索对话" />
     </label>
 
     <div ref="historyListRef" class="studio-history-list custom-scrollbar" @scroll="handleWindowScroll">
@@ -124,7 +124,7 @@
       ></div>
 
       <div v-if="!filteredConversations.length" class="studio-history-empty">
-        {{ query.trim() ? '没有匹配的对话' : '输入提示词后会在这里显示对话历史。' }}
+        {{ query.trim() ? '没有匹配的对话' : '暂无对话记录' }}
       </div>
     </div>
   </aside>
@@ -336,13 +336,11 @@ function formatConversationTime(conversation: StudioConversation) {
   min-height: 0;
   height: 100%;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.75rem;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1.25rem;
-  background: hsl(var(--card) / 0.88);
+  border-right: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
   padding: 0.75rem;
-  box-shadow: 0 16px 44px -36px rgba(15, 23, 42, 0.45);
 }
 
 @media (min-width: 1024px) {
@@ -366,15 +364,15 @@ function formatConversationTime(conversation: StudioConversation) {
 .studio-history-heading {
   min-width: 0;
   color: hsl(var(--foreground));
-  font-size: 0.9375rem;
-  font-weight: 750;
+  padding-left: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: normal;
 }
 
-.studio-history-actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.375rem;
+.studio-history-panel :deep(.studio-history-create) {
+  justify-content: flex-start;
 }
 
 .studio-history-search {
@@ -383,11 +381,16 @@ function formatConversationTime(conversation: StudioConversation) {
   flex: 0 0 auto;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.75rem;
-  background: hsl(var(--background));
-  padding: 0 0.75rem;
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--control-radius, 0.375rem);
+  background: var(--control-fill, hsl(var(--muted)));
+  padding-inline: 0.75rem;
   color: hsl(var(--muted-foreground));
+}
+
+.studio-history-search:focus-within {
+  border-color: hsl(var(--ring));
+  background: hsl(var(--card));
 }
 
 .studio-history-search input {
@@ -396,12 +399,13 @@ function formatConversationTime(conversation: StudioConversation) {
   border: 0;
   background: transparent;
   color: hsl(var(--foreground));
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   outline: none;
 }
 
 .studio-history-search input::placeholder {
-  color: hsl(var(--muted-foreground) / 0.62);
+  color: hsl(var(--muted-foreground));
   font-family: inherit;
   font-weight: 400;
   letter-spacing: 0;
@@ -445,7 +449,7 @@ function formatConversationTime(conversation: StudioConversation) {
   align-items: center;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 0.75rem;
+  border-radius: var(--control-radius, 0.375rem);
   padding: 0.5rem 0.625rem;
   color: hsl(var(--foreground));
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -470,14 +474,12 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-item:hover {
-  border-color: hsl(var(--border));
-  background: hsl(var(--secondary) / 0.55);
+  background: var(--control-fill, hsl(var(--muted)));
 }
 
 .studio-history-item.is-active {
-  border-color: hsl(var(--foreground) / 0.22);
-  background: hsl(var(--secondary));
-  box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.06);
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
 }
 
 .studio-history-main {
@@ -490,6 +492,10 @@ function formatConversationTime(conversation: StudioConversation) {
   gap: 0.1875rem;
   padding-right: 3.25rem;
   text-align: left;
+}
+
+.studio-history-main:focus-visible {
+  outline-offset: 0;
 }
 
 .studio-history-edit {
@@ -549,17 +555,32 @@ function formatConversationTime(conversation: StudioConversation) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.0625rem;
+  gap: 0.125rem;
   transform: translateY(-50%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
 }
 
-.studio-history-item:hover .studio-history-row-actions,
-.studio-history-row-actions:focus-within {
-  opacity: 1;
-  pointer-events: auto;
+@media (hover: hover) and (pointer: fine) {
+  .studio-history-row-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--motion-fast) var(--ease-out-soft);
+  }
+
+  .studio-history-item:is(:hover, :focus-within) .studio-history-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .studio-history-main {
+    padding-right: 4.5rem;
+  }
+
+  .studio-history-row-actions .studio-history-icon {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 .studio-history-icon {
@@ -579,8 +600,8 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-icon.is-danger:hover {
-  background: rgb(254 242 242);
-  color: rgb(225 29 72);
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
 }
 
 .studio-history-badge {
@@ -595,23 +616,23 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-badge.is-running {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: hsl(var(--tone-info-bg));
+  color: hsl(var(--tone-info-foreground));
 }
 
 .studio-history-badge.is-done {
-  background: #ecfdf5;
-  color: #047857;
+  background: hsl(var(--tone-success-bg));
+  color: hsl(var(--tone-success-foreground));
 }
 
 .studio-history-badge.is-error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
 }
 
 .studio-history-badge.is-expired {
-  background: #fffbeb;
-  color: #92400e;
+  background: hsl(var(--tone-warning-bg));
+  color: hsl(var(--tone-warning-foreground));
 }
 
 .studio-history-empty {

@@ -19,7 +19,9 @@ Status: current
 
 本仓库 [why-qw1ko/chatgpt2api](https://github.com/why-qw1ko/chatgpt2api) 基于 [yukkcat/chatgpt2api](https://github.com/yukkcat/chatgpt2api) 修改，后者是本仓库的直接上游。更早的代码来源为 [basketikun/chatgpt2api](https://github.com/basketikun/chatgpt2api)，对应的 MIT 版权与许可声明保留在 [NOTICE](./NOTICE)。感谢上游作者与贡献者。
 
-以下说明以本仓库当前代码为准。控制台使用 **LuxuryImage** 品牌，技术栈为 Python 3.13+、FastAPI、Vue 3、TypeScript 和 Element Plus；Docker 构建使用 Python 3.13 与 Node.js 22。
+本仓库重构了 **LuxuryImage** 管理与创作控制台。前端基于 Vue 3 和 TypeScript，通用 UI 组件已从 Nanocat 迁移至 **Element Plus**，页面样式由 Tailwind CSS 和项目主题共同实现。界面参考字节跳动产品的视觉风格，采用中性底色、蓝色主操作和紧凑导航，并重新设计了对话画图页的会话历史、消息区和创作输入区。
+
+后端使用 Python 3.13+ 和 FastAPI，Docker 构建使用 Python 3.13 与 Node.js 22。
 
 本项目并非 OpenAI 官方服务，依赖 ChatGPT Web 上游行为及所配置账号的权限和额度；接口可用性可能随上游变化。请仅使用有权使用的账号，并遵守相关服务条款和适用法律。
 
@@ -174,17 +176,17 @@ Application Database 保存账号、用户密钥、设置、代理、调用记�
 
 不要提交 `.env`、`config.json`、`data/` 或真实账号凭证。
 
-## 当前界面
+## 界面示例
 
-以下为当前代码在隔离演示环境中重新拍摄的真实浏览器截图。截图中的演示数据不含真实账号凭证，也不代表线上运行量或性能。
+以下为较早版本在隔离演示环境中的浏览器截图，供参考页面结构。演示数据仅用于说明界面。
 
 <table width="100%">
   <tr><th width="50%">概览 · 亮色</th><th width="50%">概览 · 暗色</th></tr>
-  <tr><td><img src="docs/images/1.png" alt="当前控制台概览亮色主题"></td><td><img src="docs/images/2.png" alt="当前控制台概览暗色主题"></td></tr>
+  <tr><td><img src="docs/images/1.png" alt="控制台概览亮色主题"></td><td><img src="docs/images/2.png" alt="控制台概览暗色主题"></td></tr>
   <tr><th>对话画图</th><th>账号管理</th></tr>
-  <tr><td><img src="docs/images/3.png" alt="当前对话画图工作区"></td><td><img src="docs/images/4.png" alt="当前账号管理页面"></td></tr>
+  <tr><td><img src="docs/images/3.png" alt="对话画图工作区"></td><td><img src="docs/images/4.png" alt="账号管理页面"></td></tr>
   <tr><th>实时监控</th><th>系统设置</th></tr>
-  <tr><td><img src="docs/images/5.png" alt="当前实时监控页面"></td><td><img src="docs/images/6.png" alt="当前系统设置页面"></td></tr>
+  <tr><td><img src="docs/images/5.png" alt="实时监控页面"></td><td><img src="docs/images/6.png" alt="系统设置页面"></td></tr>
 </table>
 
 ## 本地开发

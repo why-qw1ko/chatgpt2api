@@ -6,6 +6,7 @@ import type {
 import { usePageRuntime } from '@/composables/usePageRuntime'
 import { usePagedQuery } from '@/composables/usePageQuery'
 import { useToast } from '@/composables/useToast'
+import { writeClipboardText } from '@/lib/clipboard'
 import { errorMessage } from '@/lib/errorMessage'
 import { useAccountBulkActionsRuntime } from './accountBulkActionsRuntime'
 import { useAccountBulkProgressRuntime } from './accountBulkProgressRuntime'
@@ -264,7 +265,7 @@ export function useAccountsPage() {
         toast.warning(`当前账号没有可复制的 ${label}`)
         return
       }
-      await navigator.clipboard.writeText(token)
+      await writeClipboardText(token)
       toast.success(`${label} 已复制`)
     } catch (error) {
       setError(`复制 ${label} 失败`, error)

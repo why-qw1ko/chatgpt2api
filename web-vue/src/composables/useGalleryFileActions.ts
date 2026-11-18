@@ -1,5 +1,6 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { resolveGalleryFileUrl, type GalleryFile } from '@/api/gallery'
+import { writeClipboardText } from '@/lib/clipboard'
 import { downloadUrlAsFile } from '@/lib/downloads'
 import { errorMessage } from '@/lib/errorMessage'
 import { useToast } from '@/composables/useToast'
@@ -16,23 +17,6 @@ type GalleryFileActionsOptions = {
   downloadErrorMessage?: (error: unknown, file: GalleryFile) => string
   downloadSuccessTitle?: string
   downloadErrorTitle?: string
-}
-
-function fallbackCopyText(value: string) {
-  const input = document.createElement('input')
-  input.value = value
-  document.body.appendChild(input)
-  input.select()
-  document.execCommand('copy')
-  document.body.removeChild(input)
-}
-
-async function copyTextToClipboard(value: string) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value)
-    return
-  }
-  fallbackCopyText(value)
 }
 
 export function useGalleryFileActions(options: GalleryFileActionsOptions = {}) {
@@ -63,7 +47,7 @@ export function useGalleryFileActions(options: GalleryFileActionsOptions = {}) {
   async function copyFileLink(file: GalleryFile | null) {
     if (!file) return
     try {
-      await copyTextToClipboard(resolveUrl(file.url))
+      await writeClipboardText(resolveUrl(file.url))
       markCopied(file)
       toast.success(options.copySuccessMessage || '图片链接已复制。', options.copySuccessTitle || '复制成功')
     } catch {

@@ -91,6 +91,7 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     input.conversations.value = input.conversations.value.filter((item) => item.id !== conversationId)
     clearConversationNotice(conversationId)
     if (input.activeConversationId.value === conversationId) {
+      input.hooks.cancelMessageEdit(false)
       input.activeConversationId.value = input.conversations.value[0]?.id || ''
     }
     input.persistenceRuntime.scheduleConversations()

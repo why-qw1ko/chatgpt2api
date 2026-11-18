@@ -8,7 +8,7 @@
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
       <div class="log-control-panel">
-        <PanelHeader eyebrow="ACTIVITY / LOGS" title="日志管理" align="start">
+        <PanelHeader page title="日志管理" align="start">
           <template #actions>
             <Button size="sm" variant="outline" :disabled="isFetching" @click="fetchLogs">
               {{ isFetching ? '刷新中...' : '刷新' }}
@@ -150,6 +150,7 @@
       :title="deleteConfirmation.title"
       :message="deleteConfirmation.message"
       confirm-text="删除"
+      confirm-variant="danger"
       cancel-text="取消"
       @confirm="logSelectionRuntime.confirmDeleteRequest"
       @cancel="closeDeleteConfirmation"
@@ -180,6 +181,7 @@ import { usePageRuntime } from '@/composables/usePageRuntime'
 import { useListLayoutPreference } from '@/composables/useListLayoutPreference'
 import { usePageDebouncedAction, usePagedQuery, usePageVisibilityReload } from '@/composables/usePageQuery'
 import { useGalleryFileActions } from '@/composables/useGalleryFileActions'
+import { writeClipboardText } from '@/lib/clipboard'
 import { errorMessage } from '@/lib/errorMessage'
 import { getNumberPreference, preferenceKeys, setNumberPreference } from '@/lib/preferences'
 import { useLogDetailRuntime } from '@/views/logs/logDetailRuntime'
@@ -532,7 +534,7 @@ async function copyText(value: string) {
   const text = cleanString(value)
   if (!text) return
   try {
-    await navigator.clipboard.writeText(text)
+    await writeClipboardText(text)
     toast.success('已复制')
   } catch {
     toast.error('复制失败')

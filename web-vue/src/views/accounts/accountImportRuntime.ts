@@ -7,6 +7,7 @@ import {
 } from '@/api/accountImports'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useToast } from '@/composables/useToast'
+import { writeClipboardText } from '@/lib/clipboard'
 import type { useAccountBulkProgressRuntime } from './accountBulkProgressRuntime'
 import {
   useRemoteAccountImportTrackingRuntime,
@@ -484,7 +485,7 @@ export function useAccountImportRuntime(options: AccountImportRuntimeOptions) {
       return
     }
     try {
-      await navigator.clipboard.writeText(value)
+      await writeClipboardText(value)
       toast.success('授权链接已复制')
     } catch (error) {
       options.setError('复制 OAuth 授权链接失败', error)
