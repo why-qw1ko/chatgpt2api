@@ -11,7 +11,7 @@
           </p>
         </template>
         <template #actions>
-          <StateBadge :tone="autoRefresh ? 'success' : 'muted'" shape="rounded">
+          <StateBadge :tone="autoRefresh ? 'accent' : 'muted'" shape="rounded">
             {{ autoRefresh ? '自动刷新' : '已暂停' }}
           </StateBadge>
           <label class="flex items-center gap-2 text-xs text-muted-foreground">

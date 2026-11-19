@@ -22,13 +22,11 @@
             :aria-current="conversation.id === activeConversationId ? 'true' : undefined"
             @click="$emit('select', conversation.id); $emit('close')"
           >
-            <span class="studio-mobile-history-heading-line">
-              <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
-              <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" />
-            </span>
+            <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
             <span class="studio-mobile-history-meta">
               {{ conversation.messages.length }} 条 · {{ formatTime(conversation.updatedAt) }}
             </span>
+            <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" class="studio-mobile-history-status" />
           </button>
           <button
             type="button"
@@ -147,8 +145,10 @@ function formatTime(value: string) {
 }
 
 .studio-mobile-history-item {
-  position: relative;
+  display: flex;
   width: 100%;
+  align-items: center;
+  gap: 0.5rem;
   border: 1px solid transparent;
   border-radius: var(--control-radius, 0.375rem);
   padding: 0.5rem 0.75rem;
@@ -160,21 +160,20 @@ function formatTime(value: string) {
 }
 
 .studio-mobile-history-main {
-  display: flex;
-  width: 100%;
+  display: grid;
   min-width: 0;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-right: 1.85rem;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'title status' 'meta status';
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   text-align: left;
 }
 
 .studio-mobile-history-delete {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.45rem;
   width: 2rem;
   height: 2rem;
+  flex: none;
 }
 
 .studio-mobile-history-delete:hover {
@@ -182,15 +181,8 @@ function formatTime(value: string) {
   background: hsl(var(--tone-error-bg));
 }
 
-.studio-mobile-history-heading-line {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
 .studio-mobile-history-title {
+  grid-area: title;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,9 +193,12 @@ function formatTime(value: string) {
 }
 
 .studio-mobile-history-meta {
+  grid-area: meta;
   font-size: 0.75rem;
   line-height: 1rem;
   color: hsl(var(--muted-foreground));
 }
+
+.studio-mobile-history-status { grid-area: status; }
 
 </style>

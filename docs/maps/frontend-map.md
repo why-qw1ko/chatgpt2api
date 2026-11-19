@@ -16,6 +16,7 @@ The route source is
 | `/` | `Dashboard.vue` | `dashboard/useDashboardPage.ts`, `statsApi` |
 | `/accounts` | `Accounts.vue` | `accounts/useAccountsPage.ts`, account CRUD, selection, import, bulk-operation, and test runtimes |
 | `/settings` | `Settings.vue` | Settings configuration, integrations, Prompt Sources, User Keys, backup, and external-source runtimes |
+| `/theme` | `Theme.vue` | Authenticated appearance controls for administrators and User Key sessions |
 | `/proxy` | `Proxy.vue` | Default-proxy, group, and node-import runtimes; `proxyApi` |
 | `/logs` | `Logs.vue` | Query, selection, export, and detail runtimes; `logsApi` |
 | `/monitor` | `Monitor.vue` | Realtime list and detail runtimes; `monitorApi` |
@@ -55,8 +56,9 @@ flowchart LR
 `web-vue/src/components/ui/` adapts Element Plus to the product's sizing,
 semantic tones, model values, and overlay contracts. Page-specific code stays
 next to its page. `web-vue/src/style.css` owns the light/dark CSS tokens and
-maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns preference
-persistence for light/dark modes. The authenticated shell imports
+maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns the shared
+light/dark mode and accent color preferences stored in the current browser.
+The authenticated shell imports
 `web-vue/src/styles/workspace.css` for console-only light/dark palettes, responsive toolbars and surface styling; its `controls.css` import owns shared
 console control sizing, filled surfaces, neutral focus states and teleported menus.
 `PanelHeader` provides an optional page eyebrow; controls in the same action group share

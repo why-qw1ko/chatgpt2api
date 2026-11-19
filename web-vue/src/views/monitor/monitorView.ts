@@ -4,10 +4,10 @@ import type {
 } from '@/api/monitor'
 
 const TONE_TEXT_CLASSES: Record<MonitorTone, string> = {
-  success: 'text-emerald-600 dark:text-emerald-400',
-  danger: 'text-rose-600 dark:text-rose-400',
-  warning: 'text-amber-600 dark:text-amber-400',
-  info: 'text-sky-600 dark:text-sky-400',
+  success: 'text-tone-success',
+  danger: 'text-tone-error',
+  warning: 'text-tone-warning',
+  info: 'text-tone-info',
   muted: 'text-foreground',
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <MetaChip size="xs" radius="rounded" :bordered="false" :tone="tones[badge.state]" chip-class="shrink-0">
+  <MetaChip radius="rounded" :bordered="false" :tone="tones[badge.state]" chip-class="shrink-0 whitespace-nowrap">
     {{ badge.label }}
   </MetaChip>
 </template>

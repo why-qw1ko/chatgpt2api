@@ -126,11 +126,11 @@
         <FormSection density="roomy" surface="background">
           <p class="text-xs text-muted-foreground">默认出口测试结果</p>
           <div v-if="defaultTestResult" class="mt-3 space-y-1 text-xs">
-            <p :class="defaultTestResult.ok ? 'text-emerald-600' : 'text-rose-600'">
+            <p :class="defaultTestResult.ok ? 'text-tone-success' : 'text-tone-error'">
               {{ defaultTestResult.ok ? '可用' : '不可用' }}
             </p>
             <p class="text-muted-foreground">HTTP {{ defaultTestResult.status || '-' }} · {{ defaultTestResult.latency_ms || 0 }}ms</p>
-            <p v-if="defaultTestResult.error" class="break-all text-rose-600">{{ defaultTestResult.error }}</p>
+            <p v-if="defaultTestResult.error" class="break-all text-tone-error">{{ defaultTestResult.error }}</p>
           </div>
           <p v-else class="mt-3 text-xs text-muted-foreground">尚未测试</p>
         </FormSection>

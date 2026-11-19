@@ -4,7 +4,7 @@
       <div>
         <p class="ui-section-title">用户密钥管理</p>
         <p class="mt-1 text-xs text-muted-foreground">
-          创建给普通用户使用的调用密钥；普通用户登录后只进入对话画图页。
+          为普通用户创建和管理调用密钥。
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -19,7 +19,7 @@
 
     <div
       v-if="newUserKey"
-      class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+      class="rounded-xl border border-primary/20 bg-secondary px-4 py-3 text-sm text-secondary-foreground"
     >
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
@@ -29,7 +29,7 @@
         <Button
           size="xs"
           variant="outline"
-          root-class="shrink-0 border-emerald-200 bg-white text-emerald-700"
+          root-class="shrink-0"
           @click="$emit('copy', newUserKey)"
         >
           复制
@@ -56,7 +56,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <p class="truncate text-sm font-medium text-foreground">{{ item.name || '普通用户' }}</p>
             <StateBadge
-              :tone="item.enabled ? 'success' : 'muted'"
+              :tone="item.enabled ? 'accent' : 'muted'"
               size="xs"
               shape="rounded"
             >
@@ -89,8 +89,7 @@
           </Button>
           <Button
             size="xs"
-            variant="outline"
-            root-class="text-rose-600"
+            variant="danger"
             :disabled="userKeyBusy === item.id"
             @click="$emit('delete', item)"
           >

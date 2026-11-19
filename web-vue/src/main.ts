@@ -6,7 +6,7 @@ import router from './router'
 import { setUnauthorizedHandler } from './api/client'
 import { useAuthStore } from './stores/auth'
 import { registerLocalIcons } from './lib/icons'
-import { applyThemeMode, getStoredThemeMode } from './lib/theme'
+import { initializeTheme } from './lib/theme'
 import App from './App.vue'
 import './style.css'
 import './styles/controls.css'
@@ -14,7 +14,7 @@ import './styles/features.css'
 import './styles/motion.css'
 
 registerLocalIcons()
-applyThemeMode(getStoredThemeMode())
+initializeTheme()
 
 const app = createApp(App)
 const pinia = createPinia()

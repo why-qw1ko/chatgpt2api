@@ -22,6 +22,7 @@ export const preferenceKeys = {
   studioImageModel: 'studio-image-model',
   studioSidebarWidth: 'studio-sidebar-width',
   themeMode: 'theme-mode',
+  themeAccent: 'theme-accent',
   updateActiveTaskId: 'update-active-task-id',
   updateDismissedTag: 'update-dismissed-tag',
 } as const

@@ -160,15 +160,28 @@ html .lux-action-menu.el-menu { --el-menu-item-height: 34px; --el-menu-sub-item-
 html .lux-action-menu .el-menu { background: transparent; }
 html .lux-action-menu .el-menu-item.is-active:not(.lux-menu-danger) { color: hsl(var(--secondary-foreground)); }
 html .lux-action-menu .el-menu-item:focus-visible { outline: 2px solid var(--control-focus); outline-offset: -2px; }
-html .el-checkbox { min-height: 28px; }
-html .el-checkbox__inner { width: 17px; height: 17px; border-radius: var(--control-radius); border-color: hsl(var(--input)); background: hsl(var(--card)); }
-html .el-checkbox__inner::after { left: 5px; top: 2px; }
-html .el-checkbox__input.is-indeterminate .el-checkbox__inner::before { top: 7px; background: hsl(var(--primary-foreground)); }
-html .el-checkbox__input:is(.is-checked, .is-indeterminate) .el-checkbox__inner { background: hsl(var(--primary)); border-color: transparent; }
-html .el-checkbox__input.is-checked .el-checkbox__inner::after { border-color: hsl(var(--primary-foreground)); }
-html .el-checkbox__input.is-disabled .el-checkbox__inner { background: var(--control-fill); opacity: 0.5; }
-html .el-checkbox__input.is-checked + .el-checkbox__label { color: hsl(var(--foreground)); }
-html .el-checkbox__label { font-size: 13px; }
+html .el-checkbox {
+  --el-checkbox-input-width: 16px;
+  --el-checkbox-input-height: 16px;
+  --el-checkbox-border-radius: var(--control-radius);
+  --el-checkbox-bg-color: hsl(var(--card));
+  --el-checkbox-input-border: 1px solid hsl(var(--input));
+  --el-checkbox-input-border-color-hover: hsl(var(--primary));
+  --el-checkbox-checked-bg-color: hsl(var(--primary));
+  --el-checkbox-checked-input-border-color: hsl(var(--primary));
+  --el-checkbox-checked-icon-color: hsl(var(--primary-foreground));
+  --el-checkbox-checked-text-color: hsl(var(--foreground));
+  --el-checkbox-disabled-checked-input-fill: hsl(var(--muted));
+  --el-checkbox-disabled-checked-input-border-color: hsl(var(--input));
+  --el-checkbox-disabled-checked-icon-color: hsl(var(--muted-foreground));
+  min-height: 28px;
+  margin-right: 0;
+  vertical-align: middle;
+}
+html .el-checkbox__input { display: inline-flex; }
+html .el-checkbox__original { inset: 50% auto auto 50%; width: 1px; height: 1px; }
+html .el-checkbox__input.is-indeterminate .el-checkbox__inner::before { top: 50%; height: 2px; transform: translateY(-50%) scaleX(0.55); }
+html .el-checkbox__label { font-size: 0.8125rem; line-height: 1.5; }
 html .lux-table .lux-table-selection { width: 60px; min-width: 60px; padding: 12px 20px; text-align: center; vertical-align: middle; }
 .lux-segmented-scroll {
   min-width: 0;
@@ -181,8 +194,8 @@ html .lux-table .lux-table-selection { width: 60px; min-width: 60px; padding: 12
 .lux-segmented-scroll .el-segmented {
   --el-segmented-color: hsl(var(--muted-foreground));
   --el-segmented-bg-color: var(--control-fill);
-  --el-segmented-item-selected-bg-color: hsl(var(--secondary));
-  --el-segmented-item-selected-color: hsl(var(--secondary-foreground));
+  --el-segmented-item-selected-bg-color: var(--segmented-selected-bg, hsl(var(--secondary)));
+  --el-segmented-item-selected-color: var(--segmented-selected-color, hsl(var(--secondary-foreground)));
   --el-segmented-item-selected-disabled-bg-color: hsl(var(--card));
   --el-segmented-item-hover-bg-color: var(--control-hover);
   --el-segmented-item-active-bg-color: var(--control-hover);

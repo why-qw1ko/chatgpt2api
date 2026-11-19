@@ -218,6 +218,7 @@ export function systemLogRowSignature(item: SystemLogRow, input: SystemLogRowSig
     boundedSignatureText(execution.secondary, 96),
     boundedSignatureText(durationDisplay.total, 64),
     boundedSignatureText(durationDisplay.breakdown, 160),
+    logDurationTone(item),
     boundedSignatureText(statusLabel(item), 64),
     statusTone(item),
     boundedSignatureText(outcomeText(item)),
@@ -293,11 +294,11 @@ export function systemMetricItems(logMeta: Pick<SystemLogsResponse, 'stats' | 's
   const pageScope = logMeta.stats_scope === 'page'
   return [
     { label: pageScope ? '本页总数' : '总数', value: stats.total, class: 'text-foreground' },
-    { label: pageScope ? '本页成功' : '成功', value: stats.success, class: 'text-emerald-600' },
-    { label: pageScope ? '本页文本' : '文本', value: stats.text_review, class: 'text-violet-600' },
-    { label: pageScope ? '本页失败' : '失败', value: stats.failed, class: 'text-rose-600' },
-    { label: pageScope ? '本页限流' : '限流', value: stats.limited, class: 'text-amber-600' },
-    { label: pageScope ? '本页图片' : '图片接口', value: stats.image, class: 'text-cyan-600' },
+    { label: pageScope ? '本页成功' : '成功', value: stats.success, class: 'text-tone-success' },
+    { label: pageScope ? '本页文本' : '文本', value: stats.text_review, class: 'text-tone-warning' },
+    { label: pageScope ? '本页失败' : '失败', value: stats.failed, class: 'text-tone-error' },
+    { label: pageScope ? '本页限流' : '限流', value: stats.limited, class: 'text-tone-warning' },
+    { label: pageScope ? '本页图片' : '图片接口', value: stats.image, class: 'text-foreground' },
   ]
 }
 

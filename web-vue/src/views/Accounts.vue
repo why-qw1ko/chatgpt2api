@@ -547,7 +547,7 @@
                       <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                           <p class="font-medium text-foreground">{{ group.name }}</p>
-                          <StateBadge :tone="group.enabled ? 'success' : 'muted'" size="xs">
+                          <StateBadge :tone="group.enabled ? 'accent' : 'muted'" size="xs">
                             {{ group.enabled ? '启用' : '停用' }}
                           </StateBadge>
                         </div>

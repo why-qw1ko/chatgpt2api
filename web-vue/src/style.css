@@ -8,7 +8,7 @@
   --foreground: 223 13% 10%;
   --card: 0 0% 100%;
   --card-foreground: var(--foreground);
-  --primary: 222 100% 54%;
+  --primary: 224 80% 52%;
   --primary-foreground: 0 0% 100%;
   --secondary: 221 100% 96%;
   --secondary-foreground: 222 85% 43%;
@@ -16,6 +16,8 @@
   --muted-foreground: 221 10% 42%;
   --accent: var(--secondary);
   --accent-foreground: var(--secondary-foreground);
+  --selection-background: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)));
+  --selection-foreground: color-mix(in srgb, hsl(var(--primary)) 72%, hsl(var(--foreground)));
   --destructive: 352 64% 43%;
   --destructive-foreground: 0 0% 100%;
   --border: 220 13% 89%;
@@ -29,17 +31,17 @@
   --shadow-floating: 0 4px 16px rgb(17 24 39 / 0.12);
   --shadow-elevated: 0 16px 48px rgb(17 24 39 / 0.16);
   --overlay-backdrop: rgb(17 24 39 / 0.48);
-  --tone-success-border: 152 40% 72%;
-  --tone-success-bg: 148 48% 93%;
-  --tone-success-foreground: 152 55% 24%;
-  --tone-success-strong: 152 52% 32%;
-  --tone-warning-border: 32 80% 72%;
-  --tone-warning-bg: 36 92% 92%;
-  --tone-warning-foreground: 28 70% 28%;
+  --tone-success-border: 163 28% 83%;
+  --tone-success-bg: 164 28% 94%;
+  --tone-success-foreground: 167 44% 28%;
+  --tone-success-strong: 165 46% 32%;
+  --tone-warning-border: 38 43% 82%;
+  --tone-warning-bg: 39 56% 94%;
+  --tone-warning-foreground: 33 62% 29%;
   --tone-warning-strong: 28 80% 42%;
-  --tone-error-border: 350 60% 82%;
-  --tone-error-bg: 350 72% 96%;
-  --tone-error-foreground: 350 65% 38%;
+  --tone-error-border: 351 41% 86%;
+  --tone-error-bg: 351 44% 96%;
+  --tone-error-foreground: 351 52% 40%;
   --tone-error-strong: 350 65% 46%;
   --tone-info-border: 205 40% 80%;
   --tone-info-bg: 203 70% 95%;
@@ -61,6 +63,8 @@ html[data-theme="dark"] {
   --primary-foreground: 222 44% 9%;
   --secondary: 222 42% 23%;
   --secondary-foreground: 219 100% 79%;
+  --selection-background: color-mix(in srgb, hsl(var(--primary)) 25%, hsl(var(--card)));
+  --selection-foreground: color-mix(in srgb, hsl(var(--primary)) 50%, hsl(var(--foreground)));
   --muted: 223 8% 17%;
   --muted-foreground: 220 10% 70%;
   --destructive: 352 80% 68%;
@@ -71,17 +75,17 @@ html[data-theme="dark"] {
   --shadow-floating: 0 6px 20px rgb(0 0 0 / 0.28);
   --shadow-elevated: 0 16px 48px rgb(0 0 0 / 0.48);
   --overlay-backdrop: rgb(0 0 0 / 0.64);
-  --tone-success-border: 152 30% 28%;
-  --tone-success-bg: 152 30% 14%;
-  --tone-success-foreground: 152 55% 72%;
-  --tone-success-strong: 152 48% 56%;
+  --tone-success-border: 165 24% 31%;
+  --tone-success-bg: 166 22% 18%;
+  --tone-success-foreground: 164 36% 74%;
+  --tone-success-strong: 164 40% 59%;
   --tone-warning-border: 32 40% 30%;
   --tone-warning-bg: 32 28% 14%;
-  --tone-warning-foreground: 36 85% 72%;
+  --tone-warning-foreground: 37 65% 74%;
   --tone-warning-strong: 32 78% 58%;
   --tone-error-border: 350 35% 32%;
   --tone-error-bg: 350 30% 15%;
-  --tone-error-foreground: 350 80% 78%;
+  --tone-error-foreground: 351 57% 80%;
   --tone-error-strong: 350 78% 66%;
   --tone-info-border: 205 28% 32%;
   --tone-info-bg: 205 28% 15%;
@@ -215,6 +219,10 @@ html[data-theme="dark"] {
   .ui-select-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
 }
 .text-primary { color: hsl(var(--primary)); }
+.text-tone-success { color: hsl(var(--tone-success-foreground)); }
+.text-tone-warning { color: hsl(var(--tone-warning-foreground)); }
+.text-tone-error { color: hsl(var(--tone-error-foreground)); }
+.text-tone-info { color: hsl(var(--tone-info-foreground)); }
 .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 44px; }
 
 /* Element Plus component styling and product-density policies. */
@@ -235,12 +243,6 @@ html[data-theme="dark"] {
 .lux-input.font-mono .el-input__inner { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .lux-select { width: 11rem; min-width: 0; font-size: 0.75rem; }
 .lux-select--block { width: 100%; }
-.el-checkbox { height: 24px; margin-right: 0; vertical-align: middle; }
-.el-checkbox__label { font-size: 0.75rem; line-height: 1.5; }
-.el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-}
 .lux-tooltip-trigger { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; vertical-align: middle; }
 .lux-help { display: inline-flex; align-items: center; color: hsl(var(--muted-foreground)); border: 0; padding: 0; background: none; }
 .lux-hover-card { max-width: min(32rem, calc(100vw - 24px)); overflow-wrap: anywhere; }
@@ -336,18 +338,18 @@ html[data-theme="dark"] {
   align-items: center;
   max-width: 100%;
   vertical-align: middle;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.15;
 }
 .lux-tag.el-tag--small {
   height: 22px;
-  padding: 0 9px;
-  gap: 5px;
+  padding-inline: 8px;
 }
-.lux-tag.el-tag {
-  --el-tag-border-radius: 999px;
+.lux-tag.lux-tag--compact {
+  height: 20px;
 }
+.lux-tag.el-tag { --el-tag-border-radius: var(--control-radius); }
 .lux-tag .el-tag__content {
   display: inline-flex;
   align-items: center;
@@ -372,6 +374,7 @@ html[data-theme="dark"] {
 .lux-tag.el-tag--danger { --el-tag-bg-color: hsl(var(--tone-error-bg)); --el-tag-border-color: hsl(var(--tone-error-border)); --el-tag-text-color: hsl(var(--tone-error-foreground)); }
 .lux-tag.el-tag--info { --el-tag-bg-color: hsl(var(--tone-info-bg)); --el-tag-border-color: hsl(var(--tone-info-border)); --el-tag-text-color: hsl(var(--tone-info-foreground)); }
 .lux-tag.lux-tag--neutral { --el-tag-bg-color: hsl(var(--muted)); --el-tag-border-color: hsl(var(--border)); --el-tag-text-color: hsl(var(--muted-foreground)); }
+.lux-tag.lux-tag--accent { --el-tag-bg-color: hsl(var(--secondary)); --el-tag-border-color: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--card))); --el-tag-text-color: hsl(var(--secondary-foreground)); }
 .lux-tag--borderless { border-color: transparent; }
 .lux-descriptions .el-descriptions__label { font-size: 0.6875rem; color: hsl(var(--muted-foreground)); }
 .lux-value-surface {

@@ -78,15 +78,13 @@
             @click="handleSelect(conversation.id)"
             @dblclick.stop="beginRename(conversation)"
           >
-            <span class="studio-history-heading-line">
-              <span class="studio-history-title" :title="conversation.title">{{ conversation.title || '未命名对话' }}</span>
-              <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" />
-            </span>
+            <span class="studio-history-title" :title="conversation.title">{{ conversation.title || '未命名对话' }}</span>
             <span class="studio-history-meta">
               <span>{{ conversation.messages.length ? `${conversation.messages.length} 条` : '空对话' }}</span>
               <span aria-hidden="true">·</span>
               <span>{{ formatConversationTime(conversation) }}</span>
             </span>
+            <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" class="studio-history-status" />
           </button>
           <div v-if="editingId !== conversation.id" class="studio-history-row-actions">
             <button
@@ -431,12 +429,12 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-item {
-  position: relative;
   display: flex;
   width: 100%;
   min-height: 3.125rem;
   cursor: pointer;
   align-items: center;
+  gap: 0.5rem;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: var(--control-radius, 0.375rem);
@@ -469,14 +467,13 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-main {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.1875rem;
-  padding-right: 3.25rem;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'title status' 'meta status';
+  align-items: center;
+  gap: 0.125rem 0.25rem;
   text-align: left;
 }
 
@@ -503,16 +500,8 @@ function formatConversationTime(conversation: StudioConversation) {
   box-shadow: 0 0 0 3px hsl(var(--foreground) / 0.06);
 }
 
-.studio-history-heading-line {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
-}
-
 .studio-history-title {
-  display: block;
+  grid-area: title;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -525,6 +514,7 @@ function formatConversationTime(conversation: StudioConversation) {
 
 .studio-history-meta {
   display: flex;
+  grid-area: meta;
   min-width: 0;
   align-items: center;
   gap: 0.375rem;
@@ -534,6 +524,8 @@ function formatConversationTime(conversation: StudioConversation) {
   line-height: 1rem;
 }
 
+.studio-history-status { grid-area: status; }
+
 .studio-history-meta span {
   min-width: 0;
   overflow: hidden;
@@ -542,15 +534,11 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-row-actions {
-  position: absolute;
-  top: 50%;
-  right: 0.5rem;
-  z-index: 1;
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 0.125rem;
-  transform: translateY(-50%);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -567,10 +555,6 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 @media (pointer: coarse) {
-  .studio-history-main {
-    padding-right: 4.5rem;
-  }
-
   .studio-history-row-actions .studio-history-icon {
     width: 2rem;
     height: 2rem;

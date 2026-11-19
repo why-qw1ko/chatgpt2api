@@ -19,7 +19,7 @@
   >
     <template #head>
       <tr>
-        <th class="w-[3%] py-3 pl-4 pr-2">
+        <th class="w-[4%] py-3 pl-4 pr-2">
           <Checkbox
             :model-value="allVisibleLogsSelected"
             :indeterminate="someVisibleLogsSelected"
@@ -32,7 +32,7 @@
         <th class="w-[8%] py-3 pr-5">时间</th>
         <th class="w-[17%] py-3 pr-5">请求</th>
         <th class="w-[13%] py-3 pr-5">执行</th>
-        <th class="w-[14%] py-3 pr-5">分辨率</th>
+        <th class="w-[13%] py-3 pr-5">分辨率</th>
         <th class="w-[8%] py-3 pr-5">耗时</th>
         <th class="w-[7%] py-3 pr-5">图片</th>
         <th class="w-[17%] py-3 pr-5">结果</th>

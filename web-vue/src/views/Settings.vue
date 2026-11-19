@@ -15,7 +15,7 @@
         </template>
       </PanelHeader>
 
-      <ConsoleSegmentedTabs v-model="activeSettingsTab" :options="settingsTabs" aria-label="设置分组" />
+      <ConsoleSegmentedTabs v-model="activeSettingsTab" :options="settingsTabs" class="settings-tabs" aria-label="设置分组" />
 
       <div v-if="activeSettingsTab === 'basic'" class="space-y-4">
         <SurfaceBox density="compact">
@@ -703,6 +703,11 @@ useSettingsTabRuntime({
 </script>
 
 <style scoped>
+.settings-tabs {
+  --segmented-selected-bg: var(--selection-background);
+  --segmented-selected-color: var(--selection-foreground);
+}
+
 .settings-page-panel {
   border: 0 !important;
   border-radius: 0 !important;

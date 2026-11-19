@@ -213,9 +213,9 @@ const resolvedSummaryItems = computed<OperationSummaryItem[]>(() => {
 })
 
 function summaryValueClass(tone: OperationSummaryItem['tone']) {
-  if (tone === 'danger') return 'text-red-600 dark:text-red-400'
-  if (tone === 'warning') return 'text-amber-600 dark:text-amber-400'
-  if (tone === 'success') return 'text-emerald-600 dark:text-emerald-400'
+  if (tone === 'danger') return 'text-tone-error'
+  if (tone === 'warning') return 'text-tone-warning'
+  if (tone === 'success') return 'text-tone-success'
   return ''
 }
 
@@ -227,8 +227,8 @@ function eventIcon(tone: OperationProgressTone) {
 }
 
 function eventMessageClass(tone: OperationProgressTone) {
-  if (tone === 'danger') return 'text-red-600 dark:text-red-400'
-  if (tone === 'warning') return 'text-amber-600 dark:text-amber-400'
+  if (tone === 'danger') return 'text-tone-error'
+  if (tone === 'warning') return 'text-tone-warning'
   return 'text-muted-foreground'
 }
 

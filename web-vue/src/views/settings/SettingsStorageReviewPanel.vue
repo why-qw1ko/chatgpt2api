@@ -82,7 +82,7 @@
       </div>
 
       <div v-if="imageStorageTestResult" class="rounded-xl border border-border bg-background px-3 py-2 text-xs">
-        <p :class="imageStorageTestResult.ok ? 'text-emerald-600' : 'text-slate-600'">
+        <p :class="imageStorageTestResult.ok ? 'text-tone-success' : 'text-tone-error'">
           {{ imageStorageTestResult.ok ? 'WebDAV 可用' : 'WebDAV 不可用' }}
           <span v-if="imageStorageTestResult.status"> · HTTP {{ imageStorageTestResult.status }}</span>
         </p>

@@ -119,11 +119,11 @@
       </div>
 
       <div v-if="backupTestResult" class="rounded-xl border border-border bg-background px-3 py-2 text-xs">
-        <p :class="backupTestResult.ok ? 'text-emerald-600' : 'text-rose-600'">
+        <p :class="backupTestResult.ok ? 'text-tone-success' : 'text-tone-error'">
           {{ backupTestResult.ok ? '备份连接可用' : '备份连接不可用' }}
           <span v-if="backupTestResult.status"> · HTTP {{ backupTestResult.status }}</span>
         </p>
-        <p v-if="backupTestResult.error" class="mt-1 break-all text-rose-600">{{ backupTestResult.error }}</p>
+        <p v-if="backupTestResult.error" class="mt-1 break-all text-tone-error">{{ backupTestResult.error }}</p>
       </div>
 
       <div class="rounded-xl border border-border bg-background px-3 py-3 text-xs">
@@ -137,7 +137,7 @@
           <span>最近对象</span>
           <span class="break-all text-right font-mono text-foreground">{{ backupState?.last_object_key || '-' }}</span>
           <span>最近错误</span>
-          <span class="break-all text-right text-rose-600">{{ backupState?.last_error || '-' }}</span>
+          <span class="break-all text-right text-tone-error">{{ backupState?.last_error || '-' }}</span>
         </div>
       </div>
 

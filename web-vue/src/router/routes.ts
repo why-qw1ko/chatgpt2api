@@ -36,6 +36,11 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { requiredCapability: 'admin_console' },
       },
       {
+        path: 'theme',
+        name: 'theme',
+        component: () => import('@/views/Theme.vue'),
+      },
+      {
         path: 'proxy',
         name: 'proxy',
         component: () => import('@/views/Proxy.vue'),

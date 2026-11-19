@@ -16,7 +16,7 @@
 import { computed } from 'vue'
 import { MetaChip as ElementMetaChip } from '@/components/ui'
 
-type MetaChipTone = 'default' | 'muted' | 'success' | 'warning' | 'danger' | 'info'
+type MetaChipTone = 'default' | 'muted' | 'success' | 'warning' | 'danger' | 'info' | 'accent'
 type MetaChipVariant = 'soft' | 'outline' | 'solid'
 type MetaChipSize = 'xs' | 'sm' | 'md'
 
@@ -43,6 +43,7 @@ const elementTone = computed(() => {
   if (props.tone === 'warning') return 'warning'
   if (props.tone === 'danger') return 'error'
   if (props.tone === 'info') return 'info'
+  if (props.tone === 'accent') return 'accent'
   return 'neutral'
 })
 

@@ -583,7 +583,7 @@ import {
 } from '@/lib/preferences'
 import { writeClipboardText } from '@/lib/clipboard'
 import { focusFirstWithin, focusRefTarget, trapFocusWithin } from '@/lib/focusLoop'
-import { applyThemeMode, getStoredThemeMode, setStoredThemeMode, type ThemeMode } from '@/lib/theme'
+import { setThemeMode, themeMode } from '@/lib/theme'
 import {
   normalizeVersionTag,
   parseChangelog,
@@ -622,7 +622,6 @@ const updateProgressRuntime = useOperationProgressRuntime()
 const updateProgressState = updateProgressRuntime.state
 const releaseEntries = ref<ReleaseInfo[]>([])
 const currentAuthToken = ref('')
-const themeMode = ref<ThemeMode>(getStoredThemeMode())
 type RouteProgressPhase = 'idle' | 'running' | 'finishing'
 const pendingNavigationPath = ref('')
 const routeProgressPhase = ref<RouteProgressPhase>('idle')
@@ -643,7 +642,7 @@ type NavigationItem = {
   path: string
   label: string
   icon: string
-  capability: AuthCapability
+  capability?: AuthCapability
 }
 
 const menuItems: NavigationItem[] = [
@@ -695,6 +694,11 @@ const menuItems: NavigationItem[] = [
     icon: 'lucide:settings-2',
     capability: 'admin_console',
   },
+  {
+    path: '/theme',
+    label: '主题切换',
+    icon: 'lucide:palette',
+  },
 ]
 
 const routeTitleMap: Record<string, string> = {
@@ -704,12 +708,13 @@ const routeTitleMap: Record<string, string> = {
   gallery: '图片管理',
   proxy: '代理管理',
   settings: '系统设置',
+  theme: '主题切换',
   monitor: '实时监控',
   studio: '对话画图',
 }
 
 const visibleMenuItems = computed(() => {
-  return menuItems.filter(item => authStore.hasCapability(item.capability))
+  return menuItems.filter(item => !item.capability || authStore.hasCapability(item.capability))
 })
 
 const currentPageTitle = computed(() => {
@@ -851,6 +856,7 @@ const routeViewLoaders: Record<string, () => Promise<unknown>> = {
   '/monitor': () => import('@/views/Monitor.vue'),
   '/proxy': () => import('@/views/Proxy.vue'),
   '/settings': () => import('@/views/Settings.vue'),
+  '/theme': () => import('@/views/Theme.vue'),
   '/studio': () => import('@/views/Studio.vue'),
 }
 
@@ -1012,11 +1018,6 @@ if (key === 'canvas') {
   if (key === 'api-info') {
     void openApiInfo()
   }
-}
-
-function setThemeMode(mode: ThemeMode) {
-  themeMode.value = mode
-  setStoredThemeMode(mode)
 }
 
 function cycleThemeMode() {
@@ -1268,7 +1269,6 @@ const removeRouteErrorHook = router.onError((_error, to) => {
 })
 
 onMounted(() => {
-  applyThemeMode(themeMode.value)
   setupViewportListener()
   window.addEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.addEventListener('keydown', handleWindowKeydown)
@@ -1411,14 +1411,14 @@ onBeforeUnmount(() => {
 }
 
 .shell-nav-item--active {
-  background: hsl(var(--secondary));
-  color: hsl(var(--secondary-foreground));
+  background: var(--selection-background);
+  color: var(--selection-foreground);
   font-weight: 600;
 }
 
 .shell-nav-item--active:hover {
-  background: color-mix(in srgb, hsl(var(--secondary)) 94%, hsl(var(--primary)));
-  color: hsl(var(--secondary-foreground));
+  background: color-mix(in srgb, var(--selection-background) 94%, hsl(var(--primary)));
+  color: var(--selection-foreground);
 }
 
 .shell-nav-item:focus-visible {

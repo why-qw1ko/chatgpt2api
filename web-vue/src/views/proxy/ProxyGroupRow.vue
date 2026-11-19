@@ -11,7 +11,7 @@
       <p v-if="group.notes" class="mt-1 truncate text-xs text-muted-foreground" :title="group.notes">{{ group.notes }}</p>
     </td>
     <td class="py-3 pr-4 align-top">
-      <StateBadge :tone="group.enabled ? 'success' : 'muted'" size="sm">
+      <StateBadge :tone="group.enabled ? 'accent' : 'muted'" size="sm">
         {{ group.enabled ? '启用' : '停用' }}
       </StateBadge>
     </td>
