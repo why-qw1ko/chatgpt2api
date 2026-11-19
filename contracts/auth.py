@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 AuthRole = Literal["admin", "user", "unknown"]
@@ -54,13 +54,22 @@ class AuthView(_StrictModel):
 class UserKeyCreateRequest(_StrictModel):
     name: str = ""
     daily_image_limit: int | None = None
+    key: SecretStr | None = None
 
 
 class UserKeyUpdateRequest(_StrictModel):
     name: str | None = None
     enabled: bool | None = None
-    key: str | None = None
+    key: SecretStr | None = None
     daily_image_limit: int | None = None
+
+
+class UserKeyImageUsageView(_StrictModel):
+    day: str
+    used: int
+    reserved: int
+    limit: int | None
+    remaining: int | None
 
 
 class UserKeyView(_StrictModel):
@@ -71,6 +80,7 @@ class UserKeyView(_StrictModel):
     created_at: str | None = None
     last_used_at: str | None = None
     daily_image_limit: int | None = None
+    image_usage: UserKeyImageUsageView | None = None
 
 
 class UserKeyListView(_StrictModel):

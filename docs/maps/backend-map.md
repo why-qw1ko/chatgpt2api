@@ -11,11 +11,11 @@ render product HTML or transfer browser interaction ownership to Python.
 
 | Router | Primary surface | Principal owners |
 | --- | --- | --- |
-| [`api/ai.py`](../../api/ai.py) | OpenAI-compatible text, search, image, Messages, Responses, and editable-file endpoints | Protocol services, `LoggedCall`, `EditableFileTaskService` |
-| [`api/accounts.py`](../../api/accounts.py) | User Keys, Upstream Accounts, Account Groups, account operations, OAuth, CPA, and Sub2API | `AuthService`, `AccountService`, import services |
+| [`api/ai.py`](../../api/ai.py) | OpenAI-compatible text, search, image, Messages, Responses, and editable-file endpoints | Protocol services, `ImageQuotaService`, `LoggedCall`, `EditableFileTaskService` |
+| [`api/accounts.py`](../../api/accounts.py) | User Keys and key rotation, Upstream Accounts, Account Groups, account operations, OAuth, CPA, and Sub2API | `AuthService`, `ImageQuotaService`, `AccountService`, import services |
 | [`api/image_tasks.py`](../../api/image_tasks.py) | Studio-owned asynchronous image task endpoints | `ImageTaskService` |
 | [`api/prompts.py`](../../api/prompts.py) | Prompt Library reads and Prompt Source refresh/mutation | `PromptLibraryService` |
-| [`api/system.py`](../../api/system.py) | Login, version/update, settings, gallery, logs, monitor, proxy, dashboard, backup, and storage operations | Corresponding domain services and view builders |
+| [`api/system.py`](../../api/system.py) | Login, version/update, settings, gallery, logs, monitor, Studio sessions, proxy, dashboard, backup, and storage operations | Corresponding domain services and view builders |
 
 Routers authenticate, validate transport contracts, translate expected domain
 errors to HTTP responses, and call an owning service. They must not become a
@@ -45,11 +45,13 @@ image model remain unchanged.
 | Upstream Accounts and User Keys | `AccountService`, `AuthService` | Account/auth projections and batch action results | Account Repository through `DatabaseStorageBackend` |
 | Settings and policy | `SettingsManagementService`, runtime configuration | Effective settings projection and mutation result | `SystemSettingsRepository` |
 | Proxy routing | `ProxyManagementService`, `ProxyService` | Proxy References, groups, tests, and runtime view | `ProxyConfigurationRepository` |
-| Call Records | `LoggedCall`, `CallRecordService` | Call summary/detail projections | `CallRecordRepository` |
+| Call Records | `LoggedCall`, `CallRecordService` | Call summary/detail projections and exact User Key ID filtering | `CallRecordRepository` |
 | Active Requests and live operations | `RealtimeMonitorService` | Snapshot and call-detail records | Process memory |
 | Dashboard Metric Projection | `DashboardMetricsService` | 24-hour cards and 24h / 7d / 30d chart snapshots from one hourly projection | `DashboardMetricsRepository` with state, hourly, and per-model hourly tables |
 | Runtime environment | `runtime_environment_service` | One runtime snapshot | No durable state |
 | Image Tasks | `ImageTaskService` | Owner-scoped task projection and terminal result | `data/image_tasks.json` |
+| Daily image quota | [`ImageQuotaService`](../../services/image_quota_service.py) | Shared image reservations, settlement, and daily usage by User Key ID | `ImageQuotaRepository` |
+| Studio conversation history | `StudioSessionService` | Owner-scoped message merge and ordered history | `StudioConversationRepository` |
 | Image Assets and gallery | `ImageStorageService` | Asset mutation, catalogue, storage, and public URL behavior | Local/WebDAV assets plus `data/image_index.json` |
 | Editable File Tasks and Assets | `EditableFileTaskService` | Owner-scoped task commands and public asset resolution | `EditableFileTaskRepository` plus filesystem assets |
 | Prompt Sources and Prompt Library | `PromptLibraryService` | Revisioned merged library and source health | `PromptLibraryRepository` |

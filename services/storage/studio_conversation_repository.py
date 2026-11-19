@@ -142,6 +142,24 @@ class StudioConversationRepository:
             conversation["notice"] = row.notice
         return conversation
 
+    @classmethod
+    def _sort_messages(cls, messages: list[dict[str, Any]]) -> None:
+        question_ids = {message["id"] for message in messages if message["role"] == "user"}
+        linked_ids = {
+            reply_id for message in messages
+            if (reply_id := cls._clean(message.get("replyToId"))) in question_ids
+        }
+
+        def order(message: dict[str, Any]) -> tuple[str, str, str, str, str]:
+            message_id = message["id"]
+            role = "0" if message["role"] == "user" else "1"
+            turn = message_id if role == "0" else cls._clean(message.get("replyToId"))
+            if turn in linked_ids:
+                return message["createdAt"], "2", turn, role, message_id
+            return message["createdAt"], role, "", "", message_id
+
+        messages.sort(key=order)
+
     def load_owner_state(self, owner_id: str) -> dict[str, Any]:
         owner = self._clean(owner_id)
         if not owner:
@@ -163,7 +181,7 @@ class StudioConversationRepository:
                     self._message_from_row(message_row)
                 )
             for items in messages_by_conversation.values():
-                items.sort(key=lambda item: (str(item.get("createdAt") or ""), str(item.get("id") or "")))
+                self._sort_messages(items)
             conversations: list[dict[str, Any]] = []
             notices: dict[str, str] = {}
             updated_at = ""
@@ -213,11 +231,12 @@ class StudioConversationRepository:
                 StudioMessageModel.owner_id == owner,
                 StudioMessageModel.conversation_id == conversation_id,
             )
-            .order_by(StudioMessageModel.created_at.asc(), StudioMessageModel.id.asc())
         ).all()
         if len(rows) <= MAX_MESSAGES_PER_CONVERSATION:
             return
-        overflow_ids = [row.id for row in rows[: len(rows) - MAX_MESSAGES_PER_CONVERSATION]]
+        messages = [self._message_from_row(row) for row in rows]
+        self._sort_messages(messages)
+        overflow_ids = [message["id"] for message in messages[: len(rows) - MAX_MESSAGES_PER_CONVERSATION]]
         session.execute(delete(StudioMessageModel).where(
             StudioMessageModel.id.in_(overflow_ids),
         ))

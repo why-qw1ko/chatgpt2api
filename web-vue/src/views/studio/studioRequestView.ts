@@ -99,6 +99,15 @@ export async function runStudioSearchRequest(prompt: string, ownerId: string): P
   }
 }
 
+export function buildStudioInpaintPrompt(prompt: string) {
+  return [
+    '你会收到两张参考图：第一张是原图，第二张是带蓝色标记的原图。',
+    '只修改蓝色标记覆盖的局部区域，蓝色标记只是区域说明，不要出现在最终图片里。',
+    '未标记区域尽量保持与第一张原图一致。',
+    `局部修改要求：${prompt}`,
+  ].join('\n')
+}
+
 export async function createStudioImageTask(input: StudioImageTaskInput): Promise<ImageTask> {
   const model = input.imageForm.model || DEFAULT_IMAGE_MODEL
   const n = normalizeImageCount(input.imageForm.n)

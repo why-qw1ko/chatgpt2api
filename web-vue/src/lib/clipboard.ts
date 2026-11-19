@@ -57,3 +57,30 @@ export async function writeClipboardText(value: string) {
 
   if (!copied) throw new Error('Clipboard copy failed')
 }
+export async function writeClipboardImage(loadImage: () => Promise<Blob>): Promise<void> {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+    throw new Error('当前浏览器无法复制图片，请使用下载')
+  }
+
+  // Start the clipboard write inside the click gesture, including browsers that expire it during a fetch.
+  const png = loadImage().then(async (image) => {
+    if (image.type === 'image/png') return image
+    const bitmap = await createImageBitmap(image)
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('无法转换图片格式')
+      context.drawImage(bitmap, 0, 0)
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('无法转换图片格式')), 'image/png')
+      })
+    } finally {
+      bitmap.close()
+    }
+  })
+  // A rejected permission check can finish before the image request.
+  void png.catch(() => {})
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+}

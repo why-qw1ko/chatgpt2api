@@ -33,6 +33,8 @@
           v-memo="[message.memoKey]"
           :message="message"
           @action="handleMessageAction"
+          @copy-message="emit('copy-message', $event)"
+          @copy-image="forwardCopyImage"
           @toggle-expanded="toggleMessageExpanded"
           @open-search-sources="openSearchSourcePanel"
           @citation-click="openCitationSource"
@@ -99,6 +101,7 @@ const emit = defineEmits<{
   'retry-assistant': [message: StudioMessage]
   'delete-message': [messageId: string]
   'copy-message': [content: string]
+  'copy-image': [asset: StudioImageAssetView, name: string]
   preview: [src: string, name: string, localPath?: string]
   'reference-image': [asset: StudioImageAssetView, name: string, message: StudioMessage]
   'inpaint-image': [asset: StudioImageAssetView, name: string, message: StudioMessage]
@@ -142,7 +145,9 @@ const visibleMessages = computed(() => {
   const messages = allMessages.value
   if (messages.length <= visibleMessageLimit.value) return messages
   const recentStart = Math.max(0, messages.length - visibleMessageLimit.value)
-  return messages.filter((message, index) => index >= recentStart || isLiveMessage(message))
+  const visible = messages.filter((message, index) => index >= recentStart || isLiveMessage(message))
+  const visibleIds = new Set(visible.flatMap((message) => message.replyToId ? [message.id, message.replyToId] : [message.id]))
+  return messages.filter((message) => visibleIds.has(message.id))
 })
 const hiddenMessageCount = computed(() => Math.max(0, allMessages.value.length - visibleMessages.value.length))
 const messageViews = computed(() => {
@@ -284,6 +289,7 @@ function referenceImagesSignature(images: StudioReferenceImage[] | undefined) {
       compactStringSignature(image.type),
       image.size || 0,
       compactStringSignature(image.dataUrl),
+      imageCompareSourceSignature(image.source),
     ].join('\u001e'))
     .join('\u001f')
 }
@@ -566,13 +572,16 @@ async function showOlderMessages() {
 }
 
 function handleMessageAction(action: StudioMessageActionKey, message: StudioMessage) {
-  if (action === 'copy') emit('copy-message', message.content)
-  else if (action === 'edit') emit('edit', message)
+  if (action === 'edit') emit('edit', message)
   else if (action === 'resend') emit('resend', message)
   else if (action === 'fill') emit('retry', message)
   else if (action === 'resume-poll') emit('resume-image-task', message)
   else if (action === 'retry') emit('retry-assistant', message)
   else if (action === 'delete') emit('delete-message', message.id)
+}
+
+function forwardCopyImage(asset: StudioImageAssetView, name: string) {
+  emit('copy-image', asset, name)
 }
 
 function forwardPreview(src: string, name: string, localPath = '') {

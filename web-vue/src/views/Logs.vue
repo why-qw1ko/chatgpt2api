@@ -9,6 +9,9 @@
     >
       <div class="log-control-panel">
         <PanelHeader page title="日志管理" align="start">
+          <template #copy>
+            <p v-if="keyFilter" class="mt-1 break-all text-xs text-muted-foreground">用户密钥 {{ keyFilter }}</p>
+          </template>
           <template #actions>
             <Button size="sm" variant="outline" :disabled="isFetching" @click="fetchLogs">
               {{ isFetching ? '刷新中...' : '刷新' }}
@@ -160,7 +163,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, reactive, ref, toRef, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, Input } from '@/components/ui'
 import ConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { GroupedSelectMenu } from '@/components/ui'
@@ -215,6 +218,8 @@ type LogRow = SystemLogRow
 
 const toast = useToast()
 const route = useRoute()
+const router = useRouter()
+const keyFilter = computed(() => queryValue(route.query.key_id))
 const { listLayoutMode, isWorkspaceLayout } = useListLayoutPreference()
 const pageRuntime = usePageRuntime('logs')
 const apiBaseUrl = import.meta.env.VITE_API_URL || window.location.origin
@@ -365,6 +370,7 @@ const systemLogsQuery = usePagedQuery({
     model: filters.model || undefined,
     account: filters.account || undefined,
     conversation_id: filters.conversationId || undefined,
+    key_id: keyFilter.value || undefined,
     search: filters.search || undefined,
     limit: pageSize,
     offset: (page - 1) * pageSize,
@@ -413,7 +419,7 @@ const exportSystemLogs = logExportRuntime.exportSystemLogs
 
 const systemMetricItems = computed(() => buildSystemMetricItems(logMeta))
 
-const activeSystemFilterCount = computed(() => countActiveSystemFilters(filters))
+const activeSystemFilterCount = computed(() => countActiveSystemFilters(filters) + Number(Boolean(keyFilter.value)))
 
 const systemQuickFilterSelection = computed(() => buildSystemQuickFilterSelection(filters))
 
@@ -478,6 +484,10 @@ function applyRouteQuery() {
 }
 
 function resetFilters() {
+  if (keyFilter.value) {
+    void router.replace({ query: { log_id: route.query.log_id } })
+    return
+  }
   runWithSilentSystemFilters(() => {
     filters.type = 'call'
     filters.status = ''

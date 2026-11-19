@@ -34,6 +34,7 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         call_id=str(body.get("_call_id") or ""),
         trace_image_perf=bool(body.get("_trace_image_perf")),
         owner_id=str(body.get("owner_id") or ""),
+        image_quota=body.get("_image_quota"),
     ))
     if body.get("stream"):
         input_text_tokens = count_text_tokens(prompt, model)

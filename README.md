@@ -150,6 +150,10 @@ Authorization: Bearer <your-key>
 | `/v1/ppt/generations`、`/v1/psd/generations` | `POST` | 创建对应类型的异步文件任务 |
 | `/images/{image_path}`、`/files/{file_path}` | `GET` | 通过生成结果中的公开链接下载图片与文件 |
 
+在「系统设置 → 用户密钥」可以自定义密钥、一键轮换、查看当日图片用量和打开该密钥的调用日志。轮换保留密钥 ID、会话、用量和调用归属，新密钥只展示一次。
+
+每日图片上限按北京时间和用户密钥计算。Studio、`/v1/images/generations`、`/v1/images/edits`、图片模型的 `/v1/chat/completions` 和使用图片生成工具的 `/v1/responses` 共用额度。请求提交时预留张数，结束后按实际生成张数结算。上限留空表示不限，设为 `0` 会禁止该密钥生成或编辑图片。可用额度不足时，兼容 API 返回 HTTP `429` 和 `daily_limit_exceeded`。
+
 文件任务按调用者身份隔离。生成结果中的图片 / 文件链接无需 Bearer Key，持有链接即可访问，请按分享需要保管链接。
 
 聊天示例：

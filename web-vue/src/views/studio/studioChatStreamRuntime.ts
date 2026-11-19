@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { StudioConversation, StudioConversationBadgeState, StudioMessage } from '@/components/studio/types'
 import { streamStudioChatReply, studioErrorMessage } from './studioRequestView'
+import { invalidateStudioChatThread } from './studioMessageRuntime'
 
 export type StudioChatStreamRuntimeHooks = {
   touchConversation: (conversation: StudioConversation) => void
@@ -23,6 +24,7 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
     const controller = new AbortController()
     streamController = controller
     isStreaming.value = true
+    const contextIds = input.conversation.messages.map((message) => message.id).join(',')
 
     let pendingDelta = ''
     let deltaFrameId: number | null = null
@@ -60,18 +62,21 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
         },
       })
       flushPendingDelta()
-      if (streamResult?.upstreamFallback) {
-        input.conversation.upstreamConversationId = streamResult.conversationId
-        input.conversation.upstreamParentMessageId = streamResult.parentMessageId
-      } else {
-        if (streamResult?.conversationId) input.conversation.upstreamConversationId = streamResult.conversationId
-        if (streamResult?.parentMessageId) input.conversation.upstreamParentMessageId = streamResult.parentMessageId
+      if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
+      if (streamResult && contextIds === input.conversation.messages.map((message) => message.id).join(',')) {
+        const conversationId = streamResult.conversationId || (!streamResult.upstreamFallback
+          ? input.conversation.upstreamConversationId
+          : undefined)
+        input.conversation.upstreamConversationId = streamResult.parentMessageId ? conversationId : undefined
+        input.conversation.upstreamParentMessageId = conversationId ? streamResult.parentMessageId : undefined
       }
       input.assistantMessage.status = 'done'
       if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '上游没有返回内容。'
       hooks.markConversationNotice(input.conversation.id, 'done')
     } catch (error) {
       flushPendingDelta()
+      invalidateStudioChatThread(input.conversation)
+      if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
       if (controller.signal.aborted) {
         input.assistantMessage.status = 'done'
         if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '已停止。'

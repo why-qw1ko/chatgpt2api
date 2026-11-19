@@ -9,6 +9,7 @@ import {
   loadStudioConversations,
   persistStudioConversationNotices,
   persistStudioConversations,
+  studioMessageForPersistence,
 } from './studioConversationState'
 
 type StudioConversationIdSetRef = {
@@ -82,7 +83,7 @@ export function useStudioConversationPersistenceRuntime(input: StudioConversatio
     const pending = saveStudioSessionState({
       conversations: input.conversations.value.map((item) => {
         const { messageTombstones, ...conversation } = item
-        return { ...conversation, messages: [...item.messages, ...(messageTombstones || [])] }
+        return { ...conversation, messages: [...item.messages, ...(messageTombstones || [])].map(studioMessageForPersistence) }
       }),
       conversationNotices: input.conversationNotices.value,
       activeConversationId: input.activeConversationId.value,

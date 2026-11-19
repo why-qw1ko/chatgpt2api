@@ -8,6 +8,13 @@ export interface UserKey {
   created_at?: string | null
   last_used_at?: string | null
   daily_image_limit?: number | null
+  image_usage?: {
+    day: string
+    used: number
+    reserved: number
+    limit: number | null
+    remaining: number | null
+  } | null
 }
 
 export interface UserKeysResponse {
@@ -16,6 +23,7 @@ export interface UserKeysResponse {
 
 export interface UserKeyCreatePayload {
   name: string
+  key?: string
   daily_image_limit?: number | null
 }
 export interface UserKeyCreateResponse {
@@ -41,15 +49,15 @@ export interface UserKeyDeleteResponse {
 export const userKeysApi = {
   list: () => apiClient.get<never, UserKeysResponse>('/api/auth/users'),
 
-  create: (name: string, dailyImageLimit?: number | null) =>
-    apiClient.post<UserKeyCreatePayload, UserKeyCreateResponse>('/api/auth/users', {
-      name,
-      ...(dailyImageLimit != null ? { daily_image_limit: dailyImageLimit } : {}),
-    }),
+  create: (payload: UserKeyCreatePayload) =>
+    apiClient.post<UserKeyCreatePayload, UserKeyCreateResponse>('/api/auth/users', payload),
 
   update: (keyId: string, updates: UserKeyUpdatePayload) =>
-    apiClient.post<UserKeyUpdatePayload, UserKeyUpdateResponse>(`/api/auth/users/${keyId}`, updates),
+    apiClient.post<UserKeyUpdatePayload, UserKeyUpdateResponse>(`/api/auth/users/${encodeURIComponent(keyId)}`, updates),
+
+  rotate: (keyId: string) =>
+    apiClient.post<never, UserKeyCreateResponse>(`/api/auth/users/${encodeURIComponent(keyId)}/rotate`),
 
   delete: (keyId: string) =>
-    apiClient.delete<never, UserKeyDeleteResponse>(`/api/auth/users/${keyId}`),
+    apiClient.delete<never, UserKeyDeleteResponse>(`/api/auth/users/${encodeURIComponent(keyId)}`),
 }

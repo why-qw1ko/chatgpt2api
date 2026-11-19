@@ -80,6 +80,7 @@ class CallRecordQuery:
     account_email: str = ""
     conversation_id: str = ""
     search: str = ""
+    key_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -173,6 +174,13 @@ class CallRecordRepository:
             filters.append(CallRecordModel.account_email == query.account_email)
         if query.conversation_id:
             filters.append(CallRecordModel.conversation_id == query.conversation_id)
+        if query.key_id:
+            payload = CallRecordModel.payload
+            key_id = func.coalesce(
+                func.nullif(payload["detail"]["key_id"].as_string(), ""),
+                payload["key_id"].as_string(),
+            )
+            filters.append(key_id == query.key_id)
         if query.search:
             filters.append(CallRecordModel.search_text.contains(query.search.lower()))
         return filters

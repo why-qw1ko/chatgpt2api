@@ -400,6 +400,7 @@ def create_router(app_version: str) -> APIRouter:
         account: str = "",
         conversation_id: str = "",
         search: str = "",
+        key_id: str = "",
         limit: int = Query(default=200, ge=1, le=20000),
         offset: int = Query(default=0, ge=0),
         authorization: str | None = Header(default=None),
@@ -416,6 +417,7 @@ def create_router(app_version: str) -> APIRouter:
             account=account.strip(),
             conversation_id=conversation_id.strip(),
             search=search.strip(),
+            key_id=key_id.strip(),
             limit=limit,
             offset=offset,
         )

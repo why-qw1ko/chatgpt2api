@@ -159,6 +159,13 @@ class DatabaseStorageBackend(StorageBackend):
     def load_auth_keys_snapshot(self) -> StorageSnapshot:
         return self._load_snapshot("auth_keys")
 
+    def load_auth_keys_revision(self) -> str:
+        with self.engine.connect() as connection:
+            version = connection.execute(
+                select(StorageRevisionModel.version).where(StorageRevisionModel.collection == "auth_keys")
+            ).scalar_one()
+        return self._revision_value("auth_keys", version)
+
     def _replace(
         self,
         collection: StorageCollection,

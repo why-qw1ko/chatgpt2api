@@ -7,6 +7,7 @@ import {
 } from './studioConversationState'
 import type { StudioConversationPersistenceRuntime } from './studioConversationPersistenceRuntime'
 import type { StudioConversationSelectionRuntime } from './studioConversationSelectionRuntime'
+import { invalidateStudioChatThread } from './studioMessageRuntime'
 
 type StudioConversationLookupRef = {
   value: StudioConversationLookup
@@ -118,8 +119,9 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
       : input.activeConversation.value
     if (!conversation?.messages.length) return null
     input.hooks.cancelMessageEdit()
-    conversation.messagesReplacedAt = new Date().toISOString()
+    conversation.messagesReplacedAt = new Date(Math.max(Date.now(), Date.parse(conversation.updatedAt) || 0)).toISOString()
     conversation.messages = []
+    invalidateStudioChatThread(conversation)
     conversation.title = '新对话'
     clearConversationNotice(conversation.id)
     touchConversation(conversation)

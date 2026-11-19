@@ -13,7 +13,7 @@ from concurrent.futures import (
     wait,
 )
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import tiktoken
 from curl_cffi.requests import exceptions as curl_exceptions
@@ -56,6 +56,9 @@ from utils.helper import (
 from utils.image_tokens import count_image_content_tokens, image_output_metadata, image_size_from_bytes
 from utils.log import logger
 from utils.diagnostics import diagnostic_excerpt
+
+if TYPE_CHECKING:
+    from services.image_quota_service import ImageQuotaReservation
 
 
 def _monitor_image_stage(request: "ConversationRequest", event: str, **data: Any) -> None:
@@ -501,6 +504,7 @@ def format_image_result(
     requested_size: str | None = None,
     deadline_monotonic: float | None = None,
     owner_id: str = "",
+    max_results: int | None = None,
 ) -> dict[str, Any]:
     data: list[dict[str, Any]] = []
     image_urls: list[str] = []
@@ -528,6 +532,8 @@ def format_image_result(
         if dimensions:
             asset["width"], asset["height"] = dimensions
         data.append(asset)
+        if max_results is not None and len(data) >= max_results:
+            break
     result: dict[str, Any] = {"created": created or int(time.time()), "data": data}
     if image_urls:
         result["_image_urls"] = image_urls
@@ -558,6 +564,7 @@ class ConversationRequest:
     monitor_attempt: int = 0
     deadline_monotonic: float = 0.0
     owner_id: str = ""
+    image_quota: ImageQuotaReservation | None = None
 
 
 @dataclass
@@ -1697,6 +1704,7 @@ def _image_result_output_from_urls(
         requested_size=request.size,
         deadline_monotonic=request.deadline_monotonic or None,
         owner_id=request.owner_id,
+        max_results=1 if request.image_quota is not None and request.image_quota.capped else None,
     )
     data = formatted["data"]
     if not data:
@@ -2087,6 +2095,7 @@ def stream_codex_image_outputs(
         requested_size=request.size,
         deadline_monotonic=request.deadline_monotonic or None,
         owner_id=request.owner_id,
+        max_results=1 if request.image_quota is not None and request.image_quota.capped else None,
     )
     data = formatted["data"]
     if data:
@@ -2810,6 +2819,25 @@ def _select_image_pool_error(errors: dict[int, Exception]) -> Exception | None:
     return selected
 
 
+def _generate_image_slot(request: ConversationRequest, index: int, total: int) -> list[ImageOutput]:
+    quota = request.image_quota
+    if quota is None:
+        return _generate_single_image(request, index, total)
+    quota.retain_work()
+    try:
+        outputs = _generate_single_image(request, index, total)
+        for output in outputs:
+            if output.kind != "result":
+                continue
+            accepted = quota.record(len(output.data))
+            if accepted < len(output.data):
+                output.data = output.data[:accepted]
+                output.image_urls = output.image_urls[:accepted]
+        return outputs
+    finally:
+        quota.release_work()
+
+
 def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[ImageOutput]:
     """并行生成多张图片，每张图片使用独立线程和账号，互不阻塞。"""
     if not is_supported_image_model(request.model):
@@ -2831,7 +2859,7 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
 
     if request.n <= 1:
         # 单张图片，直接执行（无需线程池开销）
-        outputs = _generate_single_image(replace(request), 1, 1)
+        outputs = _generate_image_slot(replace(request), 1, 1)
         if not outputs:
             raise ImageGenerationError(
                 "image generation completed without output",
@@ -2852,7 +2880,7 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
         errors: dict[int, Exception] = {}
         for index in range(1, request.n + 1):
             try:
-                outputs = _generate_single_image(replace(request), index, request.n)
+                outputs = _generate_image_slot(replace(request), index, request.n)
             except Exception as exc:
                 _capture_failed_image_attempts(request, exc)
                 errors[index] = exc
@@ -2921,8 +2949,18 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
         return outputs
 
     try:
+        quota = request.image_quota
         for index in range(1, request.n + 1):
-            future = executor.submit(_generate_single_image, replace(request), index, request.n)
+            if quota is not None:
+                quota.retain_work()
+            try:
+                future = executor.submit(_generate_image_slot, replace(request), index, request.n)
+            except BaseException:
+                if quota is not None:
+                    quota.release_work()
+                raise
+            if quota is not None:
+                future.add_done_callback(lambda _: quota.release_work())
             futures[future] = index
 
         # yield 结果：按完成顺序立即输出，不再等所有图片都结束后才返回成功结果。

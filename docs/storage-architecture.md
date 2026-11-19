@@ -12,6 +12,7 @@
 | 数据 | 当前所有者 | 主要持久化位置 / 适配器 |
 | --- | --- | --- |
 | 上游账号与 User Key | Account Repository | Application Database |
+| 用户密钥每日图片额度 | `ImageQuotaService` / `ImageQuotaRepository` | Application Database（按密钥归属和北京时间日期记录预留、生成张数与结算状态） |
 | 系统配置与代理设置 | `ConfigStore` 的配置 Repository | Application Database |
 | 调用日志 | `LogService` 的 Call Record Repository | Application Database |
 | 概览指标 | `DashboardMetricsService` 的 Dashboard Metric Projection | Application Database 中的状态、小时和模型小时三张表，保留 30 天 |

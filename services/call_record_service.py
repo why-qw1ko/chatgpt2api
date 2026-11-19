@@ -130,6 +130,7 @@ class CallRecordService:
         account: str = "",
         conversation_id: str = "",
         search: str = "",
+        key_id: str = "",
     ) -> CallRecordQuery:
         return CallRecordQuery(
             type=self._clean(type),
@@ -141,6 +142,7 @@ class CallRecordService:
             account_email=self._clean(account),
             conversation_id=self._clean(conversation_id),
             search=self._clean(search),
+            key_id=self._clean(key_id),
         )
 
     def list(
@@ -169,6 +171,7 @@ class CallRecordService:
         account: str = "",
         conversation_id: str = "",
         search: str = "",
+        key_id: str = "",
         limit: int = 200,
         offset: int = 0,
     ) -> dict[str, Any]:
@@ -183,6 +186,7 @@ class CallRecordService:
             account,
             conversation_id,
             search,
+            key_id,
         ))
         page = self.repository.list_page(
             self._query(
@@ -195,6 +199,7 @@ class CallRecordService:
                 account=account,
                 conversation_id=conversation_id,
                 search=search,
+                key_id=key_id,
             ),
             limit=safe_limit,
             offset=safe_offset,

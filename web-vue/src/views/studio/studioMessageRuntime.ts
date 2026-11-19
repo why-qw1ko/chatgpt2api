@@ -25,6 +25,7 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       id: message.id,
       role: message.role,
       mode: message.mode,
+      replyToId: message.replyToId,
       content: '',
       createdAt: message.createdAt,
       updatedAt: deletedAt,
@@ -42,13 +43,18 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
   }
 
   function addMessage(conversation: StudioConversation, message: Omit<StudioMessage, 'id' | 'createdAt'>) {
+    const questionIndex = message.replyToId ? conversation.messages.findIndex((item) => item.id === message.replyToId) : -1
+    const question = conversation.messages[questionIndex]
+    const lastCreatedAt = Date.parse(conversation.messages.at(-1)?.createdAt || '')
+    const nextCreatedAt = Number.isFinite(lastCreatedAt) ? Math.max(Date.now(), lastCreatedAt + 1) : Date.now()
     const next: StudioMessage = {
       id: createStudioId('message'),
-      createdAt: new Date().toISOString(),
+      createdAt: question ? question.createdAt : new Date(nextCreatedAt).toISOString(),
       ...message,
     }
-    conversation.messages.push(next)
-    const inserted = conversation.messages[conversation.messages.length - 1] || next
+    const index = question ? questionIndex + 1 : conversation.messages.length
+    conversation.messages.splice(index, 0, next)
+    const inserted = conversation.messages[index] || next
     input.hooks.touchConversation(conversation)
     if (conversation.title === '新对话' && message.role === 'user') {
       conversation.title = buildStudioConversationTitle(message.content)
@@ -60,6 +66,10 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
   function deleteActiveMessage(messageId: string) {
     const conversation = input.activeConversation.value
     if (!conversation) return null
+    return removeMessage(conversation, messageId)
+  }
+
+  function removeMessage(conversation: StudioConversation, messageId: string) {
     const message = conversation.messages.find((item) => item.id === messageId)
     if (!message) return null
     const deletedAt = new Date().toISOString()
@@ -68,6 +78,7 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...(conversation.messageTombstones || []),
       tombstone(message, deletedAt),
     ]
+    invalidateStudioChatThread(conversation)
     input.hooks.touchConversation(conversation)
     return conversation
   }
@@ -90,6 +101,7 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...conversation.messages.slice(0, index),
       nextMessage,
     ]
+    invalidateStudioChatThread(conversation)
     if (!conversation.messages.slice(0, index).some((item) => item.role === 'user')) {
       conversation.title = buildStudioConversationTitle(message.content)
     }
@@ -103,14 +115,24 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...target.conversation.messages.slice(target.index).map((item) => tombstone(item, deletedAt)),
     ]
     target.conversation.messages = target.conversation.messages.slice(0, target.index)
+    invalidateStudioChatThread(target.conversation)
     input.hooks.touchConversation(target.conversation)
   }
 
   function findPreviousUserMessage(target: StudioMessageTarget) {
-    return target.conversation.messages
+    if (target.message.replyToId) {
+      return target.conversation.messages.find((item) => item.id === target.message.replyToId && item.role === 'user') || null
+    }
+    const isQuestion = (item: StudioMessage) => item.role === 'user' && item.mode === target.message.mode && item.content.trim()
+    const question = target.conversation.messages
       .slice(0, target.index)
       .reverse()
-      .find((item) => item.role === 'user' && item.content.trim()) || null
+      .find(isQuestion)
+    if (!question) return null
+    const ambiguous = target.conversation.messages.some((item) => (
+      item.id !== question.id && item.createdAt === question.createdAt && isQuestion(item)
+    ))
+    return ambiguous ? null : question
   }
 
   return {
@@ -119,6 +141,12 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
     findMessage,
     findPreviousUserMessage,
     pruneAfterTarget,
+    removeMessage,
     replaceFromTarget,
   }
+}
+
+export function invalidateStudioChatThread(conversation: StudioConversation) {
+  conversation.upstreamConversationId = undefined
+  conversation.upstreamParentMessageId = undefined
 }

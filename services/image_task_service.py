@@ -26,6 +26,7 @@ from services.image_failure import (
     image_failure,
     public_image_error_message,
 )
+from services.image_quota_service import ImageQuotaExceededError, ImageQuotaReservation, ImageQuotaService, image_quota_service
 from services.image_task_view import image_task_page, image_task_row
 from services.json_file import read_json_file, write_json_file
 from services.log_service import (
@@ -84,12 +85,7 @@ ADMIN_LOG_ONLY_TASK_DETAIL_KEYS = (
 )
 
 
-class ImageTaskLimitExceededError(RuntimeError):
-    def __init__(self, limit: int, used: int):
-        self.limit = limit
-        self.used = used
-        self.code = "daily_limit_exceeded"
-        super().__init__(f"每日图片生成次数已达上限（{used}/{limit}），请明天再试")
+ImageTaskLimitExceededError = ImageQuotaExceededError
 
 
 class ImageTaskQueueFullError(RuntimeError):
@@ -216,17 +212,6 @@ def _owner_id(identity: dict[str, object]) -> str:
     return _clean(identity.get("id")) or "anonymous"
 
 
-def _daily_image_limit(identity: dict[str, object]) -> int | None:
-    raw = identity.get("daily_image_limit")
-    if raw is None:
-        return None
-    try:
-        limit = int(raw)
-        return limit if limit >= 0 else None
-    except (TypeError, ValueError):
-        return None
-
-
 def _task_key(owner_id: str, task_id: str) -> str:
     return f"{owner_id}:{task_id}"
 
@@ -275,11 +260,13 @@ class ImageTaskService:
         edit_handler: Callable[[dict[str, Any]], dict[str, Any]] = openai_v1_image_edit.handle,
         retention_hours_getter: Callable[[], int] | None = None,
         task_runner: BoundedTaskRunner | None = None,
+        quota_service: ImageQuotaService | None = None,
     ):
         self.path = path
         self.generation_handler = generation_handler
         self.edit_handler = edit_handler
         self.retention_hours_getter = retention_hours_getter or (lambda: config.image_retention_hours)
+        self.quota_service = quota_service or image_quota_service
         self.task_runner = task_runner or BoundedTaskRunner(
             name="image-task",
             max_workers=env_int("CHATGPT2API_IMAGE_TASK_WORKERS", 16),
@@ -298,11 +285,16 @@ class ImageTaskService:
         self._spool_parent.mkdir(parents=True, exist_ok=True)
         self._spool_owner_lease: _SpoolOwnerLease | None = None
         self._spool_exit_cleanup: Callable[[], None] | None = None
+        self._active_spool_roots: set[str] = set()
         self._spool_root = self._initialize_spool_root()
         try:
             with self._lock:
                 self._tasks = self._load_locked()
-                changed = self._loaded_private_task_details or self._recover_unfinished_locked()
+                if any(task.get("quota_entry_id") for task in self._tasks.values()):
+                    with interprocess_lock(self._spool_parent / SPOOL_LIFECYCLE_LOCK_NAME):
+                        self._cleanup_stale_spool_roots_locked()
+                changed = self._recover_unfinished_locked() or self._loaded_private_task_details
+                self._restore_quota_usage_locked()
                 changed = self._cleanup_locked() or changed
                 if changed:
                     self._save_locked()
@@ -338,6 +330,7 @@ class ImageTaskService:
 
     def _cleanup_stale_spool_roots_locked(self) -> None:
         prefix = f"{self.path.stem}-"
+        self._active_spool_roots.clear()
         for candidate in self._spool_parent.iterdir():
             if not candidate.is_dir() or not candidate.name.startswith(prefix):
                 continue
@@ -350,8 +343,10 @@ class ImageTaskService:
             try:
                 owner_probe.__enter__()
             except TimeoutError:
+                self._active_spool_roots.add(candidate.name)
                 continue
             except OSError as exc:
+                self._active_spool_roots.add(candidate.name)
                 logger.warning({
                     "event": "image_task_spool_owner_probe_failed",
                     "path": str(candidate),
@@ -452,19 +447,29 @@ class ImageTaskService:
             reservation=reservation,
         )
 
-    def _count_today_images_locked(self, owner: str) -> int:
-        today = beijing_now_str()[:10]
-        count = 0
+    def _restore_quota_usage_locked(self) -> None:
+        day = beijing_now_str()[:10]
+        legacy_completed: dict[str, list[tuple[str, int]]] = {}
+        interrupted: list[tuple[str, str]] = []
         for task in self._tasks.values():
-            if task.get("owner_id") != owner:
-                continue
-            created_at = str(task.get("created_at") or "")
-            if not created_at or created_at[:10] != today:
-                continue
-            if task.get("status") == TASK_STATUS_ERROR:
-                continue
-            count += _image_count(task.get("n"))
-        return count
+            entry_id = _clean(task.get("quota_entry_id"))
+            owner = task["owner_id"]
+            if entry_id:
+                if task.get("quota_spool_root") not in self._active_spool_roots:
+                    interrupted.append((entry_id, owner))
+            elif task.get("status") == TASK_STATUS_SUCCESS and task["created_at"].startswith(day):
+                count = image_task_row(task)["succeeded_count"]
+                if count:
+                    legacy_completed.setdefault(owner, []).append((task["id"], count))
+        self.quota_service.release_interrupted_tasks(interrupted)
+        if legacy_completed:
+            from services.auth_service import auth_service
+
+            user_ids = {item["id"] for item in auth_service.list_keys(role="user")}
+            self.quota_service.seed_studio_usage(
+                {owner: rows for owner, rows in legacy_completed.items() if owner in user_ids},
+                day,
+            )
 
     def list_tasks(self, identity: dict[str, object], task_ids: list[str]) -> dict[str, Any]:
         owner = _owner_id(identity)
@@ -510,15 +515,6 @@ class ImageTaskService:
         submitted_wall = time.time()
         submitted_perf = time.perf_counter()
 
-        limit = _daily_image_limit(identity)
-        if limit is not None and limit >= 0:
-            today_count = self._count_today_images_locked(owner)
-            requested = _image_count(payload.get("n"))
-            if today_count + requested > limit:
-                if reservation is not None:
-                    reservation.rollback()
-                raise ImageTaskLimitExceededError(limit=limit, used=today_count + requested)
-
         while True:
             with self._lock:
                 cleaned = self._cleanup_locked()
@@ -540,8 +536,10 @@ class ImageTaskService:
             pending.wait()
 
         queued_payload: dict[str, Any] | None = None
+        quota: ImageQuotaReservation | None = None
         try:
             reservation = reservation or self.reserve_submission()
+            quota = self.quota_service.reserve(identity, _image_count(payload.get("n")))
             queued_payload = self._prepare_queued_payload(mode, payload)
             task = {
                 "id": task_id,
@@ -557,6 +555,7 @@ class ImageTaskService:
                 "updated_at": now,
                 "created_ts": time.time(),
             }
+            self._bind_quota(task, quota)
             self._commit_new_task(
                 reservation,
                 key,
@@ -571,7 +570,10 @@ class ImageTaskService:
                 _clean(payload.get("model"), "gpt-image-2"),
                 submitted_wall,
                 submitted_perf,
+                quota,
+                quota=quota,
             )
+            quota = None  # The queued callback now owns the reservation.
             with self._lock:
                 return image_task_row(self._tasks.get(key, task))
         except Exception:
@@ -581,10 +583,17 @@ class ImageTaskService:
                 self._cleanup_queued_payload(queued_payload)
             raise
         finally:
+            if quota is not None:
+                quota.finish()
             with self._lock:
                 completed = self._pending_submissions.pop(key, None)
                 if completed is not None:
                     completed.set()
+
+    def _bind_quota(self, task: dict[str, Any], quota: ImageQuotaReservation | None) -> None:
+        if quota is not None:
+            task["quota_entry_id"] = quota.id
+            task["quota_spool_root"] = self._spool_root.name
 
     def _prepare_queued_payload(self, mode: str, payload: dict[str, Any]) -> dict[str, Any]:
         queued = dict(payload)
@@ -639,13 +648,22 @@ class ImageTaskService:
         previous_task: dict[str, Any] | None,
         callback: Callable[..., None],
         *args: Any,
+        quota: ImageQuotaReservation | None = None,
     ) -> None:
         def run_when_ready() -> None:
-            self._run_callback_safely(key, queued_payload, callback, *args)
+            try:
+                self._run_callback_safely(key, queued_payload, callback, *args)
+            finally:
+                if quota is not None:
+                    quota.finish()
 
         def cancel_before_start(_: BaseException) -> None:
-            self._mark_task_interrupted_safely(key)
-            self._cleanup_queued_payload(queued_payload)
+            try:
+                self._mark_task_interrupted_safely(key)
+                self._cleanup_queued_payload(queued_payload)
+            finally:
+                if quota is not None:
+                    quota.finish()
 
         with self._lock:
             self._tasks[key] = task
@@ -765,6 +783,7 @@ class ImageTaskService:
         model: str,
         submitted_wall: float,
         submitted_perf: float,
+        quota: ImageQuotaReservation | None = None,
     ) -> None:
         started = submitted_wall
         handler_queue_ms = max(0, int((time.perf_counter() - submitted_perf) * 1000))
@@ -799,6 +818,7 @@ class ImageTaskService:
             "_image_result_callback": image_result_callback,
             "_call_id": call_id,
             "_trace_image_perf": True,
+            "_image_quota": quota,
         }
         handler_started = time.perf_counter()
         realtime_monitor_service.stage(
@@ -829,6 +849,8 @@ class ImageTaskService:
                 if account_email:
                     setattr(error, "account_email", account_email)
                 raise error
+            if quota is not None:
+                quota.record(len(data), total=True)
             usage = result.get("usage")
             duration_ms = int((time.time() - started) * 1000)
             self._update_task(
@@ -1007,6 +1029,9 @@ class ImageTaskService:
                 "started_ts": item.get("started_ts"),
                 "duration_ms": item.get("duration_ms"),
             }
+            if quota_entry_id := _clean(item.get("quota_entry_id")):
+                task["quota_entry_id"] = quota_entry_id
+                task["quota_spool_root"] = _clean(item.get("quota_spool_root"))
             data = item.get("data")
             if isinstance(data, list):
                 task["data"] = data
@@ -1045,6 +1070,8 @@ class ImageTaskService:
         changed = False
         for task in self._tasks.values():
             if task.get("status") in UNFINISHED_STATUSES:
+                if task.get("quota_spool_root") in self._active_spool_roots:
+                    continue
                 raw_error = "image task interrupted by service restart"
                 public_error, _, details = _normalize_task_failure(
                     ImageFailureError(
@@ -1098,18 +1125,25 @@ class ImageTaskService:
             mode = task.get("mode", "generate")
             model = task.get("model", "gpt-image-2")
             base_url = _clean(task.get("base_url"))
-            submitted_wall = time.time()
-            submitted_perf = time.perf_counter()
-            reservation = self.reserve_submission()
-            previous_task = deepcopy(task)
-            queued_task = deepcopy(task)
-            queued_task["status"] = TASK_STATUS_QUEUED
-            queued_task["error"] = ""
-            queued_task["updated_at"] = _now_iso()
-            queued_task["updated_ts"] = time.time()
-            for field in TASK_DETAIL_KEYS:
-                queued_task.pop(field, None)
-            try:
+            requested = _image_count(task.get("n"))
+        submitted_wall = time.time()
+        submitted_perf = time.perf_counter()
+        reservation = self.reserve_submission()
+        quota: ImageQuotaReservation | None = None
+        try:
+            quota = self.quota_service.reserve(identity, requested)
+            with self._lock:
+                if self._tasks.get(key) is not task or task.get("status") != TASK_STATUS_ERROR:
+                    raise ValueError("task is not in error state")
+                previous_task = deepcopy(task)
+                queued_task = deepcopy(task)
+                queued_task["status"] = TASK_STATUS_QUEUED
+                queued_task["error"] = ""
+                queued_task["updated_at"] = _now_iso()
+                queued_task["updated_ts"] = time.time()
+                for field in TASK_DETAIL_KEYS:
+                    queued_task.pop(field, None)
+                self._bind_quota(queued_task, quota)
                 self._commit_new_task(
                     reservation,
                     key,
@@ -1126,9 +1160,14 @@ class ImageTaskService:
                     base_url,
                     submitted_wall,
                     submitted_perf,
+                    quota,
+                    quota=quota,
                 )
-            finally:
-                reservation.rollback()
+                quota = None
+        finally:
+            reservation.rollback()
+            if quota is not None:
+                quota.finish()
         with self._lock:
             return image_task_row(self._tasks.get(key, task))
 
@@ -1143,6 +1182,7 @@ class ImageTaskService:
         base_url: str,
         submitted_wall: float,
         submitted_perf: float,
+        quota: ImageQuotaReservation | None = None,
     ) -> None:
         """后台线程：继续轮询已有 conversation_id 的图片结果。"""
         started = submitted_wall
@@ -1189,8 +1229,16 @@ class ImageTaskService:
                 int(time.time()),
                 requested_size=size,
                 owner_id=task_owner_id,
+                max_results=_image_count(request_payload.get("n")) if quota is not None and quota.capped else None,
             )
             data = formatted["data"]
+            if quota is not None:
+                accepted = quota.record(len(data))
+                if accepted < len(data):
+                    data = data[:accepted]
+                    formatted["data"] = data
+                    if "_image_urls" in formatted:
+                        formatted["_image_urls"] = formatted["_image_urls"][:accepted]
             self._update_task(
                 key,
                 status=TASK_STATUS_SUCCESS,

@@ -43,4 +43,6 @@ def install_exception_handlers(app: FastAPI) -> None:
     async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         if _is_openai_compatible_path(request.url.path):
             return _compatible_error_response(request, exc.errors(), 422)
+        if request.url.path == "/api/auth/users" or request.url.path.startswith("/api/auth/users/"):
+            return JSONResponse(status_code=422, content={"detail": {"error": "用户密钥参数格式不正确"}})
         return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})

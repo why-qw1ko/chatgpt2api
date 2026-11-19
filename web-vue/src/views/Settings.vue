@@ -123,12 +123,15 @@
         v-else-if="activeSettingsTab === 'keys'"
         :user-keys="userKeys"
         :user-keys-loading="userKeysLoading"
+        :user-keys-error="userKeysError"
         :user-key-busy="userKeyBusy"
         :new-user-key="newUserKey"
         @load="loadUserKeys"
         @create="openUserKeyCreateModal"
         @copy="copyUserKey"
+        @dismiss-key="clearNewUserKey"
         @edit="openUserKeyEditModal"
+        @rotate="rotateUserKey"
         @toggle="toggleUserKey"
         @delete="deleteUserKey"
       />
@@ -462,12 +465,14 @@ const userKeysRuntime = useSettingsUserKeysRuntime({
 const userKeys = userKeysRuntime.userKeys
 const userKeysLoaded = userKeysRuntime.userKeysLoaded
 const userKeysLoading = userKeysRuntime.userKeysLoading
+const userKeysError = userKeysRuntime.userKeysError
 const userKeyBusy = userKeysRuntime.userKeyBusy
 const userKeyModal = userKeysRuntime.userKeyModal
 const editingUserKey = userKeysRuntime.editingUserKey
 const newUserKey = userKeysRuntime.newUserKey
 const userKeyForm = userKeysRuntime.userKeyForm
 const copyUserKey = userKeysRuntime.copyUserKey
+const clearNewUserKey = userKeysRuntime.clearNewUserKey
 const openUserKeyCreateModal = userKeysRuntime.openUserKeyCreateModal
 const openUserKeyEditModal = userKeysRuntime.openUserKeyEditModal
 const closeUserKeyModal = userKeysRuntime.closeUserKeyModal
@@ -475,6 +480,7 @@ const loadUserKeys = userKeysRuntime.loadUserKeys
 const createUserKey = userKeysRuntime.createUserKey
 const updateUserKey = userKeysRuntime.updateUserKey
 const toggleUserKey = userKeysRuntime.toggleUserKey
+const rotateUserKey = userKeysRuntime.rotateUserKey
 const deleteUserKey = userKeysRuntime.deleteUserKey
 
 const sensitiveWordsText = computed({

@@ -276,6 +276,7 @@ def image_chat_response(body: dict[str, Any]) -> dict[str, Any]:
         call_id=str(body.get("_call_id") or ""),
         trace_image_perf=bool(body.get("_trace_image_perf")),
         owner_id=str(body.get("owner_id") or ""),
+        image_quota=body.get("_image_quota"),
     )))
     response = completion_response(model, image_result_content(result), int(result.get("created") or 0) or None)
     usage = image_usage(
@@ -308,6 +309,7 @@ def image_chat_events(body: dict[str, Any]) -> Iterator[dict[str, Any]]:
         call_id=str(body.get("_call_id") or ""),
         trace_image_perf=bool(body.get("_trace_image_perf")),
         owner_id=str(body.get("owner_id") or ""),
+        image_quota=body.get("_image_quota"),
     ))
     yield from stream_image_chat_completion(image_outputs, model)
 

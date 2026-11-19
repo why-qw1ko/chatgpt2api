@@ -178,6 +178,7 @@ export type SystemLogsListParams = {
   model?: string
   account?: string
   conversation_id?: string
+  key_id?: string
   search?: string
   limit?: number
   offset?: number
@@ -455,6 +456,7 @@ function normalizeSystemParams(params?: SystemLogsListParams) {
     model: cleanString(params?.model),
     account: cleanString(params?.account),
     conversation_id: cleanString(params?.conversation_id),
+    key_id: cleanString(params?.key_id),
     search: cleanString(params?.search),
     limit: Number.isFinite(limit) ? Math.min(Math.max(Math.trunc(limit), 1), 20000) : 500,
     offset: Number.isFinite(offset) ? Math.max(Math.trunc(offset), 0) : 0,

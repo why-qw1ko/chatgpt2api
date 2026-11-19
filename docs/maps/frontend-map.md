@@ -15,13 +15,13 @@ The route source is
 | `/login` | `Login.vue` | Auth adapter and redirect validation |
 | `/` | `Dashboard.vue` | `dashboard/useDashboardPage.ts`, `statsApi` |
 | `/accounts` | `Accounts.vue` | `accounts/useAccountsPage.ts`, account CRUD, selection, import, bulk-operation, and test runtimes |
-| `/settings` | `Settings.vue` | Settings configuration, integrations, Prompt Sources, User Keys, backup, and external-source runtimes |
+| `/settings` | `Settings.vue` | Settings configuration, integrations, Prompt Sources, User Key usage and rotation, backup, and external-source runtimes |
 | `/theme` | `Theme.vue` | Authenticated appearance controls for administrators and User Key sessions |
 | `/proxy` | `Proxy.vue` | Default-proxy, group, and node-import runtimes; `proxyApi` |
 | `/logs` | `Logs.vue` | Query, selection, export, and detail runtimes; `logsApi` |
 | `/monitor` | `Monitor.vue` | Realtime list and detail runtimes; `monitorApi` |
 | `/gallery` | `Gallery.vue` | Query, interaction, and operation runtimes; `galleryApi` |
-| `/studio` | `Studio.vue` | Send, chat stream, image/file task, polling, conversation, prompt, model, layout, and scroll runtimes |
+| `/studio` | `Studio.vue` | Send and retry, chat branching, image/file tasks, polling, conversation history, clipboard, prompt, layout, and scroll |
 | `/debug` | Redirect only | Redirects to `/studio`; it is not a separate page |
 
 `AppShell.vue` owns authenticated product navigation and header-level overlays.

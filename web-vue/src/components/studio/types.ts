@@ -19,10 +19,14 @@ export interface StudioMessage {
   updatedAt?: string
   deletedAt?: string
   baseUpdatedAt?: string
+  replyToId?: string
   status?: StudioMessageStatus
   model?: string
   imageSize?: string
   imageCount?: number
+  imageInputCount?: number
+  imageQuality?: string
+  imageEditPrompt?: string
   taskId?: string
   fileTaskId?: string
   fileTaskDeleted?: boolean
@@ -66,6 +70,8 @@ export interface StudioReferenceImage {
   type: string
   size: number
   dataUrl: string
+  originalInBrowser?: boolean
+  source?: StudioImageCompareSource
 }
 
 export type StudioReference = StudioReferenceImage

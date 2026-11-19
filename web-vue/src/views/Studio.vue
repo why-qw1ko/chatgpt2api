@@ -95,6 +95,7 @@
             @retry-assistant="retryAssistantMessage"
             @delete-message="deleteMessage"
             @copy-message="copyText"
+            @copy-image="copyResultImage"
             @preview="openPreview"
             @reference-image="referenceGeneratedImage"
             @inpaint-image="openInpaintModal"
@@ -183,7 +184,8 @@
     <StudioLightbox
       :preview="referenceRuntime.preview.value"
       @close="referenceRuntime.closePreview"
-      @copy="copyText"
+      @copy-image="copyPreviewImage"
+      @copy-link="copyPreviewLink"
       @download="downloadPreviewImage"
     />
     <StudioInpaintModal
@@ -226,7 +228,7 @@ import { usePageRuntime } from '@/composables/usePageRuntime'
 import { preloadPromptLibrary } from '@/composables/usePromptLibraryRuntime'
 import StudioPromptPicker from '@/components/studio/StudioPromptPicker.vue'
 import StudioSearchSourcesPanel from '@/components/studio/StudioSearchSourcesPanel.vue'
-import { writeClipboardText } from '@/lib/clipboard'
+import { writeClipboardImage, writeClipboardText } from '@/lib/clipboard'
 import { downloadUrlAsFile } from '@/lib/downloads'
 import {
   buildStudioConversationLookup,
@@ -237,7 +239,7 @@ import {
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
 import { loadStudioSessionState, saveStudioSessionState } from '@/api/studioSessions'
-import { studioErrorMessage } from '@/views/studio/studioRequestView'
+import { buildStudioInpaintPrompt, studioErrorMessage } from '@/views/studio/studioRequestView'
 import { useStudioChatStreamRuntime } from '@/views/studio/studioChatStreamRuntime'
 import { useStudioComposerRuntime } from '@/views/studio/studioComposerRuntime'
 import { useStudioConversationActionsRuntime } from '@/views/studio/studioConversationActionsRuntime'
@@ -253,6 +255,7 @@ import { useStudioMessageRuntime } from '@/views/studio/studioMessageRuntime'
 import { useStudioModelFormRuntime } from '@/views/studio/studioModelFormRuntime'
 import {
   createStudioReferenceFromFile,
+  fetchStudioImageFile,
   toStudioMessageReferenceImage,
   useStudioReferenceRuntime,
 } from '@/views/studio/studioReferenceRuntime'
@@ -267,6 +270,7 @@ import type {
   StudioImageAssetView,
   StudioImageComparePreview,
   StudioImageCompareSource,
+  StudioPreviewImage,
   StudioMessage,
   StudioReferenceImage,
 } from '@/components/studio/types'
@@ -643,8 +647,10 @@ async function deleteConversation(id: string) {
   })
   if (!ok) return
   conversationMutationVersion += 1
+  const removeReferences = referenceRuntime.prepareReferenceRemoval(conversation.messages)
   try {
     await conversationActionsRuntime.deleteConversation(id)
+    removeReferences(remainingStudioMessages())
   } catch {
     toast.error('删除失败，请稍后重试')
   }
@@ -661,8 +667,10 @@ async function confirmClearHistory() {
   })
   if (!ok) return
   conversationMutationVersion += 1
+  const removeReferences = referenceRuntime.prepareReferenceRemoval()
   try {
     await conversationActionsRuntime.clearHistory()
+    removeReferences()
     isMobileHistoryOpen.value = false
   } catch {
     toast.error('清空失败，请稍后重试')
@@ -680,12 +688,20 @@ async function clearCurrentConversation() {
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.clearCurrentConversation(conversation.id)
+  const removeReferences = referenceRuntime.prepareReferenceRemoval(conversation.messages)
+  if (conversationActionsRuntime.clearCurrentConversation(conversation.id)) removeReferences(remainingStudioMessages())
 }
 
 function deleteMessage(messageId: string) {
+  const message = activeConversation.value?.messages.find((item) => item.id === messageId)
+  if (!message) return
+  const removeReferences = referenceRuntime.prepareReferenceRemoval([message])
   if (editingMessageId.value === messageId) cancelMessageEdit()
-  messageRuntime.deleteActiveMessage(messageId)
+  if (messageRuntime.deleteActiveMessage(messageId)) removeReferences(remainingStudioMessages())
+}
+
+function remainingStudioMessages() {
+  return conversations.value.flatMap((item) => item.messages)
 }
 
 function cancelMessageEdit(clearComposer = true) {
@@ -709,8 +725,13 @@ function stopStreaming() {
 }
 
 async function appendFiles(files: File[]) {
-  const added = await referenceRuntime.append(files)
-  if (added && composeMode.value !== 'chat' && composeMode.value !== 'file') composerRuntime.activateImageMode()
+  const conversation = activeConversation.value
+  try {
+    const added = await referenceRuntime.append(files, undefined, () => activeConversation.value === conversation)
+    if (added && composeMode.value !== 'chat' && composeMode.value !== 'file') composerRuntime.activateImageMode()
+  } catch (error) {
+    toast.error(studioErrorMessage(error, '读取参考图失败'))
+  }
 }
 
 function cleanAssetText(value: unknown) {
@@ -754,19 +775,7 @@ function imageCompareSource(asset: StudioImageAssetView, name: string): StudioIm
 }
 
 async function imageAssetToFile(asset: StudioImageAssetView, name: string) {
-  const filename = imageAssetFilename(asset, name)
-  const source = imageAssetSource(asset)
-  if (!source) throw new Error('图片没有可读取的地址')
-
-  const response = /^data:/i.test(source)
-    ? await fetch(source)
-    : await fetch(source, { credentials: 'same-origin' })
-  if (!response.ok) throw new Error(`读取图片失败：HTTP ${response.status}`)
-
-  const blob = await response.blob()
-  if (!blob.size) throw new Error('读取到的图片为空')
-  if (blob.type && !blob.type.startsWith('image/')) throw new Error('读取到的内容不是图片')
-  return new File([blob], filename, { type: blob.type || 'image/png' })
+  return fetchStudioImageFile(imageAssetSource(asset), imageAssetFilename(asset, name))
 }
 
 async function messageReferenceImageFromFile(file: File): Promise<StudioReferenceImage> {
@@ -775,19 +784,23 @@ async function messageReferenceImageFromFile(file: File): Promise<StudioReferenc
 }
 
 async function referenceGeneratedImage(asset: StudioImageAssetView, name: string) {
-  let file: File
+  const conversation = activeConversation.value
   try {
-    file = await imageAssetToFile(asset, name)
+    const file = await imageAssetToFile(asset, name)
+    if (activeConversation.value !== conversation) return
+    const added = await referenceRuntime.append(
+      [file], imageCompareSource(asset, name) || undefined, () => activeConversation.value === conversation,
+    )
+    if (activeConversation.value !== conversation) return
+    if (!added) {
+      toast.error('最多只能添加 8 张参考图')
+      return
+    }
   } catch (error) {
     toast.error(studioErrorMessage(error, '引用图片读取失败'))
     return
   }
 
-  const added = await referenceRuntime.append([file])
-  if (!added) {
-    toast.error('最多只能添加 8 张参考图')
-    return
-  }
   composerRuntime.activateImageMode()
   toast.success('已引用到输入框')
   scheduleScrollToBottom()
@@ -817,30 +830,30 @@ function openImageCompare(source: StudioImageCompareSource, asset: StudioImageAs
 
 async function submitInpaintEdit(payload: { prompt: string; markedImage: File }) {
   const target = inpaintTarget.value
+  const conversation = activeConversation.value
   const prompt = cleanAssetText(payload.prompt)
   if (!target || !prompt) return
 
   let sourceFile: File
-  let referenceImage: StudioReferenceImage
+  let referenceImages: StudioReferenceImage[]
   try {
     sourceFile = await imageAssetToFile(target.asset, target.name)
-    referenceImage = await messageReferenceImageFromFile(payload.markedImage)
+    const [original, marked] = await Promise.all([
+      messageReferenceImageFromFile(sourceFile),
+      messageReferenceImageFromFile(payload.markedImage),
+    ])
+    referenceImages = [{ ...original, source: target.source }, marked]
   } catch (error) {
     toast.error(studioErrorMessage(error, '局部修改图片读取失败'))
     return
   }
 
-  const requestPrompt = [
-    '你会收到两张参考图：第一张是原图，第二张是带蓝色标记的原图。',
-    '只修改蓝色标记覆盖的局部区域，蓝色标记只是区域说明，不要出现在最终图片里。',
-    '未标记区域尽量保持与第一张原图一致。',
-    `局部修改要求：${prompt}`,
-  ].join('\n')
+  if (inpaintTarget.value !== target || activeConversation.value !== conversation) return
   const ok = await sendImageEditRequest({
-    prompt: requestPrompt,
+    prompt: buildStudioInpaintPrompt(prompt),
     files: [sourceFile, payload.markedImage],
     userContent: `局部修改：${prompt}`,
-    referenceImages: [referenceImage],
+    referenceImages,
     assistantContent: '局部修改任务已提交',
     inpaintSource: target.source,
     imageCount: 1,
@@ -873,6 +886,29 @@ async function copyText(value: string) {
     toast.success('已复制')
   } catch {
     toast.error('复制失败')
+  }
+}
+
+async function copyResultImage(asset: StudioImageAssetView, name: string) {
+  try {
+    await writeClipboardImage(() => imageAssetToFile(asset, name))
+    toast.success('已复制图片')
+  } catch (error) {
+    toast.error(studioErrorMessage(error, '复制图片失败，请使用下载'))
+  }
+}
+
+function copyPreviewImage(preview: StudioPreviewImage) {
+  return copyResultImage({ url: preview.src, path: preview.localPath || '' }, preview.name)
+}
+
+function copyPreviewLink(preview: StudioPreviewImage) {
+  const src = imageAssetSource({ url: preview.src, path: preview.localPath || '' })
+  try {
+    const url = new URL(src, window.location.origin)
+    if (url.protocol === 'http:' || url.protocol === 'https:') return copyText(url.href)
+  } catch {
+    toast.error('图片链接无效')
   }
 }
 

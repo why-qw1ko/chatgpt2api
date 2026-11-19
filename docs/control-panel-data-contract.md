@@ -21,10 +21,13 @@
 | 账号管理 | `/api/accounts`、`/api/account-groups`、`api/accounts.py` | `api/accounts.ts` 与账号页面运行时 |
 | 代理管理 | `/api/proxy/*`、代理管理服务 | `api/proxy.ts` 与代理页面运行时 |
 | 系统设置 | `GET/PATCH /api/settings`、`services/settings_management_service.py`、`contracts/settings.py` | `api/settings.ts` 与设置分区 |
+| 用户密钥 | `/api/auth/users`、`contracts/auth.py`、`ImageQuotaService` | `api/userKeys.ts`、设置中的用量与轮换，按密钥 ID 筛选调用日志 |
 | 图片管理 | `/api/images`、`ImageStorageService` | `api/gallery.ts` 与图库页面运行时 |
 | 对话画图 | `/api/image-tasks`、`api/image_task_contract.py`、`services/image_task_view.py` | Studio 的任务运行时 |
 | 可编辑文件 | `/v1/editable-file-tasks`、`services/editable_file_task_service.py` | Studio 的独立文件任务运行时 |
 | 提示词库 | `/api/prompts`、`contracts/prompts.py` | Studio 和设置中的提示词来源界面 |
+
+`GET /api/auth/users` 返回每条密钥的 `image_usage`，包含日期、已用张数、预留张数、上限和剩余张数。不限额的密钥使用 `null` 表示上限和剩余张数。新密钥值通过创建或轮换响应返回，轮换保留原 `id`。日志可使用 `GET /api/logs?key_id=...` 精确筛选该密钥的调用记录。
 
 ## 概览中心
 

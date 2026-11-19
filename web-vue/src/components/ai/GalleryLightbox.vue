@@ -30,7 +30,11 @@
           </button>
           <button v-if="canShowCopy" class="lightbox-btn" @click="emitFile('copy')">
             <Icon :icon="copied ? 'lucide:check' : 'lucide:copy'" />
-            {{ copied ? '已复制' : '复制链接' }}
+            {{ copied ? '已复制' : copyLabel }}
+          </button>
+          <button v-if="showActions && showCopyLinkAction" class="lightbox-btn" @click="emitFile('copy-link')">
+            <Icon icon="lucide:link" />
+            复制链接
           </button>
           <button v-if="canShowTag" class="lightbox-btn" @click="emitFile('edit-tags')">
             <Icon icon="lucide:tag" />
@@ -56,11 +60,15 @@ const props = withDefaults(defineProps<{
   showActions?: boolean
   showDownloadAction?: boolean
   showCopyAction?: boolean
+  showCopyLinkAction?: boolean
+  copyLabel?: string
   showTagAction?: boolean
 }>(), {
   showActions: true,
   showDownloadAction: true,
   showCopyAction: true,
+  showCopyLinkAction: false,
+  copyLabel: '复制链接',
   showTagAction: true,
 })
 
@@ -68,6 +76,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'download', file: GalleryFile): void
   (e: 'copy', file: GalleryFile): void
+  (e: 'copy-link', file: GalleryFile): void
   (e: 'edit-tags', file: GalleryFile): void
 }>()
 
@@ -75,7 +84,7 @@ const canShowDownload = computed(() => props.showActions && props.showDownloadAc
 const canShowCopy = computed(() => props.showActions && props.showCopyAction)
 const canShowTag = computed(() => props.showActions && props.showTagAction)
 
-function emitFile(event: 'download' | 'copy' | 'edit-tags') {
+function emitFile(event: 'download' | 'copy' | 'copy-link' | 'edit-tags') {
   if (!props.file) return
   emit(event, props.file)
 }
