@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import type { StudioConversation, StudioConversationBadgeState, StudioMessage } from '@/components/studio/types'
-import { streamStudioChatReply, studioErrorMessage } from './studioRequestView'
-import { invalidateStudioChatThread } from './studioMessageRuntime'
+import { streamStudioChatReply, studioErrorMessage, type StudioChatContextInput } from './studioRequestView'
 
 export type StudioChatStreamRuntimeHooks = {
   touchConversation: (conversation: StudioConversation) => void
@@ -9,11 +8,12 @@ export type StudioChatStreamRuntimeHooks = {
   markConversationNotice: (conversationId: string, state: StudioConversationBadgeState) => void
 }
 
-export type StudioChatStreamInput = {
-  conversation: StudioConversation
+export type StudioChatStreamInput = Omit<StudioChatContextInput, 'signal'> & {
   assistantMessage: StudioMessage
   model: string
   reasoningEffort: string
+  isMessageRetained: (messageId: string) => boolean
+  onContextNotice: (message: string) => void
 }
 
 export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) {
@@ -24,7 +24,6 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
     const controller = new AbortController()
     streamController = controller
     isStreaming.value = true
-    const contextIds = input.conversation.messages.map((message) => message.id).join(',')
 
     let pendingDelta = ''
     let deltaFrameId: number | null = null
@@ -51,31 +50,23 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
     }
 
     try {
-      const streamResult = await streamStudioChatReply({
-        conversation: input.conversation,
-        currentAssistantId: input.assistantMessage.id,
-        model: input.model,
-        reasoningEffort: input.reasoningEffort,
+      const submitted = await streamStudioChatReply({
+        ...input,
         signal: controller.signal,
+        canSubmit: () => input.isMessageRetained(input.questionId)
+          && input.isMessageRetained(input.assistantMessage.id),
         handlers: {
           onDelta: scheduleDeltaFlush,
         },
       })
+      if (!submitted) return 'discarded'
       flushPendingDelta()
       if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
-      if (streamResult && contextIds === input.conversation.messages.map((message) => message.id).join(',')) {
-        const conversationId = streamResult.conversationId || (!streamResult.upstreamFallback
-          ? input.conversation.upstreamConversationId
-          : undefined)
-        input.conversation.upstreamConversationId = streamResult.parentMessageId ? conversationId : undefined
-        input.conversation.upstreamParentMessageId = conversationId ? streamResult.parentMessageId : undefined
-      }
       input.assistantMessage.status = 'done'
       if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '上游没有返回内容。'
       hooks.markConversationNotice(input.conversation.id, 'done')
     } catch (error) {
       flushPendingDelta()
-      invalidateStudioChatThread(input.conversation)
       if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
       if (controller.signal.aborted) {
         input.assistantMessage.status = 'done'

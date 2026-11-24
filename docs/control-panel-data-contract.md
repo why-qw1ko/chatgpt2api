@@ -29,6 +29,8 @@
 
 `GET /api/auth/users` 返回每条密钥的 `image_usage`，包含日期、已用张数、预留张数、上限和剩余张数。不限额的密钥使用 `null` 表示上限和剩余张数。新密钥值通过创建或轮换响应返回，轮换保留原 `id`。日志可使用 `GET /api/logs?key_id=...` 精确筛选该密钥的调用记录。
 
+`GET /api/studio-sessions` 随会话历史返回 `context_rounds`，空会话也会返回该字段。管理员通过 `PATCH /api/settings` 修改 `studio_context_rounds`，用于限制 Studio 每个会话的总轮数，默认 3 轮。一条用户提问和其关联回复计为一轮。达到上限时，Studio 拦截对话、画图、搜索和文件的新增轮次，并提示新建对话。普通对话将当前分支的完整历史与本次提问提交到 `/v1/chat/completions`，通过 `_preserve_history: true` 保留提交的问答顺序及内容。
+
 ## 概览中心
 
 `GET /api/dashboard` 一次返回三个所有权清晰的投影：`ranges` 是 Application Database 中 Dashboard 指标的 `24h`、`7d`、`30d` 持久化汇总，`runtime` 是当前进程与运行环境的实时采样，`operations` 是当前 Active Requests 数量。前端只校验并展示这些字段，不扫描 Call Records，也不从实时监控详情反算并发。

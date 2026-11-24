@@ -116,6 +116,7 @@
             :image-high-resolution-enabled="imageHighResolutionEnabled"
             :references="referenceRuntime.references.value"
             :is-sending="isSending"
+            :is-restoring-history="isWaitingForHistory"
             :is-streaming="isStreaming"
             :is-editing="Boolean(editingMessageId)"
             @update:image-model="imageForm.model = $event"
@@ -238,7 +239,11 @@ import {
   type StudioConversationLookup,
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
-import { loadStudioSessionState, saveStudioSessionState } from '@/api/studioSessions'
+import {
+  DEFAULT_STUDIO_CONTEXT_ROUNDS,
+  isStudioContextRounds,
+} from '@/api/studioSessions'
+import { PUBLIC_SETTINGS_CHANGED_EVENT } from '@/api/settings'
 import { buildStudioInpaintPrompt, studioErrorMessage } from '@/views/studio/studioRequestView'
 import { useStudioChatStreamRuntime } from '@/views/studio/studioChatStreamRuntime'
 import { useStudioComposerRuntime } from '@/views/studio/studioComposerRuntime'
@@ -338,15 +343,23 @@ const imageHighResolutionEnabled = modelFormRuntime.imageHighResolutionEnabled
 const conversations = ref<StudioConversation[]>(persistedConversationState.conversations)
 const activeConversationId = ref(persistedConversationState.activeConversationId)
 const conversationNotices = ref<Record<string, StudioConversationBadgeState>>(persistedConversationState.conversationNotices)
+const contextRounds = ref(DEFAULT_STUDIO_CONTEXT_ROUNDS)
+const isRestoringHistory = ref(true)
+const newConversationDuringRestore = ref<string | null>(null)
+const isWaitingForHistory = computed(() => (
+  isRestoringHistory.value && activeConversationId.value !== newConversationDuringRestore.value
+))
 
-let serverHydrationDone = false
+let historyLoadFailed = false
+let contextRoundsSavedHere = false
 let conversationMutationVersion = 0
 onMounted(async () => {
-  if (serverHydrationDone) return
-  serverHydrationDone = true
   const hydrationMutationVersion = conversationMutationVersion
+  let loadedContextRounds: number | undefined
   try {
-    let result = await loadStudioSessionState()
+    let result = await conversationPersistenceRuntime.loadSession()
+    if (!conversationPersistenceRuntime.isCurrentSession()) return
+    loadedContextRounds = result.context_rounds
     if (hydrationMutationVersion !== conversationMutationVersion) return
     const localTombstones = conversations.value.filter((item) => item.deletedAt)
     if (localTombstones.length) {
@@ -360,8 +373,11 @@ onMounted(async () => {
         return !server || (item.deletedAt || '') >= server.updatedAt
       })
       if (pendingTombstones.length) {
-        await saveStudioSessionState({ conversations: pendingTombstones, conversationNotices: {} })
-        result = await loadStudioSessionState()
+        await conversationPersistenceRuntime.syncTombstones({ conversations: pendingTombstones, conversationNotices: {} })
+        if (!conversationPersistenceRuntime.isCurrentSession()) return
+        result = await conversationPersistenceRuntime.loadSession()
+        if (!conversationPersistenceRuntime.isCurrentSession()) return
+        loadedContextRounds = result.context_rounds
       }
     }
     if (hydrationMutationVersion !== conversationMutationVersion) return
@@ -406,10 +422,28 @@ onMounted(async () => {
       activeConversationId.value = serverActiveId
     }
   } catch {
-    // 服务端不可用时沿用本地缓存。
-    if (conversations.value.some((item) => item.deletedAt)) conversationPersistenceRuntime.scheduleConversations()
+    if (conversationPersistenceRuntime.isCurrentSession()) {
+      historyLoadFailed = true
+      if (conversations.value.some((item) => !item.deletedAt)) {
+        toast.warning('未能同步历史对话，本次使用此浏览器的记录')
+      }
+      if (conversations.value.some((item) => item.deletedAt)) conversationPersistenceRuntime.scheduleConversations()
+    }
+  } finally {
+    if (conversationPersistenceRuntime.isCurrentSession()) {
+      if (!contextRoundsSavedHere && loadedContextRounds !== undefined) contextRounds.value = loadedContextRounds
+      ensureActiveConversation()
+      isRestoringHistory.value = false
+    }
   }
 })
+
+function applyContextRounds(event: Event) {
+  const rounds = (event as CustomEvent<{ studioContextRounds?: unknown }>).detail?.studioContextRounds
+  if (!isStudioContextRounds(rounds)) return
+  contextRoundsSavedHere = true
+  contextRounds.value = rounds
+}
 const conversationLookup = computed<StudioConversationLookup>(() => buildStudioConversationLookup(conversations.value))
 const conversationRuntimeIndex = computed<StudioConversationRuntimeIndex>(() => buildStudioConversationRuntimeIndex(conversations.value))
 const validConversationIds = computed(() => conversationLookup.value.validIds)
@@ -421,7 +455,7 @@ const conversationPersistenceRuntime = useStudioConversationPersistenceRuntime({
 })
 const activeConversation = computed(() => {
   return conversationLookup.value.byId.get(activeConversationId.value)
-    || conversations.value[0]
+    || conversations.value.find((item) => !item.deletedAt)
     || null
 })
 const activeSearchSourceMessage = computed(() => {
@@ -593,6 +627,7 @@ const sendRuntime = useStudioSendRuntime({
   fileTaskRuntime,
   chatModel,
   chatReasoningEffort,
+  contextRounds,
   imageForm,
   toast,
   hooks: {
@@ -605,13 +640,38 @@ const sendRuntime = useStudioSendRuntime({
   },
 })
 const retryMessage = sendRuntime.fillComposerFromMessage
-const editMessage = sendRuntime.editMessage
-const resendMessage = sendRuntime.resendMessage
-const retryAssistantMessage = sendRuntime.retryAssistantMessage
 const sendImageEditRequest = sendRuntime.sendImageEditRequest
-const sendMessage = sendRuntime.sendMessage
 const chatModelOptions = modelFormRuntime.chatModelOptions
 const imageModelOptions = modelFormRuntime.imageModelOptions
+
+function canUseConversation() {
+  if (!conversationPersistenceRuntime.isCurrentSession()) {
+    toast.warning('登录状态已变化，请刷新页面后继续。')
+    return false
+  }
+  return !isWaitingForHistory.value
+}
+
+function sendMessage() {
+  if (!canUseConversation()) return
+  if (historyLoadFailed && !activeConversation.value) {
+    toast.error('无法读取历史对话。请刷新页面重试，或点击「新建对话」开始。')
+    return
+  }
+  return sendRuntime.sendMessage()
+}
+
+function editMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.editMessage(message)
+}
+
+function resendMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.resendMessage(message)
+}
+
+function retryAssistantMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.retryAssistantMessage(message)
+}
 
 function ensureConversation(content = '') {
   return conversationActionsRuntime.ensureConversation(content)
@@ -619,6 +679,7 @@ function ensureConversation(content = '') {
 
 function createConversation(seed = '') {
   const conversation = conversationActionsRuntime.createConversation(seed)
+  if (isRestoringHistory.value) newConversationDuringRestore.value = conversation.id
   isMobileHistoryOpen.value = false
   return conversation
 }
@@ -705,6 +766,7 @@ function remainingStudioMessages() {
 }
 
 function cancelMessageEdit(clearComposer = true) {
+  if (editingMessageId.value) referenceRuntime.clear()
   composerRuntime.cancelMessageEdit(clearComposer)
 }
 
@@ -832,7 +894,8 @@ async function submitInpaintEdit(payload: { prompt: string; markedImage: File })
   const target = inpaintTarget.value
   const conversation = activeConversation.value
   const prompt = cleanAssetText(payload.prompt)
-  if (!target || !prompt) return
+  if (!target || !prompt || !canUseConversation()) return
+  if (conversation && !sendRuntime.canSendRound(conversation)) return
 
   let sourceFile: File
   let referenceImages: StudioReferenceImage[]
@@ -848,7 +911,7 @@ async function submitInpaintEdit(payload: { prompt: string; markedImage: File })
     return
   }
 
-  if (inpaintTarget.value !== target || activeConversation.value !== conversation) return
+  if (inpaintTarget.value !== target || activeConversation.value !== conversation || !canUseConversation()) return
   const ok = await sendImageEditRequest({
     prompt: buildStudioInpaintPrompt(prompt),
     files: [sourceFile, payload.markedImage],
@@ -951,11 +1014,7 @@ async function resumeImageTask(message: StudioMessage) {
 }
 
 function ensureActiveConversation() {
-  // 不自动创建空对话：用户未点「新对话」时保持空状态。
-  if (!conversations.value.length) return
-  if (!activeConversationId.value || !conversationLookup.value.validIds.has(activeConversationId.value)) {
-    activeConversationId.value = conversations.value[0]?.id || ''
-  }
+  activeConversationId.value = activeConversation.value?.id || ''
 }
 
 function initializeStudio() {
@@ -992,7 +1051,6 @@ function disposeStudio() {
   imageTaskRuntime.dispose()
   fileTaskRuntime.dispose()
   chatStreamRuntime.dispose()
-  conversationPersistenceRuntime.flush()
   conversationPersistenceRuntime.dispose()
   conversationSelectionRuntime.dispose()
   layoutRuntime.dispose()
@@ -1036,9 +1094,11 @@ pageRuntime.onShow(() => {
 
 onMounted(() => {
   bindSearchSourceLayoutObserver()
+  window.addEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, applyContextRounds)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, applyContextRounds)
   searchSourceLayoutObserver?.disconnect()
   searchSourceLayoutObserver = null
   disposeStudio()

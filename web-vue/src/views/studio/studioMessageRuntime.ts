@@ -78,7 +78,6 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...(conversation.messageTombstones || []),
       tombstone(message, deletedAt),
     ]
-    invalidateStudioChatThread(conversation)
     input.hooks.touchConversation(conversation)
     return conversation
   }
@@ -101,7 +100,6 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...conversation.messages.slice(0, index),
       nextMessage,
     ]
-    invalidateStudioChatThread(conversation)
     if (!conversation.messages.slice(0, index).some((item) => item.role === 'user')) {
       conversation.title = buildStudioConversationTitle(message.content)
     }
@@ -115,7 +113,6 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
       ...target.conversation.messages.slice(target.index).map((item) => tombstone(item, deletedAt)),
     ]
     target.conversation.messages = target.conversation.messages.slice(0, target.index)
-    invalidateStudioChatThread(target.conversation)
     input.hooks.touchConversation(target.conversation)
   }
 
@@ -144,9 +141,4 @@ export function useStudioMessageRuntime(input: StudioMessageRuntimeInput) {
     removeMessage,
     replaceFromTarget,
   }
-}
-
-export function invalidateStudioChatThread(conversation: StudioConversation) {
-  conversation.upstreamConversationId = undefined
-  conversation.upstreamParentMessageId = undefined
 }

@@ -33,6 +33,7 @@
               :image-retention-hours-field="imageRetentionHoursField"
               :log-retention-hours-field="logRetentionHoursField"
               :console-request-timeout-field="consoleRequestTimeoutField"
+              :studio-context-rounds-field="studioContextRoundsField"
               :image-poll-timeout-field="imagePollTimeoutField"
               :image-stream-timeout-field="imageStreamTimeoutField"
               :image-poll-initial-wait-field="imagePollInitialWaitField"
@@ -537,6 +538,14 @@ const consoleRequestTimeoutField = useNumberSettingField(
   },
   { integer: true, metadata: () => fieldMetadata('console_request_timeout_secs') },
 )
+const studioContextRoundsField = useNumberSettingField(
+  () => localSettings.value?.studio_context_rounds,
+  (value) => {
+    if (!localSettings.value) return
+    localSettings.value.studio_context_rounds = value
+  },
+  { integer: true, metadata: () => fieldMetadata('studio_context_rounds') },
+)
 const imagePollTimeoutField = useNumberSettingField(
   () => localSettings.value?.image_poll_timeout_secs,
   (value) => {
@@ -633,6 +642,7 @@ const numberSettingFields = [
   logRetentionHoursField,
   refreshAccountIntervalField,
   consoleRequestTimeoutField,
+  studioContextRoundsField,
   imagePollTimeoutField,
   imageStreamTimeoutField,
   imagePollInitialWaitField,

@@ -44,7 +44,9 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoading.value = false
     void loadModelCatalog(true)
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event(PUBLIC_SETTINGS_CHANGED_EVENT))
+      window.dispatchEvent(new CustomEvent(PUBLIC_SETTINGS_CHANGED_EVENT, {
+        detail: { studioContextRounds: response.settings.studio_context_rounds },
+      }))
     }
     return response
   }

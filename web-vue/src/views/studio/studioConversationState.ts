@@ -86,6 +86,11 @@ export function persistStudioConversations(conversations: StudioConversation[]) 
 }
 
 export function studioMessageForPersistence(message: StudioMessage) {
+  if (message.mode === 'chat') {
+    const referenceImages = message.referenceImages?.map((image) => image.originalInBrowser
+      && image.dataUrl.length > MAX_SYNCED_STUDIO_REFERENCE_CHARS ? { ...image, dataUrl: '' } : image)
+    return { ...message, referenceImages }
+  }
   if (message.mode !== 'image') return message
   const referenceImages = message.referenceImages?.map((image) => image.dataUrl.length > MAX_SYNCED_STUDIO_REFERENCE_CHARS
     ? { ...image, dataUrl: '' }
@@ -210,18 +215,11 @@ export function mergeStudioConversations(local: StudioConversation, remote: Stud
     .filter(Boolean)
     .sort()
     .at(-1)
-  const sameTranscript = messages.length === local.messages.length && messages.every((message, index) => {
-    const previous = local.messages[index]
-    return message.id === previous.id && message.content === previous.content
-      && (message.updatedAt || message.createdAt) === (previous.updatedAt || previous.createdAt)
-  })
   return {
     ...base,
     title: (remote.updatedAt || '') >= (local.updatedAt || '') ? (remote.title || local.title) : local.title,
     updatedAt: (remote.updatedAt || '') > (local.updatedAt || '') ? remote.updatedAt : local.updatedAt,
     messagesReplacedAt,
-    upstreamConversationId: sameTranscript ? local.upstreamConversationId : undefined,
-    upstreamParentMessageId: sameTranscript ? local.upstreamParentMessageId : undefined,
     messages,
     messageTombstones,
   }
@@ -243,8 +241,6 @@ export function normalizeStudioConversation(item: unknown): StudioConversation |
     updatedAt: cleanStudioText(raw.updatedAt) || new Date().toISOString(),
     deletedAt: cleanStudioText(raw.deletedAt) || undefined,
     messagesReplacedAt: cleanStudioText(raw.messagesReplacedAt) || undefined,
-    upstreamConversationId: cleanStudioText(raw.upstreamConversationId) || undefined,
-    upstreamParentMessageId: cleanStudioText(raw.upstreamParentMessageId) || undefined,
     messages,
     messageTombstones,
   }

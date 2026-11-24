@@ -58,8 +58,6 @@ export interface StudioConversation {
   updatedAt: string
   deletedAt?: string
   messagesReplacedAt?: string
-  upstreamConversationId?: string
-  upstreamParentMessageId?: string
   messages: StudioMessage[]
   messageTombstones?: StudioMessage[]
 }

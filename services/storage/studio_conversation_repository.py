@@ -160,6 +160,17 @@ class StudioConversationRepository:
 
         messages.sort(key=order)
 
+    def has_owner_conversations(self, owner_id: str) -> bool:
+        owner = self._clean(owner_id)
+        if not owner:
+            return False
+        with self.Session() as session:
+            return session.scalar(
+                select(StudioConversationModel.id)
+                .where(StudioConversationModel.owner_id == owner)
+                .limit(1)
+            ) is not None
+
     def load_owner_state(self, owner_id: str) -> dict[str, Any]:
         owner = self._clean(owner_id)
         if not owner:

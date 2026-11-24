@@ -6,7 +6,7 @@ import { createStudioId, MAX_SYNCED_STUDIO_REFERENCE_CHARS } from './studioConve
 const DEFAULT_MAX_REFERENCE_FILES = 8
 const REFERENCE_STORE = 'references'
 const MAX_REFERENCE_FILE_BYTES = 50 * 1024 * 1024
-const MAX_REFERENCE_TOTAL_BYTES = 100 * 1024 * 1024
+export const MAX_REFERENCE_TOTAL_BYTES = 100 * 1024 * 1024
 const REFERENCE_CACHE_MAX_BYTES = 192 * 1024 * 1024
 const REFERENCE_CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 
@@ -185,17 +185,23 @@ export function useStudioReferenceRuntime(options: StudioReferenceRuntimeOptions
     return added
   }
 
-  async function rememberImageReferences(images: StudioReferenceImage[], originals: File[]) {
+  async function rememberImageReferences(images: StudioReferenceImage[], originals: File[], keepPreview = false) {
     const owner = auth.subject?.id
     const entries: CachedReference[] = []
     const compact = images.map((image, index) => {
       const file = originals[index]
       const source = image.source && /^https?:|^\//i.test(image.source.src) ? image.source : undefined
       if (!file || image.dataUrl.length <= MAX_SYNCED_STUDIO_REFERENCE_CHARS) return { ...image, source }
-      if (owner && !source) {
+      const originalInBrowser = keepPreview ? Boolean(owner) : !source
+      if (owner && originalInBrowser) {
         entries.push({ key: JSON.stringify([owner, image.id]), file, savedAt: Date.now() })
       }
-      return { ...image, source, dataUrl: '', originalInBrowser: !source || undefined }
+      return {
+        ...image,
+        source,
+        dataUrl: keepPreview ? image.dataUrl : '',
+        originalInBrowser: originalInBrowser || undefined,
+      }
     })
     if (!entries.length) return compact
     try {
@@ -203,8 +209,34 @@ export function useStudioReferenceRuntime(options: StudioReferenceRuntimeOptions
       return compact
     } catch {
       // Keep the original available until the current tab closes if local storage is unavailable.
+      if (keepPreview) return compact.map((image, index) => ({ ...image, originalInBrowser: images[index].originalInBrowser }))
       return compact.map((image, index) => image.originalInBrowser ? { ...image, dataUrl: images[index].dataUrl } : image)
     }
+  }
+
+  async function restoreCachedImageReference(image: StudioReferenceImage) {
+    const owner = auth.subject?.id
+    const file = owner && image.originalInBrowser
+      ? await readReferenceFile(JSON.stringify([owner, image.id])).catch(() => undefined)
+      : undefined
+    if (auth.subject?.id !== owner) throw new Error('登录密钥已切换，请在当前会话重新添加参考图')
+    if (!file) throw new Error(`找不到原参考图「${image.name}」。请重新上传原图或用最新结果继续修改。`)
+    return file
+  }
+
+  async function restoreChatImageReference(image: StudioReferenceImage) {
+    if (isInlineImage(image.dataUrl)) return fetchStudioImageFile(image.dataUrl, image.name)
+    return restoreCachedImageReference(image)
+  }
+
+  async function resolveChatReference(image: StudioReferenceImage, signal?: AbortSignal) {
+    signal?.throwIfAborted()
+    if (image.dataUrl) return isReplayableChatImage(image.dataUrl) ? image.dataUrl : ''
+    const file = await restoreCachedImageReference(image)
+    signal?.throwIfAborted()
+    if (!file.size || file.type === 'image/svg+xml') return ''
+    const dataUrl = await readFileAsDataUrl(file)
+    return isReplayableChatImage(dataUrl) ? dataUrl : ''
   }
 
   async function restoreImageReferences(images: StudioReferenceImage[]) {
@@ -212,11 +244,7 @@ export function useStudioReferenceRuntime(options: StudioReferenceRuntimeOptions
     const originals = await Promise.all(images.map(async (image) => {
       if (image.dataUrl) return fetchStudioImageFile(image.dataUrl, image.name)
       if (image.source) return fetchStudioImageFile(image.source.src, image.name)
-      const file = owner && image.originalInBrowser
-        ? await readReferenceFile(JSON.stringify([owner, image.id])).catch(() => undefined)
-        : undefined
-      if (!file) throw new Error(`找不到原参考图「${image.name}」。请重新上传原图或用最新结果继续修改。`)
-      return file
+      return restoreCachedImageReference(image)
     }))
     if (auth.subject?.id !== owner) throw new Error('登录密钥已切换，请在当前会话重新添加参考图')
     return originals
@@ -284,6 +312,8 @@ export function useStudioReferenceRuntime(options: StudioReferenceRuntimeOptions
     messageReferenceImages,
     append,
     rememberImageReferences,
+    resolveChatReference,
+    restoreChatImageReference,
     restoreImageReferences,
     replaceWithImageReferences,
     prepareReferenceRemoval,
@@ -293,6 +323,17 @@ export function useStudioReferenceRuntime(options: StudioReferenceRuntimeOptions
     openPreview,
     closePreview,
   }
+}
+
+function isInlineImage(value: string) {
+  return /^data:image\/[^;,]+;base64,/i.test(value)
+}
+
+function isReplayableChatImage(value: string) {
+  const header = /^data:(image\/[^;,]+|application\/octet-stream);base64,/i.exec(value)
+  if (!header || header[1].toLowerCase() === 'image/svg+xml') return false
+  const payload = value.slice(header[0].length)
+  return payload.length > 0 && payload.length % 4 === 0 && /^[a-z\d+/]+={0,2}$/i.test(payload)
 }
 
 export async function fetchStudioImageFile(source: string, filename: string) {

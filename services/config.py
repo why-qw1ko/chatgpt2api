@@ -13,7 +13,7 @@ from contracts.settings_specification import (
     normalize_integer_setting,
     numeric_setting_spec,
 )
-from services.json_file import read_json_object, write_json_file
+from services.json_file import read_json_object
 from services.storage.base import StorageBackend
 from services.storage.configuration_repository import (
     AccountGroupRepository,
@@ -513,6 +513,14 @@ class ConfigStore:
         )
 
     @property
+    def studio_context_rounds(self) -> int:
+        self.reload_if_changed()
+        return normalize_integer_setting(
+            "studio_context_rounds",
+            self.data.get("studio_context_rounds"),
+        )
+
+    @property
     def image_poll_timeout_secs(self) -> int:
         self.reload_if_changed()
         return normalize_integer_setting(
@@ -700,6 +708,7 @@ class ConfigStore:
             data["log_retention_hours"] = self.log_retention_hours
             data["image_min_free_mb"] = self.image_min_free_mb
             data["console_request_timeout_secs"] = self.console_request_timeout_secs
+            data["studio_context_rounds"] = self.studio_context_rounds
             data["image_poll_timeout_secs"] = self.image_poll_timeout_secs
             data["image_stream_timeout_secs"] = self.image_stream_timeout_secs
             data["image_poll_interval_secs"] = self.image_poll_interval_secs

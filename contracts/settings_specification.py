@@ -24,6 +24,7 @@ NUMERIC_SETTING_SPECS = MappingProxyType({
     "image_retention_hours": NumericSettingSpec(24, 1, unit="hours"),
     "log_retention_hours": NumericSettingSpec(24, 1, unit="hours"),
     "console_request_timeout_secs": NumericSettingSpec(600, 30, 3600, unit="seconds"),
+    "studio_context_rounds": NumericSettingSpec(3, 1, unit="rounds"),
     "image_poll_timeout_secs": NumericSettingSpec(60, 1, unit="seconds"),
     "image_stream_timeout_secs": NumericSettingSpec(80, 1, unit="seconds"),
     "image_poll_initial_wait_secs": NumericSettingSpec(

@@ -1,4 +1,5 @@
 import { nextTick, type Ref } from 'vue'
+import { getAuthToken } from '@/api/client'
 import { editableFileTasksApi } from '@/api/editableFileTasks'
 import { normalizeImageCount } from '@/api/imageTasks'
 import type {
@@ -37,8 +38,9 @@ export type StudioSendRuntimeInput = {
   fileTaskRuntime: Pick<ReturnType<typeof useStudioFileTaskRuntime>, 'merge' | 'schedulePoll'>
   chatModel: Ref<string>
   chatReasoningEffort: Ref<string>
+  contextRounds: Ref<number>
   imageForm: StudioImageForm
-  toast: Pick<ReturnType<typeof useToast>, 'success' | 'error'>
+  toast: Pick<ReturnType<typeof useToast>, 'success' | 'error' | 'warning'>
   hooks: StudioSendRuntimeHooks
 }
 
@@ -72,6 +74,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     chatReasoningEffort,
     chatStreamRuntime,
     composerRuntime,
+    contextRounds,
     hooks,
     imageForm,
     imageTaskRuntime,
@@ -80,6 +83,24 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     referenceRuntime,
     toast,
   } = input
+
+  function canSendRound(conversation: StudioConversation, existingQuestionId?: string) {
+    const limit = contextRounds.value
+    let rounds = existingQuestionId ? 0 : 1
+    let questionFound = !existingQuestionId
+    for (const message of conversation.messages) {
+      if (message.role !== 'user' || message.deletedAt) continue
+      rounds += 1
+      if (message.id === existingQuestionId) {
+        questionFound = true
+        break
+      }
+    }
+    if (!questionFound) return false
+    if (rounds <= limit) return true
+    toast.warning(`已达到 ${limit} 轮对话上限，请新建对话后继续。`)
+    return false
+  }
 
   async function sendMessage() {
     const content = composerRuntime.composerText.value.trim()
@@ -93,6 +114,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     const mode = composerRuntime.composeMode.value
     if (!validateFileRequest(mode)) return
     const conversation = hooks.ensureConversation(content)
+    if (!canSendRound(conversation)) return
     const withReferences = mode === 'image' || mode === 'chat' || mode === 'file'
     const files = referenceRuntime.selectedFiles()
     const attachments = referenceRuntime.attachmentNames()
@@ -117,7 +139,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
       files,
       requestErrorFallback: studioModeRequestErrorFallback(mode),
       clearReferencesOnSuccess: withReferences && !clearReferencesImmediately,
-      rememberImageReferences: mode === 'image',
+      rememberImageReferences: mode === 'image' || mode === 'chat',
     })
   }
 
@@ -129,6 +151,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     }
 
     const { conversation, message } = target
+    if (!canSendRound(conversation, message.id)) return
     const mode = composerRuntime.composeMode.value
     if (!validateFileRequest(mode)) return
     const withReferences = mode === 'image' || mode === 'chat' || mode === 'file'
@@ -174,7 +197,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
       files,
       requestErrorFallback: studioModeRequestErrorFallback(mode),
       clearReferencesOnSuccess: withReferences && !clearReferencesImmediately,
-      rememberImageReferences: mode === 'image',
+      rememberImageReferences: mode === 'image' || mode === 'chat',
       inpaintSource,
       imageOptions: inpaintSource ? { n: 1 } : undefined,
     })
@@ -186,8 +209,9 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
 
     const userContent = request.userContent?.trim() || prompt
     const conversation = hooks.ensureConversation(userContent)
+    if (!canSendRound(conversation)) return false
     hooks.activeConversationId.value = conversation.id
-    composerRuntime.cancelMessageEdit(false)
+    leaveMessageEdit()
     composerRuntime.activateImageMode()
 
     const question = messageRuntime.addMessage(conversation, {
@@ -213,8 +237,13 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     })
   }
 
-  function fillComposerFromMessage(message: StudioMessage) {
+  function leaveMessageEdit() {
+    if (composerRuntime.editingMessageId.value) referenceRuntime.clear()
     composerRuntime.cancelMessageEdit(false)
+  }
+
+  function fillComposerFromMessage(message: StudioMessage) {
+    leaveMessageEdit()
     composerRuntime.fillFromMessage(message)
   }
 
@@ -222,6 +251,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     if (composerRuntime.isSending.value || chatStreamRuntime.isStreaming.value) return
     const target = messageRuntime.findMessage(message.id)
     if (!target || target.message.role !== 'user') return
+    if (!canSendRound(target.conversation, target.message.id)) return
     hooks.activeConversationId.value = target.conversation.id
     composerRuntime.startEdit(target.message)
     referenceRuntime.clear()
@@ -229,6 +259,10 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
       toast.error('请重新上传原图后提交文件任务')
     }
     hooks.scheduleScrollToBottom()
+    if (message.mode === 'chat' && (message.referenceImages?.length || message.attachments?.length)) {
+      await restoreChatEditReferences(target.message)
+      return
+    }
     if (message.mode === 'image' && (message.referenceImages?.length || message.attachments?.length)) {
       const response = findImageAnswer(message.id)
       const replay = await restoreImageRequest(target.message, response)
@@ -245,27 +279,80 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     }
   }
 
+  async function restoreChatEditReferences(message: StudioMessage) {
+    const images = message.referenceImages || []
+    const token = getAuthToken()
+    const canReplace = () => composerRuntime.editingMessageId.value === message.id
+      && composerRuntime.composeMode.value === 'chat' && !referenceRuntime.selectedFiles().length
+      && getAuthToken() === token
+    composerRuntime.setSending(true)
+    try {
+      const resolved = await Promise.allSettled(images.map(async (image) => ({
+        image,
+        file: await referenceRuntime.restoreChatImageReference(image),
+      })))
+      if (!canReplace()) return
+      const available = resolved.flatMap((item) => item.status === 'fulfilled' ? [item.value] : [])
+      await referenceRuntime.replaceWithImageReferences(
+        available.map((item) => item.image), available.map((item) => item.file), undefined, canReplace,
+      )
+      if (composerRuntime.editingMessageId.value !== message.id) return
+      const missing = Math.max(images.length, message.attachments?.length || 0) - available.length
+      if (missing) toast.warning(`有 ${missing} 张原参考图无法读取，可重新上传后提交。`)
+    } catch (error) {
+      toast.warning(studioErrorMessage(error, '读取参考图失败，请重新上传原图'))
+    } finally {
+      composerRuntime.setSending(false)
+    }
+  }
+
   async function resendMessage(message: StudioMessage) {
     if (composerRuntime.isSending.value || chatStreamRuntime.isStreaming.value) return
+    const target = messageRuntime.findMessage(message.id)
+    if (!target || target.message.role !== 'user' || !canSendRound(target.conversation)) return
+    if (message.mode === 'chat') {
+      if (!target.message.content.trim()) return
+      const { conversation, message: original } = target
+      hooks.activeConversationId.value = conversation.id
+      fillComposerFromMessage(original)
+      referenceRuntime.clear()
+      const question = messageRuntime.addMessage(conversation, {
+        role: 'user',
+        mode: 'chat',
+        content: original.content,
+        status: 'done',
+        attachments: original.attachments,
+        referenceImages: original.referenceImages,
+      })
+      composerRuntime.composerText.value = ''
+      await runRequestWithComposerState({
+        conversation,
+        question,
+        prompt: original.content,
+        files: [],
+        requestErrorFallback: studioModeRetryErrorFallback('chat'),
+      })
+      return
+    }
     if (message.mode === 'image') {
-      const target = messageRuntime.findMessage(message.id)
-      if (!target) return
       const questionSource = target.message
       const replay = await restoreImageRequest(questionSource, findImageAnswer(message.id))
-      if (!replay || !messageRuntime.findMessage(message.id)) return
-      hooks.activeConversationId.value = target.conversation.id
+      const currentTarget = messageRuntime.findMessage(message.id)
+      if (!replay || !currentTarget || !canSendRound(currentTarget.conversation)) return
+      hooks.activeConversationId.value = currentTarget.conversation.id
       fillComposerFromMessage(message)
-      const question = messageRuntime.addMessage(target.conversation, {
+      const question = messageRuntime.addMessage(currentTarget.conversation, {
         role: 'user', mode: 'image', content: questionSource.content, status: 'done',
         attachments: questionSource.attachments, referenceImages: questionSource.referenceImages, imageEditPrompt: questionSource.imageEditPrompt,
       })
       composerRuntime.composerText.value = ''
       await runRequestWithComposerState({
-        conversation: target.conversation, question, ...replay,
+        conversation: currentTarget.conversation, question, ...replay,
         requestErrorFallback: studioModeRetryErrorFallback('image'),
       })
       return
     }
+    hooks.activeConversationId.value = target.conversation.id
     if (message.mode === 'file') {
       referenceRuntime.clear()
       if (message.fileKind === 'psd' || message.referenceImages?.length) {
@@ -288,6 +375,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
       toast.error('找不到对应的提问，请从原提问重发')
       return
     }
+    if (!canSendRound(target.conversation, previousUserMessage.id)) return
 
     if (previousUserMessage.mode === 'file' && (previousUserMessage.fileKind === 'psd' || previousUserMessage.referenceImages?.length)) {
       referenceRuntime.clear()
@@ -304,6 +392,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     if (!replay) return
     const currentTarget = messageRuntime.findMessage(message.id)
     if (!currentTarget) return
+    if (previousUserMessage.mode === 'image' && !canSendRound(currentTarget.conversation, previousUserMessage.id)) return
 
     hooks.activeConversationId.value = currentTarget.conversation.id
     if (previousUserMessage.mode === 'image') {
@@ -370,7 +459,13 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
     composerRuntime.setSending(true)
     try {
       if (input.rememberImageReferences && input.question.referenceImages?.length) {
-        const references = await referenceRuntime.rememberImageReferences(input.question.referenceImages, input.files)
+        const token = input.question.mode === 'chat' ? getAuthToken() : undefined
+        const references = await referenceRuntime.rememberImageReferences(
+          input.question.referenceImages, input.files, input.question.mode === 'chat',
+        )
+        if (token !== undefined && getAuthToken() !== token) {
+          throw new Error('登录密钥已切换，请重新发送消息')
+        }
         const question = messageRuntime.findMessage(input.question.id)?.message
         if (!question) return false
         question.referenceImages = references
@@ -423,12 +518,22 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
       model: chatModel.value,
     })
 
-    await chatStreamRuntime.stream({
+    const result = await chatStreamRuntime.stream({
       conversation,
       assistantMessage,
+      questionId: replyToId,
       model: chatModel.value,
       reasoningEffort: chatReasoningEffort.value,
+      resolveReference: referenceRuntime.resolveChatReference,
+      isMessageRetained: (messageId) => {
+        const target = messageRuntime.findMessage(messageId)
+        return target?.conversation === conversation && !target.message.deletedAt
+      },
+      onContextNotice: (notice) => toast.warning(notice),
     })
+    if (result === 'discarded' && messageRuntime.findMessage(assistantMessage.id)?.conversation === conversation) {
+      messageRuntime.removeMessage(conversation, assistantMessage.id)
+    }
   }
 
   async function sendSearchMessage(conversation: StudioConversation, prompt: string, replyToId: string) {
@@ -567,6 +672,7 @@ export function useStudioSendRuntime(input: StudioSendRuntimeInput) {
   }
 
   return {
+    canSendRound,
     editMessage,
     fillComposerFromMessage,
     resendMessage,

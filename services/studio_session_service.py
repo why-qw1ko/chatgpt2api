@@ -4,13 +4,14 @@ import json
 import threading
 from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, select
+from sqlalchemy import Column, Integer, String, Text
 
 from services.application_database import (
     DatabaseBase,
     initialize_application_database,
     resolve_database_url,
 )
+from services.config import config
 from services.storage.studio_conversation_repository import (
     StudioConversationRepository,
 )
@@ -68,8 +69,7 @@ class StudioSessionService:
                 session.close()
 
     def _import_legacy_if_needed(self, owner: str) -> None:
-        structured = self._repository.load_owner_state(owner)
-        if structured.get("state"):
+        if self._repository.has_owner_conversations(owner):
             return
         legacy = self._load_legacy_state(owner)
         if not legacy:
@@ -79,7 +79,7 @@ class StudioSessionService:
     def load(self, owner_id: str) -> dict[str, Any]:
         owner = self._clean(owner_id)
         if not owner:
-            return {"schema_version": 2, "state": None}
+            return {"schema_version": 2, "state": None, "context_rounds": config.studio_context_rounds}
         self._import_legacy_if_needed(owner)
         loaded = self._repository.load_owner_state(owner)
         state = loaded.get("state")
@@ -93,6 +93,7 @@ class StudioSessionService:
             "schema_version": 2,
             "state": state,
             "updated_at": loaded.get("updated_at"),
+            "context_rounds": config.studio_context_rounds,
         }
 
     def save(self, owner_id: str, state: dict[str, Any]) -> dict[str, Any]:

@@ -92,6 +92,13 @@ tables retain semantic HTML row slots and a single internal scroll container.
   not claim the same axis.
 - New Studio conversations return the object stored in the reactive collection,
   so the first asynchronous reply updates the same object rendered by the view.
+- Studio waits for initial history restoration before sending in an existing
+  conversation. The send runtime applies the per-conversation turn limit to
+  new submissions and resends across modes. When a new turn would exceed the
+  limit, Studio prompts the user to start a conversation. Text sends, edits, and
+  retries submit the current branch's full history through the current question.
+  Studio reports unavailable reference images. Pending conversation writes
+  and initial restoration remain scoped to the login that started the page.
 - Single-item and batch actions call the same bulk Interface with one ID when
   their business semantics are identical.
 

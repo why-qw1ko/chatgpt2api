@@ -288,12 +288,12 @@
               size="sm"
               variant="primary"
               root-class="chat-input-send"
-              :disabled="isSending || !text.trim()"
-              :loading="isSending"
+              :disabled="isSending || isRestoringHistory || !text.trim()"
+              :loading="isSending || isRestoringHistory"
               :aria-label="submitAriaLabel"
             >
               <Icon
-                v-if="!isSending"
+                v-if="!isSending && !isRestoringHistory"
                 :icon="!isEditing && isGenerationMode ? 'lucide:sparkle' : 'lucide:send-horizontal'"
                 class="h-3.5 w-3.5 shrink-0"
                 aria-hidden="true"
@@ -346,6 +346,7 @@ const props = defineProps<{
   imageHighResolutionEnabled: boolean
   references: StudioReference[]
   isSending: boolean
+  isRestoringHistory: boolean
   isStreaming: boolean
   isEditing: boolean
 }>()
@@ -521,6 +522,7 @@ const placeholderText = computed(() => {
   return chatPlaceholder.value
 })
 const submitAriaLabel = computed(() => {
+  if (props.isRestoringHistory) return '正在加载历史对话'
   if (props.isEditing) return '保存修改'
   if (props.mode === 'image') return '提交图片任务'
   if (props.mode === 'file') return `生成 ${props.fileKind === 'psd' ? 'PSD' : 'PPT'}`
@@ -529,6 +531,7 @@ const submitAriaLabel = computed(() => {
 })
 const isGenerationMode = computed(() => props.mode === 'image' || props.mode === 'file')
 const submitLabel = computed(() => {
+  if (props.isRestoringHistory) return '加载历史'
   if (props.isEditing) return '保存'
   if (isGenerationMode.value) return '生成'
   return props.mode === 'search' ? '搜索' : '发送'
@@ -612,6 +615,7 @@ defineExpose({ focusInput })
 function submitOnEnter(event: KeyboardEvent) {
   if (event.isComposing || event.keyCode === 229) return
   event.preventDefault()
+  if (props.isRestoringHistory) return
   emit('submit')
 }
 

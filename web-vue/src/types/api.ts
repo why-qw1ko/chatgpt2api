@@ -70,6 +70,7 @@ export interface Settings {
   image_retention_hours: number
   log_retention_hours: number
   console_request_timeout_secs: number
+  studio_context_rounds: number
   image_poll_timeout_secs: number
   image_stream_timeout_secs: number
   image_poll_initial_wait_secs: number
