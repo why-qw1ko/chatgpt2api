@@ -6,6 +6,7 @@ import json
 import re
 import uuid
 import zipfile
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Literal
 
@@ -42,6 +43,7 @@ from services.account_service import account_service
 from services.account_view import account_detail, account_row, account_status_category
 from services.config import config
 from services.cpa_service import cpa_config, cpa_import_service, list_remote_files
+from services.image_quota_service import image_quota_service
 from services.log_service import LoggedCall
 from services.oauth_login_service import OAuthLoginError, oauth_login_service
 from services.proxy_management_service import project_proxy_assignment, proxy_management_service
@@ -1160,10 +1162,21 @@ def create_router() -> APIRouter:
     async def list_user_keys(authorization: str | None = Header(default=None)):
         require_admin(authorization)
         items = await run_in_threadpool(auth_service.list_keys, role="user")
+        limits = {
+            str(item["id"]): limit if isinstance(limit := item.get("daily_image_limit"), int) else None
+            for item in items
+        }
+        usage = await run_in_threadpool(image_quota_service.list_today, limits)
+        for item in items:
+            item["image_usage"] = asdict(usage[str(item["id"])])
         return {"items": items}
 
     @router.post("/api/auth/users", response_model=UserKeyCreateResult)
-    async def create_user_key(body: UserKeyCreateRequest, authorization: str | None = Header(default=None)):
+    async def create_user_key(
+            body: UserKeyCreateRequest,
+            response: Response,
+            authorization: str | None = Header(default=None),
+    ):
         require_admin(authorization)
         try:
             item, raw_key = await run_in_threadpool(
@@ -1171,9 +1184,11 @@ def create_router() -> APIRouter:
                 role="user",
                 name=body.name,
                 daily_image_limit=body.daily_image_limit,
+                key=body.key.get_secret_value() if body.key is not None else None,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
+        response.headers["Cache-Control"] = "no-store"
         return {"item": item, "raw_key": raw_key}
 
     @router.post("/api/auth/users/{key_id}", response_model=UserKeyUpdateResult)
@@ -1183,16 +1198,11 @@ def create_router() -> APIRouter:
             authorization: str | None = Header(default=None),
     ):
         require_admin(authorization)
-        updates = {
-            key: value
-            for key, value in {
-                "name": body.name,
-                "enabled": body.enabled,
-                "key": body.key,
-                "daily_image_limit": body.daily_image_limit,
-            }.items()
-            if value is not None
-        }
+        updates = body.model_dump(exclude={"key", "daily_image_limit"}, exclude_none=True)
+        if "daily_image_limit" in body.model_fields_set:
+            updates["daily_image_limit"] = body.daily_image_limit
+        if body.key is not None:
+            updates["key"] = body.key.get_secret_value()
         if not updates:
             raise HTTPException(status_code=400, detail={"error": "还没有检测到改动，请修改后再保存"})
         try:
@@ -1202,6 +1212,20 @@ def create_router() -> APIRouter:
         if item is None:
             raise HTTPException(status_code=404, detail={"error": "这条用户密钥不存在，可能已经被删除"})
         return {"item": item}
+
+    @router.post("/api/auth/users/{key_id}/rotate", response_model=UserKeyCreateResult)
+    async def rotate_user_key(
+            key_id: str,
+            response: Response,
+            authorization: str | None = Header(default=None),
+    ):
+        require_admin(authorization)
+        result = await run_in_threadpool(auth_service.rotate_key, key_id, role="user")
+        if result is None:
+            raise HTTPException(status_code=404, detail={"error": "这条用户密钥不存在，可能已经被删除"})
+        item, raw_key = result
+        response.headers["Cache-Control"] = "no-store"
+        return {"item": item, "raw_key": raw_key}
 
     @router.delete("/api/auth/users/{key_id}", response_model=UserKeyDeleteResult)
     async def delete_user_key(key_id: str, authorization: str | None = Header(default=None)):

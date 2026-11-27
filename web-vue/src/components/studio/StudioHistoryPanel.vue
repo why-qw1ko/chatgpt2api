@@ -2,29 +2,29 @@
   <aside class="studio-history-panel">
     <div class="studio-history-header">
       <div class="studio-history-title-row">
-        <span class="studio-history-heading">对话</span>
-        <div class="studio-history-actions">
-          <Button size="sm" variant="outline" icon-only root-class="rounded-xl" title="新对话" @click="$emit('create')">
-            <Icon icon="lucide:plus" class="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon-only
-            root-class="rounded-xl"
-            :disabled="!conversations.length"
-            title="清空历史记录"
-            @click="$emit('clear')"
-          >
-            <Icon icon="lucide:trash-2" class="h-4 w-4" />
-          </Button>
-        </div>
+        <h2 class="studio-history-heading">对话历史</h2>
+        <Button
+          size="xs"
+          variant="ghost"
+          icon-only
+          :disabled="!conversations.length"
+          title="清空历史记录"
+          aria-label="清空历史记录"
+          @click="$emit('clear')"
+        >
+          <Icon icon="lucide:trash-2" class="h-4 w-4" aria-hidden="true" />
+        </Button>
       </div>
     </div>
 
-    <label class="studio-history-search ui-input">
-      <Icon icon="lucide:search" class="h-3.5 w-3.5 shrink-0" />
-      <input v-model="query" placeholder="搜索对话" />
+    <Button variant="primary" block root-class="studio-history-create" @click="$emit('create')">
+      <Icon icon="lucide:plus" class="h-4 w-4" aria-hidden="true" />
+      新建对话
+    </Button>
+
+    <label class="studio-history-search">
+      <Icon icon="lucide:search" class="h-4 w-4 shrink-0" aria-hidden="true" />
+      <input v-model="query" placeholder="搜索对话" aria-label="搜索对话" />
     </label>
 
     <div ref="historyListRef" class="studio-history-list custom-scrollbar" @scroll="handleWindowScroll">
@@ -38,7 +38,6 @@
         v-for="{ item: conversation } in visibleConversationEntries"
         :key="conversation.id"
         class="studio-history-window-row"
-        :class="{ 'has-badge': badges[conversation.id] }"
       >
         <div
           v-memo="historyItemMemo(conversation)"
@@ -79,19 +78,13 @@
             @click="handleSelect(conversation.id)"
             @dblclick.stop="beginRename(conversation)"
           >
-            <span class="studio-history-title">{{ conversation.title || '未命名对话' }}</span>
+            <span class="studio-history-title" :title="conversation.title">{{ conversation.title || '未命名对话' }}</span>
             <span class="studio-history-meta">
               <span>{{ conversation.messages.length ? `${conversation.messages.length} 条` : '空对话' }}</span>
               <span aria-hidden="true">·</span>
               <span>{{ formatConversationTime(conversation) }}</span>
             </span>
-            <span
-              v-if="badges[conversation.id]"
-              class="studio-history-badge"
-              :class="`is-${badges[conversation.id].state}`"
-            >
-              {{ badges[conversation.id].label }}
-            </span>
+            <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" class="studio-history-status" />
           </button>
           <div v-if="editingId !== conversation.id" class="studio-history-row-actions">
             <button
@@ -124,7 +117,7 @@
       ></div>
 
       <div v-if="!filteredConversations.length" class="studio-history-empty">
-        {{ query.trim() ? '没有匹配的对话' : '输入提示词后会在这里显示对话历史。' }}
+        {{ query.trim() ? '没有匹配的对话' : '暂无对话记录' }}
       </div>
     </div>
   </aside>
@@ -132,9 +125,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useWindowedList } from '@/composables/useWindowedList'
+import StudioConversationStatus from './StudioConversationStatus.vue'
 import type { StudioConversation, StudioConversationBadge } from './types'
 
 const props = defineProps<{
@@ -204,7 +198,6 @@ const {
 } = useWindowedList({
   items: filteredConversations,
   itemHeight: 58,
-  getItemHeight: (conversation) => props.badges[conversation.id] ? 76 : 58,
   overscan: 8,
   disabled: computed(() => !shouldWindowHistory.value),
 })
@@ -336,13 +329,11 @@ function formatConversationTime(conversation: StudioConversation) {
   min-height: 0;
   height: 100%;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.75rem;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1.25rem;
-  background: hsl(var(--card) / 0.88);
+  border-right: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
   padding: 0.75rem;
-  box-shadow: 0 16px 44px -36px rgba(15, 23, 42, 0.45);
 }
 
 @media (min-width: 1024px) {
@@ -366,15 +357,15 @@ function formatConversationTime(conversation: StudioConversation) {
 .studio-history-heading {
   min-width: 0;
   color: hsl(var(--foreground));
-  font-size: 0.9375rem;
-  font-weight: 750;
+  padding-left: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: normal;
 }
 
-.studio-history-actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.375rem;
+.studio-history-panel :deep(.studio-history-create) {
+  justify-content: flex-start;
 }
 
 .studio-history-search {
@@ -383,11 +374,16 @@ function formatConversationTime(conversation: StudioConversation) {
   flex: 0 0 auto;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.75rem;
-  background: hsl(var(--background));
-  padding: 0 0.75rem;
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--control-radius, 0.375rem);
+  background: var(--control-fill, hsl(var(--muted)));
+  padding-inline: 0.75rem;
   color: hsl(var(--muted-foreground));
+}
+
+.studio-history-search:focus-within {
+  border-color: hsl(var(--ring));
+  background: hsl(var(--card));
 }
 
 .studio-history-search input {
@@ -396,12 +392,13 @@ function formatConversationTime(conversation: StudioConversation) {
   border: 0;
   background: transparent;
   color: hsl(var(--foreground));
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   outline: none;
 }
 
 .studio-history-search input::placeholder {
-  color: hsl(var(--muted-foreground) / 0.62);
+  color: hsl(var(--muted-foreground));
   font-family: inherit;
   font-weight: 400;
   letter-spacing: 0;
@@ -414,6 +411,7 @@ function formatConversationTime(conversation: StudioConversation) {
   flex: 1;
   flex-direction: column;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .studio-history-window-spacer {
@@ -430,28 +428,19 @@ function formatConversationTime(conversation: StudioConversation) {
   padding-bottom: 0.25rem;
 }
 
-.studio-history-window-row.has-badge {
-  height: 4.75rem;
-  flex-basis: 4.75rem;
-}
-
 .studio-history-item {
-  position: relative;
   display: flex;
   width: 100%;
   min-height: 3.125rem;
   cursor: pointer;
   align-items: center;
+  gap: 0.5rem;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 0.75rem;
+  border-radius: var(--control-radius, 0.375rem);
   padding: 0.5rem 0.625rem;
   color: hsl(var(--foreground));
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.studio-history-window-row.has-badge .studio-history-item {
-  min-height: 4.25rem;
 }
 
 .studio-history-item.is-draggable {
@@ -469,26 +458,27 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-item:hover {
-  border-color: hsl(var(--border));
-  background: hsl(var(--secondary) / 0.55);
+  background: var(--control-fill, hsl(var(--muted)));
 }
 
 .studio-history-item.is-active {
-  border-color: hsl(var(--foreground) / 0.22);
-  background: hsl(var(--secondary));
-  box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.06);
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
 }
 
 .studio-history-main {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.1875rem;
-  padding-right: 3.25rem;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'title status' 'meta status';
+  align-items: center;
+  gap: 0.125rem 0.25rem;
   text-align: left;
+}
+
+.studio-history-main:focus-visible {
+  outline-offset: 0;
 }
 
 .studio-history-edit {
@@ -511,7 +501,7 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-title {
-  display: block;
+  grid-area: title;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -524,6 +514,7 @@ function formatConversationTime(conversation: StudioConversation) {
 
 .studio-history-meta {
   display: flex;
+  grid-area: meta;
   min-width: 0;
   align-items: center;
   gap: 0.375rem;
@@ -533,6 +524,8 @@ function formatConversationTime(conversation: StudioConversation) {
   line-height: 1rem;
 }
 
+.studio-history-status { grid-area: status; }
+
 .studio-history-meta span {
   min-width: 0;
   overflow: hidden;
@@ -541,24 +534,31 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-row-actions {
-  position: absolute;
-  top: 50%;
-  right: 0.5rem;
-  z-index: 1;
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  gap: 0.0625rem;
-  transform: translateY(-50%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
+  gap: 0.125rem;
 }
 
-.studio-history-item:hover .studio-history-row-actions,
-.studio-history-row-actions:focus-within {
-  opacity: 1;
-  pointer-events: auto;
+@media (hover: hover) and (pointer: fine) {
+  .studio-history-row-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--motion-fast) var(--ease-out-soft);
+  }
+
+  .studio-history-item:is(:hover, :focus-within) .studio-history-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .studio-history-row-actions .studio-history-icon {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 .studio-history-icon {
@@ -578,34 +578,8 @@ function formatConversationTime(conversation: StudioConversation) {
 }
 
 .studio-history-icon.is-danger:hover {
-  background: rgb(254 242 242);
-  color: rgb(225 29 72);
-}
-
-.studio-history-badge {
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 999px;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 650;
-  line-height: 1rem;
-  white-space: nowrap;
-}
-
-.studio-history-badge.is-running {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.studio-history-badge.is-done {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.studio-history-badge.is-error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
 }
 
 .studio-history-empty {

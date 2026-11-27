@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen">
+  <div ref="workspaceRoot" class="app-shell min-h-screen">
     <Transition name="route-progress">
       <div
         v-if="routeProgressPhase !== 'idle'"
@@ -16,153 +16,98 @@
     <div class="flex min-h-screen flex-col lg:flex-row">
       <div
         v-if="isSidebarOpen && isMobileViewport"
-        class="fixed inset-0 z-30 bg-black/20 lg:hidden"
+        class="shell-sidebar-scrim fixed inset-0 z-30 lg:hidden"
         aria-hidden="true"
-        @click="closeSidebar"
+        @click="closeSidebar()"
       ></div>
       <aside
         ref="sidebarRef"
-        class="shell-sidebar fixed inset-y-0 left-0 z-40 w-64 -translate-x-full overflow-hidden bg-card border-r border-border
-               transition-[transform,width] duration-200 ease-out will-change-[transform,width] transform-gpu flex flex-col lg:static lg:translate-x-0 lg:w-[var(--sidebar-width)] lg:bg-card
-               lg:border-b-0 lg:border-r lg:sticky lg:top-0 lg:h-screen"
-        :class="[isSidebarOpen ? 'translate-x-0' : '', { 'sidebar--rail': isSidebarRail }]"
-        :style="sidebarStyle"
-        :aria-hidden="isMobileViewport && !isSidebarOpen ? 'true' : undefined"
+        class="shell-sidebar fixed inset-y-0 left-0 z-40 flex w-64 max-w-full shrink-0 -translate-x-full flex-col overflow-hidden border-r border-border bg-card
+               lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:translate-x-0"
+        :class="{ 'shell-sidebar--open': isSidebarOpen, 'sidebar--rail': isSidebarRail }"
+        :role="isMobileSidebarActive ? 'dialog' : undefined"
+        :aria-modal="isMobileSidebarActive ? true : undefined"
+        :aria-label="isMobileSidebarActive ? '导航菜单' : undefined"
         :inert="isMobileViewport && !isSidebarOpen"
         tabindex="-1"
         @keydown="handleSidebarKeydown"
       >
-        <div class="flex h-16 items-center px-5 pt-4 lg:h-20 lg:pt-5">
-          <div class="flex min-w-0 items-center">
-            <div class="shell-sidebar-brand shrink-0">
-              <svg aria-hidden="true" viewBox="0 0 64 64" class="h-8 w-8">
-                <defs>
-                  <linearGradient id="sidebar-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#4F7CFF"/>
-                    <stop offset="50%" stop-color="#7B5FFF"/>
-                    <stop offset="100%" stop-color="#C74FFF"/>
-                  </linearGradient>
-                </defs>
-                <rect width="64" height="64" rx="14" fill="url(#sidebar-logo-grad)"/>
-                <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
-                <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
-                <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
-              </svg>
-            </div>
-            <div class="sidebar-label sidebar-brand-label">
-              <p class="ui-section-title">ChatGPT2API</p>
-            </div>
-          </div>
+        <div class="shell-sidebar-brand">
+          <img src="/logo.svg" alt="" class="h-8 w-8 shrink-0 rounded-md" />
+          <span class="sidebar-label shell-wordmark">LuxuryImage</span>
+          <Button v-if="isMobileSidebarActive" size="sm" variant="ghost" icon-only root-class="ml-auto" aria-label="关闭导航" @click="closeSidebar()">
+            <Icon icon="lucide:x" class="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
 
-        <nav id="app-sidebar-navigation" class="sidebar-nav-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 pb-2 pt-3 lg:pt-4">
-          <p class="shell-sidebar-section-label sidebar-section-label px-3 text-xs uppercase tracking-[0.28em] text-muted-foreground">
-            导航
-          </p>
-          <div class="space-y-1">
-            <RouterLink
-              v-for="item in visibleMenuItems"
-              :key="item.path"
-              :to="item.path"
-              class="shell-nav-item group flex items-center overflow-hidden rounded-lg border border-transparent py-1.5 text-sm font-medium transition-colors"
-              :class="navItemClassMap[item.path]"
-              :aria-label="item.label"
-              :aria-current="isNavActive(item.path) ? 'page' : undefined"
-              :aria-busy="isNavPending(item.path) ? 'true' : undefined"
-              @mouseenter="prefetchRouteView(item.path)"
-              @focus="prefetchRouteView(item.path)"
-              @click="handleNavClick(item.path)"
-            >
-              <Tooltip v-if="isSidebarRail" :text="item.label" placement="right">
-                <span
-                  class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors"
-                  :class="navIconClassMap[item.path]"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                    <path :d="item.icon" />
-                  </svg>
-                </span>
-              </Tooltip>
-              <span
-                v-else
-                class="shell-nav-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors"
-                :class="navIconClassMap[item.path]"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                  <path :d="item.icon" />
-                </svg>
-              </span>
-              <span class="sidebar-label">{{ item.label }}</span>
-            </RouterLink>
-          </div>
+        <nav id="app-sidebar-navigation" class="sidebar-nav-scroll" aria-label="主导航">
+          <RouterLink
+            v-for="item in visibleMenuItems"
+            :key="item.path"
+            :to="item.path"
+            class="shell-nav-item"
+            :class="{ 'shell-nav-item--active': isNavVisuallyActive(item.path) }"
+            :aria-label="item.label"
+            :aria-current="isNavActive(item.path) ? 'page' : undefined"
+            :aria-busy="isNavPending(item.path) ? 'true' : undefined"
+            @mouseenter="prefetchRouteView(item.path)"
+            @focus="prefetchRouteView(item.path)"
+            @click="handleNavClick(item.path, $event)"
+          >
+            <Tooltip v-if="isSidebarRail" :text="item.label" placement="right">
+              <Icon :icon="item.icon" class="shell-nav-icon" aria-hidden="true" />
+            </Tooltip>
+            <Icon v-else :icon="item.icon" class="shell-nav-icon" aria-hidden="true" />
+            <span class="sidebar-label">{{ item.label }}</span>
+          </RouterLink>
         </nav>
 
-        <div class="shell-sidebar-footer mt-auto border-t border-border px-2 py-3">
-          <div class="sidebar-footer-actions">
+        <div class="sidebar-footer-actions mt-auto shrink-0 border-t border-border p-3">
+          <Button
+            size="sm"
+            variant="ghost"
+            :icon-only="isSidebarRail"
+            root-class="sidebar-logout"
+            aria-label="退出登录"
+            @click="handleLogout"
+          >
+            <Tooltip v-if="isSidebarRail" text="退出登录" placement="right">
+              <Icon icon="lucide:log-out" class="h-4 w-4" aria-hidden="true" />
+            </Tooltip>
+            <Icon v-else icon="lucide:log-out" class="h-4 w-4" aria-hidden="true" />
+            <span v-if="!isSidebarRail">退出登录</span>
+          </Button>
+          <Tooltip v-if="!isMobileViewport" :text="sidebarCollapseLabel" :placement="isSidebarRail ? 'right' : 'top'">
             <Button
               size="sm"
-              variant="outline"
-              :icon-only="isSidebarRail"
-              root-class="sidebar-logout shell-sidebar-footer-button rounded-full text-muted-foreground"
-              aria-label="退出登录"
-              @click="handleLogout"
-            >
-              <Tooltip v-if="isSidebarRail" text="退出登录" placement="right">
-                <span class="sidebar-footer-tooltip-trigger">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5" />
-                    <path d="M15 12H3" />
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
-                  </svg>
-                </span>
-              </Tooltip>
-              <span class="sidebar-label sidebar-logout-label">退出登录</span>
-            </Button>
-            <Button
-              v-if="!isImmersivePage"
-              size="sm"
-              variant="outline"
+              variant="ghost"
               icon-only
-              root-class="sidebar-collapse-button shell-sidebar-footer-button shrink-0 rounded-full text-muted-foreground"
-              @click="isSidebarCollapsed = !isSidebarCollapsed"
-              :aria-label="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+              :aria-label="sidebarCollapseLabel"
               :aria-expanded="!isSidebarCollapsed"
               aria-controls="app-sidebar-navigation"
+              @click="isSidebarCollapsed = !isSidebarCollapsed"
             >
-              <Tooltip v-if="isSidebarRail" :text="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" placement="right">
-                <span class="sidebar-footer-tooltip-trigger">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="currentColor">
-                    <path d="M6 4h2v16H6V4zm4 4h8v2h-8V8zm0 6h8v2h-8v-2z" />
-                  </svg>
-                </span>
-              </Tooltip>
-              <svg v-else aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="currentColor">
-                <path d="M6 4h2v16H6V4zm4 4h8v2h-8V8zm0 6h8v2h-8v-2z" />
-              </svg>
+              <Icon :icon="isSidebarRail ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" class="h-4 w-4" aria-hidden="true" />
             </Button>
-          </div>
+          </Tooltip>
         </div>
       </aside>
 
       <main
-        class="relative min-w-0 flex-1 bg-card lg:ml-0"
-        :class="[
-          { 'flex h-dvh min-h-0 flex-col overflow-hidden': isWorkspacePage },
-          { 'lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden': isContainedManagementPage },
-        ]"
-        :aria-hidden="isMobileSidebarActive ? 'true' : undefined"
+        class="relative min-w-0 bg-background"
+        :class="usesViewportLayout ? 'flex h-dvh min-h-0 flex-none flex-col overflow-hidden lg:flex-1' : 'flex-1'"
         :inert="isMobileSidebarActive"
       >
         <header
           v-if="!isImmersivePage"
-          class="shell-header min-w-0 flex h-14 items-center gap-2.5 border-b border-border bg-card px-4 sm:px-6 lg:h-16"
+          class="flex h-14 min-w-0 items-center gap-3 border-b border-border bg-card px-3 sm:px-4 lg:px-6"
           :class="{ 'shrink-0': usesViewportLayout }"
         >
-          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
             <Button
               ref="sidebarToggleRef"
-              size="xs"
-              variant="outline"
+              size="sm"
+              variant="ghost"
               icon-only
               root-class="lg:hidden"
               @click="openSidebar"
@@ -170,39 +115,18 @@
               :aria-expanded="isMobileViewport && isSidebarOpen"
               aria-controls="app-sidebar-navigation"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
-                <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" />
-              </svg>
+              <Icon icon="lucide:menu" class="h-4 w-4 shrink-0" aria-hidden="true" />
             </Button>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 64 64"
-              class="hidden h-9 w-9 shrink-0 sm:block"
-            >
-              <defs>
-                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#4F7CFF"/>
-                  <stop offset="50%" stop-color="#7B5FFF"/>
-                  <stop offset="100%" stop-color="#C74FFF"/>
-                </linearGradient>
-              </defs>
-              <rect width="64" height="64" rx="14" fill="url(#logo-grad)"/>
-              <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white" opacity="0.95"/>
-              <circle cx="48" cy="16" r="3" fill="white" opacity="0.7"/>
-              <circle cx="16" cy="48" r="2.5" fill="white" opacity="0.5"/>
-            </svg>
-            <div class="min-w-0">
-              <h2 class="truncate text-base font-semibold text-foreground sm:text-lg lg:text-xl">
-                {{ currentPageTitle }}
-              </h2>
-            </div>
+            <h2 class="truncate text-sm font-semibold tracking-normal text-foreground">
+              {{ currentPageTitle }}
+            </h2>
           </div>
-          <div class="ml-auto flex shrink-0 items-center gap-[12px]">
-            <div class="flex items-center gap-[8px]">
+          <div class="ml-auto flex shrink-0 items-center gap-2">
+            <div class="flex items-center gap-2">
               <Tooltip :text="themeButtonTitle" placement="bottom">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   icon-only
                   :aria-label="themeButtonTitle"
                   @click="cycleThemeMode"
@@ -225,7 +149,7 @@
               <Tooltip text="刷新当前页面" placement="bottom">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   icon-only
                   aria-label="刷新当前页面"
                   @click="refreshPage"
@@ -234,7 +158,7 @@
                 </Button>
               </Tooltip>
             </div>
-            <div class="flex items-center gap-[8px]">
+            <div class="flex items-center gap-2">
               <span v-if="authStore.isAdmin" class="hidden lg:inline-flex">
                 <Tooltip text="查看接口信息" placement="bottom">
                   <Button
@@ -253,10 +177,8 @@
                   <Button
                     size="sm"
                     variant="outline"
-                    :root-class="hasNewVersion
-                      ? '!border-amber-400/70 !bg-amber-50 !text-amber-800 hover:!border-amber-500 hover:!bg-amber-100 hover:!text-amber-900 dark:!border-amber-500/60 dark:!bg-amber-950/35 dark:!text-amber-300 dark:hover:!border-amber-400 dark:hover:!bg-amber-950/55 dark:hover:!text-amber-200'
-                      : ''"
-                    aria-label="查看版本更新"
+                    :root-class="hasNewVersion ? 'shell-header-update' : undefined"
+                    :aria-label="hasNewVersion ? '有新版本，查看版本更新' : '查看版本更新'"
                     @click="openUpdateDialog"
                   >
                     {{ currentVersionLabel || '版本' }}
@@ -280,11 +202,11 @@
         </header>
 
         <div
-          class="relative min-w-0 overflow-x-hidden bg-card"
+          class="shell-content relative min-w-0 overflow-x-hidden"
           :class="[
-            isWorkspacePage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
-            isContainedManagementPage ? 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-hidden' : '',
-            isImmersivePage ? 'p-0' : 'px-4 py-6 sm:px-6',
+            isWorkspacePage ? 'shell-content--workspace flex min-h-0 flex-1 flex-col overflow-hidden' : '',
+            isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
+            isImmersivePage ? 'p-0' : 'px-4 py-5 sm:px-7 sm:py-7',
           ]"
         >
           <RouterView v-slot="{ Component, route: currentRoute }">
@@ -294,7 +216,7 @@
                   class="route-view-content"
                   :class="[
                     isWorkspacePage ? 'flex min-h-0 flex-1 flex-col' : '',
-                    isContainedManagementPage ? 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col' : '',
+                    isContainedManagementPage ? 'flex min-h-0 flex-1 flex-col' : '',
                     { 'h-full': isImmersivePage },
                   ]"
                 >
@@ -325,6 +247,7 @@
       :title="confirmDialog.title.value"
       :message="confirmDialog.message.value"
       :confirm-text="confirmDialog.confirmText.value"
+      :confirm-variant="confirmDialog.confirmVariant.value"
       :cancel-text="confirmDialog.cancelText.value"
       @confirm="confirmDialog.confirm"
       @cancel="confirmDialog.cancel"
@@ -626,6 +549,9 @@
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useWorkspaceAtmosphere } from '@/composables/useWorkspaceAtmosphere'
+import '@/styles/workspace.css'
+
 import {
   PUBLIC_SETTINGS_CHANGED_EVENT,
 } from '@/api/settings'
@@ -637,7 +563,7 @@ import { useModelCatalog } from '@/composables/useModelCatalog'
 import { usePublicRuntimeConfig } from '@/composables/usePublicRuntimeConfig'
 import { useListLayoutPreference } from '@/composables/useListLayoutPreference'
 import { useOperationProgressRuntime } from '@/composables/useOperationProgressRuntime'
-import { ActionMenu, Button, Tooltip, ValueSurface, type ActionMenuItem } from 'nanocat-ui'
+import { ActionMenu, Button, Tooltip, ValueSurface, type ActionMenuItem } from '@/components/ui'
 import ConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import MetaChip from '@/components/ai/MetaChip.vue'
 import ModalFooter from '@/components/ai/ModalFooter.vue'
@@ -657,7 +583,7 @@ import {
 } from '@/lib/preferences'
 import { writeClipboardText } from '@/lib/clipboard'
 import { focusFirstWithin, focusRefTarget, trapFocusWithin } from '@/lib/focusLoop'
-import { applyThemeMode, getStoredThemeMode, setStoredThemeMode, type ThemeMode } from '@/lib/theme'
+import { setThemeMode, themeMode } from '@/lib/theme'
 import {
   normalizeVersionTag,
   parseChangelog,
@@ -667,18 +593,22 @@ import {
 import type { UpdateTaskResponse, VersionCheckResponse } from '@/types/api'
 import localVersion from '../../../VERSION?raw'
 
+const workspaceRoot = ref<HTMLElement | null>(null)
+useWorkspaceAtmosphere(workspaceRoot)
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 const isSidebarOpen = ref(false)
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(getBooleanPreference(preferenceKeys.sidebarCollapsed))
 const isMobileViewport = ref(typeof window !== 'undefined'
   ? !window.matchMedia('(min-width: 1024px)').matches
   : false)
 const sidebarToggleRef = ref<ComponentPublicInstance | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const confirmDialog = useConfirmDialog()
+let isLogoutPending = false
 const isApiInfoOpen = ref(false)
 
 const isUpdateDialogOpen = ref(false)
@@ -692,17 +622,11 @@ const updateProgressRuntime = useOperationProgressRuntime()
 const updateProgressState = updateProgressRuntime.state
 const releaseEntries = ref<ReleaseInfo[]>([])
 const currentAuthToken = ref('')
-const themeMode = ref<ThemeMode>(getStoredThemeMode())
 type RouteProgressPhase = 'idle' | 'running' | 'finishing'
 const pendingNavigationPath = ref('')
 const routeProgressPhase = ref<RouteProgressPhase>('idle')
 const cachedRouteNames = ['Dashboard', 'Studio', 'Accounts', 'Logs', 'Monitor', 'Gallery', 'Proxy', 'Settings']
 const cachedRouteMax = cachedRouteNames.length
-const themeOptions: { label: string; value: ThemeMode }[] = [
-  { label: '浅色', value: 'light' },
-  { label: '深色', value: 'dark' },
-  { label: '系统', value: 'system' },
-]
 const {
   chatModels: supportedChatModels,
   imageModels: supportedImageModels,
@@ -718,57 +642,62 @@ type NavigationItem = {
   path: string
   label: string
   icon: string
-  capability: AuthCapability
+  capability?: AuthCapability
 }
 
 const menuItems: NavigationItem[] = [
   {
     path: '/',
     label: '概览中心',
-    icon: 'M4 4h7v7H4V4zm9 0h7v4h-7V4zm0 6h7v10h-7V10zM4 13h7v7H4v-7z',
+    icon: 'lucide:layout-dashboard',
     capability: 'admin_console',
   },
   {
     path: '/monitor',
     label: '实时监控',
-    icon: 'M4 5h3v14H4V5zm5 6h3v8H9v-8zm5-4h3v12h-3V7zm5 7h3v5h-3v-5z',
+    icon: 'lucide:activity',
     capability: 'admin_console',
   },
   {
     path: '/studio',
     label: '对话画图',
-    icon: 'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l-4 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 3v6h12V7H6zm2 2 2.1 2.8 2.4-3.1L17 14H7l1-5z',
+    icon: 'lucide:messages-square',
     capability: 'studio',
   },
   {
     path: '/accounts',
     label: '账号管理',
-    icon: 'M12 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 12 12zm0 2c-4.1 0-7.5 2.2-7.5 5v1h15v-1c0-2.8-3.4-5-7.5-5z',
+    icon: 'lucide:users-round',
     capability: 'admin_console',
   },
   {
     path: '/logs',
     label: '日志管理',
-    icon: 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z',
+    icon: 'lucide:logs',
     capability: 'admin_console',
   },
   {
     path: '/gallery',
     label: '图片管理',
-    icon: 'M22 16V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2zm-11-4 2.03 2.71L16 11l4 5H8l3-3zM2 6v14a2 2 0 0 0 2 2h14v-2H4V6H2z',
+    icon: 'lucide:images',
     capability: 'studio',
   },
   {
     path: '/proxy',
     label: '代理管理',
-    icon: 'M12 3a5 5 0 0 1 5 5v2h1a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3h1V8a5 5 0 0 1 5-5zm-3 7h6V8a3 3 0 0 0-6 0v2zm-3 2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H6z',
+    icon: 'lucide:network',
     capability: 'admin_console',
   },
   {
     path: '/settings',
     label: '系统设置',
-    icon: 'M4 6h10v2H4V6zm12 0h4v2h-4V6zM4 11h6v2H4v-2zm8 0h8v2h-8v-2zM4 16h10v2H4v-2zm12 0h4v2h-4v-2z',
+    icon: 'lucide:settings-2',
     capability: 'admin_console',
+  },
+  {
+    path: '/theme',
+    label: '主题切换',
+    icon: 'lucide:palette',
   },
 ]
 
@@ -779,12 +708,13 @@ const routeTitleMap: Record<string, string> = {
   gallery: '图片管理',
   proxy: '代理管理',
   settings: '系统设置',
+  theme: '主题切换',
   monitor: '实时监控',
   studio: '对话画图',
 }
 
 const visibleMenuItems = computed(() => {
-  return menuItems.filter(item => authStore.hasCapability(item.capability))
+  return menuItems.filter(item => !item.capability || authStore.hasCapability(item.capability))
 })
 
 const currentPageTitle = computed(() => {
@@ -800,14 +730,9 @@ const { isWorkspaceLayout } = useListLayoutPreference()
 const isContainedManagementPage = computed(() => isManagementPage.value && isWorkspaceLayout.value)
 const usesViewportLayout = computed(() => isWorkspacePage.value || isContainedManagementPage.value)
 const isMobileSidebarActive = computed(() => isMobileViewport.value && isSidebarOpen.value)
-const isSidebarRail = computed(() => (
-  !isMobileViewport.value && (isSidebarCollapsed.value || isImmersivePage.value)
-))
-const sidebarStyle = computed(() => ({
-  '--sidebar-width': isSidebarRail.value ? '4rem' : '16rem',
-}))
+const isSidebarRail = computed(() => !isMobileViewport.value && isSidebarCollapsed.value)
+const sidebarCollapseLabel = computed(() => isSidebarCollapsed.value ? '展开侧边栏' : '收起侧边栏')
 
-const navItemBaseClass = 'justify-start gap-0 px-1.5'
 const activeNavPathSet = computed(() => {
   const name = String(route.name || '')
   const currentPath = route.path
@@ -837,32 +762,6 @@ function isNavVisuallyActive(path: string) {
   if (pendingNavigationPath.value) return isNavPending(path)
   return isNavActive(path)
 }
-
-function buildNavItemClass(path: string) {
-  const base = navItemBaseClass
-  if (isNavVisuallyActive(path)) {
-    return `${base} rounded-[0.9rem] border-[hsl(var(--primary)_/_0.28)] bg-[hsl(var(--primary)_/_0.08)] font-semibold text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)_/_0.08)]`
-  }
-  return `${base} rounded-[0.9rem] border-transparent text-muted-foreground hover:border-border hover:bg-[hsl(var(--secondary)_/_0.55)] hover:text-foreground`
-}
-
-function buildNavIconClass(path: string) {
-  if (isNavVisuallyActive(path)) {
-    return 'border-[hsl(var(--primary)_/_0.28)] bg-[hsl(var(--card))] text-foreground shadow-sm'
-  }
-  return 'border-border bg-[hsl(var(--card))] text-muted-foreground group-hover:border-[hsl(var(--foreground)_/_0.28)] group-hover:text-foreground'
-}
-
-const navItemClassMap = computed<Record<string, string>>(() => {
-  const entries = visibleMenuItems.value.map((item) => [item.path, buildNavItemClass(item.path)])
-  return Object.fromEntries(entries)
-})
-
-const navIconClassMap = computed<Record<string, string>>(() => {
-  const entries = visibleMenuItems.value.map((item) => [item.path, buildNavIconClass(item.path)])
-  return Object.fromEntries(entries)
-})
-
 
 const apiSdkUrl = computed(() => `${apiBaseUrl.value}/v1`)
 const apiKeyDisplay = computed(() => currentAuthToken.value || '未登录')
@@ -921,13 +820,8 @@ const canvasHref = computed(() => {
   if (!canvas?.enabled || !canvas.url.trim() || !token) return ''
   return buildThirdPartyHref(canvas.url, apiBaseUrl.value, token)
 })
-const themeButtonText = computed(() => themeOptions.find(option => option.value === themeMode.value)?.label || '系统')
-const themeButtonTitle = computed(() => `当前主题：${themeButtonText.value}，点击切换`)
-const themeButtonIcon = computed(() => {
-  if (themeMode.value === 'light') return 'lucide:sun'
-  if (themeMode.value === 'dark') return 'lucide:moon'
-  return 'lucide:sun-moon'
-})
+const themeButtonTitle = computed(() => themeMode.value === 'light' ? '切换到暗色主题' : '切换到亮色主题')
+const themeButtonIcon = computed(() => themeMode.value === 'light' ? 'lucide:moon' : 'lucide:sun')
 
 const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   const items: ActionMenuItem[] = []
@@ -942,7 +836,6 @@ const mobileHeaderMenuItems = computed<ActionMenuItem[]>(() => {
   return items
 })
 const routePendingText = computed(() => `正在加载${currentPageTitle.value}`)
-let systemThemeMedia: MediaQueryList | null = null
 let viewportMedia: MediaQueryList | null = null
 const prefetchedRoutePaths = new Set<string>()
 const routeProgressDelayMs = 140
@@ -963,6 +856,7 @@ const routeViewLoaders: Record<string, () => Promise<unknown>> = {
   '/monitor': () => import('@/views/Monitor.vue'),
   '/proxy': () => import('@/views/Proxy.vue'),
   '/settings': () => import('@/views/Settings.vue'),
+  '/theme': () => import('@/views/Theme.vue'),
   '/studio': () => import('@/views/Studio.vue'),
 }
 
@@ -1039,8 +933,6 @@ watch(
   }
 )
 
-isSidebarCollapsed.value = getBooleanPreference(preferenceKeys.sidebarCollapsed, false)
-
 watch(isSidebarCollapsed, (value) => {
   setBooleanPreference(preferenceKeys.sidebarCollapsed, value)
 })
@@ -1062,9 +954,25 @@ function refreshPage() {
 }
 
 async function handleLogout() {
-  closeSidebar()
-  await authStore.logout()
-  await router.replace({ name: 'login' })
+  if (isLogoutPending || confirmDialog.open.value) return
+  isLogoutPending = true
+  try {
+    if (isMobileSidebarActive.value) {
+      closeSidebar()
+      await nextTick()
+    }
+    const confirmed = await confirmDialog.ask({
+      title: '确认退出登录',
+      message: '退出后，再次进入控制台需要重新输入访问密钥。',
+      confirmText: '退出登录',
+      confirmVariant: 'danger',
+    })
+    if (!confirmed) return
+    await authStore.logout()
+    await router.replace({ name: 'login' })
+  } finally {
+    isLogoutPending = false
+  }
 }
 
 async function openApiInfo() {
@@ -1112,15 +1020,8 @@ if (key === 'canvas') {
   }
 }
 
-function setThemeMode(mode: ThemeMode) {
-  themeMode.value = mode
-  setStoredThemeMode(mode)
-}
-
 function cycleThemeMode() {
-  const index = themeOptions.findIndex(option => option.value === themeMode.value)
-  const next = themeOptions[(index + 1) % themeOptions.length]
-  setThemeMode(next.value)
+  setThemeMode(themeMode.value === 'light' ? 'dark' : 'light')
 }
 
 function openUpdateDialog() {
@@ -1151,7 +1052,7 @@ function applyUpdateTask(task: UpdateTaskResponse, open: boolean) {
   updateTargetTag.value = normalizeVersionTag(task.latest_tag || updateTargetTag.value)
   currentVersionTag.value = normalizeVersionTag(task.current_tag || currentVersionTag.value)
   updateProgressState.open = open
-  updateProgressState.title = task.busy ? '正在更新 ChatGPT2API' : 'ChatGPT2API 更新'
+  updateProgressState.title = task.busy ? '正在更新 LuxuryImage' : 'LuxuryImage 更新'
   updateProgressState.subtitle = task.latest_tag ? `目标版本 ${normalizeVersionTag(task.latest_tag)}` : ''
   updateProgressState.total = task.total
   updateProgressState.current = task.current
@@ -1281,18 +1182,6 @@ async function loadCurrentVersion() {
   } catch {}
 }
 
-function handleSystemThemeChange() {
-  if (themeMode.value === 'system') {
-    applyThemeMode(themeMode.value)
-  }
-}
-
-function setupSystemThemeListener() {
-  if (typeof window === 'undefined') return
-  systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)')
-  systemThemeMedia.addEventListener('change', handleSystemThemeChange)
-}
-
 function handlePublicSettingsChanged() {
   void loadPublicRuntimeConfig(true)
 }
@@ -1363,7 +1252,8 @@ function prefetchRouteView(path: string) {
   })
 }
 
-function handleNavClick(path: string) {
+function handleNavClick(path: string, event: MouseEvent) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   beginRouteNavigation(path)
   closeSidebar()
 }
@@ -1379,8 +1269,6 @@ const removeRouteErrorHook = router.onError((_error, to) => {
 })
 
 onMounted(() => {
-  applyThemeMode(themeMode.value)
-  setupSystemThemeListener()
   setupViewportListener()
   window.addEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.addEventListener('keydown', handleWindowKeydown)
@@ -1393,10 +1281,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (confirmDialog.open.value) confirmDialog.cancel()
   window.removeEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, handlePublicSettingsChanged)
   window.removeEventListener('keydown', handleWindowKeydown)
-  systemThemeMedia?.removeEventListener('change', handleSystemThemeChange)
-  systemThemeMedia = null
   teardownViewportListener()
   clearUpdateTaskPollTimer()
   clearRouteProgressDelayTimer()
@@ -1466,82 +1353,123 @@ onBeforeUnmount(() => {
   }
 }
 
-.sidebar-nav-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.shell-sidebar-scrim {
+  background: var(--overlay-backdrop);
 }
 
-.sidebar-nav-scroll::-webkit-scrollbar {
-  display: none;
+.shell-sidebar-brand {
+  display: flex;
+  height: 56px;
+  flex-shrink: 0;
+  align-items: center;
+  padding-inline: 16px;
+}
+
+.shell-wordmark {
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.shell-header-update.el-button {
+  --el-button-text-color: hsl(var(--tone-warning-foreground));
+  --el-button-bg-color: hsl(var(--tone-warning-bg));
+  --el-button-hover-text-color: hsl(var(--tone-warning-foreground));
+  --el-button-hover-bg-color: color-mix(in srgb, hsl(var(--tone-warning-bg)) 84%, hsl(var(--tone-warning-border)));
+  --el-button-active-text-color: var(--el-button-hover-text-color);
+  --el-button-active-bg-color: var(--el-button-hover-bg-color);
+}
+
+.sidebar-nav-scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.shell-nav-item {
+  display: flex;
+  min-height: 40px;
+  flex: none;
+  align-items: center;
+  padding-inline: 12px;
+  border-radius: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.shell-nav-item:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.shell-nav-item--active {
+  background: var(--selection-background);
+  color: var(--selection-foreground);
+  font-weight: 600;
+}
+
+.shell-nav-item--active:hover {
+  background: color-mix(in srgb, var(--selection-background) 94%, hsl(var(--primary)));
+  color: var(--selection-foreground);
+}
+
+.shell-nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.shell-nav-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
 }
 
 .sidebar-label {
-  display: block;
   min-width: 0;
   max-width: 11rem;
-  flex: 1 1 auto;
+  margin-inline-start: 8px;
   overflow: hidden;
-  margin-inline-start: 0.75rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    max-width 0.2s ease,
-    margin-inline-start 0.2s ease,
-    opacity 0.12s ease 0.04s,
-    transform 0.2s ease;
-}
-
-.sidebar-brand-label {
-  flex: 0 1 auto;
-}
-
-.sidebar-section-label {
-  max-height: 1.75rem;
-  overflow: hidden;
-  padding-bottom: 0.5rem;
-  white-space: nowrap;
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    max-height 0.2s ease,
-    padding-bottom 0.2s ease,
-    opacity 0.12s ease 0.04s,
-    transform 0.2s ease;
 }
 
 .sidebar-footer-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .sidebar-logout {
-  display: inline-flex;
   min-width: 0;
-  height: 2rem;
   flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+.sidebar--rail {
+  width: 4rem;
+}
+
+.sidebar--rail .shell-sidebar-brand,
+.sidebar--rail .shell-nav-item {
   justify-content: center;
-  overflow: hidden;
-  padding-inline: 0.75rem;
+  padding-inline: 0;
 }
 
-.sidebar-logout-label {
-  flex: 0 1 auto;
-  margin-inline-start: 0;
+.sidebar--rail .sidebar-nav-scroll {
+  padding-inline: 8px;
 }
 
-.sidebar-footer-tooltip-trigger {
-  display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: none;
-  align-items: center;
+.sidebar--rail .shell-nav-item :deep(.lux-tooltip-trigger) {
   justify-content: center;
-}
-
-.sidebar-collapse-button {
-  flex: none;
+  width: 100%;
+  align-self: stretch;
 }
 
 .sidebar--rail .sidebar-label {
@@ -1549,33 +1477,37 @@ onBeforeUnmount(() => {
   margin-inline-start: 0;
   opacity: 0;
   transform: translateX(-4px);
-  transition-delay: 0s;
-}
-
-.sidebar--rail .sidebar-section-label {
-  max-height: 0;
-  padding-bottom: 0;
-  opacity: 0;
-  transform: translateX(-4px);
-  transition-delay: 0s;
 }
 
 .sidebar--rail .sidebar-footer-actions {
   flex-direction: column;
-  gap: 0.5rem;
+  padding-inline: 8px;
 }
 
-.sidebar--rail .sidebar-logout {
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 2.25rem;
-  justify-content: center;
-  padding: 0;
+.shell-sidebar--open {
+  transform: translateX(0);
 }
 
-.sidebar--rail .sidebar-collapse-button {
-  width: 2.25rem;
-  height: 2.25rem;
+@media (prefers-reduced-motion: no-preference) {
+  .shell-sidebar {
+    transition: transform var(--motion-slow) var(--ease-spring);
+  }
+
+  .sidebar-label {
+    transition:
+      opacity var(--motion-fast) var(--ease-out-soft),
+      transform var(--motion-base) var(--ease-spring);
+  }
+
+  .shell-nav-item {
+    transition: background-color var(--motion-fast) var(--ease-out-soft), color var(--motion-fast) var(--ease-out-soft);
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .shell-sidebar {
+    transition: width var(--motion-base) var(--ease-spring);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1594,44 +1526,6 @@ onBeforeUnmount(() => {
 
   .shell-route-progress-bar--finishing {
     transform: scaleX(1);
-  }
-
-  .sidebar-label,
-  .sidebar-section-label {
-    transition: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  .sidebar--rail .sidebar-label {
-    max-width: 11rem;
-    margin-inline-start: 0.75rem;
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .sidebar--rail .sidebar-section-label {
-    max-height: 1.75rem;
-    padding-bottom: 0.5rem;
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .sidebar--rail .sidebar-footer-actions {
-    flex-direction: row;
-    gap: 0.75rem;
-  }
-
-  .sidebar--rail .sidebar-logout {
-    width: auto;
-    height: 2rem;
-    flex: 1 1 auto;
-    justify-content: center;
-    padding-inline: 0.75rem;
-  }
-
-  .sidebar-collapse-button {
-    display: none;
   }
 }
 </style>

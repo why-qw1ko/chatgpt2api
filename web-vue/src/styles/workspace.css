@@ -1,0 +1,88 @@
+/* Console page layouts share the tokens defined in style.css. */
+.app-shell .page-panel { padding: 20px; }
+html[data-workspace] .app-shell .lux-table-shell { border-radius: var(--radius); }
+html[data-workspace] .app-shell .lux-table th { background: hsl(var(--muted)); font-size: 12px; letter-spacing: 0; }
+html[data-workspace] .app-shell .lux-table td { transition: background-color 130ms; }
+html[data-workspace] .app-shell .lux-table tbody tr:hover td { background: hsl(var(--primary) / 0.025); }
+html[data-workspace] .app-shell .lux-form-card, html[data-workspace] .app-shell .lux-chart-card { border-color: hsl(var(--border) / 0.8); background: hsl(var(--card)); }
+html[data-workspace] .app-shell .lux-chart-card > .el-card__header { border-bottom-color: hsl(var(--border) / 0.6); }
+
+html[data-workspace] .app-shell .shell-content--workspace { padding: 0; }
+
+/* Page hierarchy: identity, controls, then the working surface. */
+html[data-workspace] .app-shell .panel-header--page {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+  border-radius: 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  background: transparent;
+}
+html[data-workspace] .app-shell .panel-header--page .ui-section-title { font-size: 20px; font-weight: 600; line-height: 1.4; }
+html[data-workspace] .app-shell .panel-header--page .panel-header-copy { flex: 1 1 22rem; }
+html[data-workspace] .app-shell .panel-header--page .panel-header-copy > p:last-child:not(.ui-section-title) { line-height: 1.75; }
+html[data-workspace] .app-shell .panel-header-actions { row-gap: 10px; }
+html[data-workspace] .app-shell .accounts-panel > .panel-header { flex-shrink: 0; }
+html[data-workspace] .app-shell .accounts-toolbar,
+html[data-workspace] .app-shell .log-control-panel { flex-shrink: 0; }
+html[data-workspace] .app-shell .lux-table { font-size: 13px; }
+html[data-workspace] .app-shell .lux-table th { padding-block: 12px; font-weight: 600; }
+html[data-workspace] .app-shell .lux-table-shell--unframed { border-radius: 0; }
+html[data-workspace] .app-shell .lux-table-footer { border-top: 1px solid hsl(var(--border) / 0.7); background: hsl(var(--card)); }
+html[data-workspace] .app-shell .metric-strip { gap: 12px; padding: 0; background: transparent; }
+html[data-workspace] .app-shell .metric-strip-card { padding: 16px; border: 1px solid hsl(var(--border) / 0.8); border-radius: var(--radius); background: hsl(var(--card)); }
+html[data-workspace] .app-shell .metric-strip-label { font-size: 11px; color: hsl(var(--muted-foreground)); }
+html[data-workspace] .app-shell .metric-strip-value { font-size: 23px; font-weight: 600; letter-spacing: -0.04em; }
+html[data-workspace] .app-shell .lux-empty .el-empty__image { display: grid; place-items: center; padding: 8px; border-radius: var(--radius); background: hsl(var(--muted)); color: hsl(var(--primary) / 0.5); }
+html[data-workspace] .app-shell .lux-empty .el-empty__description { color: hsl(var(--muted-foreground)); }
+
+/* Configuration pages share a quieter form rhythm, with clear section headings. */
+html[data-workspace] .app-shell .lux-form-card > .el-card__header { padding: 17px 20px; background: transparent; border-bottom: 1px solid hsl(var(--border) / 0.65); }
+html[data-workspace] .app-shell .lux-form-card > .el-card__header .ui-section-title { font-size: 14px; font-weight: 600; }
+html[data-workspace] .app-shell .lux-form-card .ui-field-label,
+html[data-workspace] .app-shell .lux-field .el-form-item__label { font-size: 13px; font-weight: 500; }
+html[data-workspace] .app-shell .monitor-metric-group { border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
+html[data-workspace] .app-shell .monitor-metric-group:hover,
+html[data-workspace] .app-shell .monitor-metric-cell:hover { transform: none; box-shadow: none; }
+html[data-workspace] .app-shell .monitor-metric-cell { border-radius: var(--radius); background: hsl(var(--card)); border-color: hsl(var(--border) / 0.8); padding: 14px; }
+html[data-workspace] .app-shell .monitor-overview-panel .panel-header-actions .lux-input { width: 72px; }
+html[data-workspace] .app-shell .gallery-page { --gallery-radius: var(--radius); }
+
+@media (max-width: 640px) {
+  .app-shell .page-panel { padding: 16px; }
+  html[data-workspace] .app-shell .panel-header--page .ui-section-title { font-size: 18px; }
+  html[data-workspace] .app-shell .panel-header--page { gap: 12px; padding: 0 0 16px; }
+  html[data-workspace] .app-shell .accounts-panel { gap: 12px; }
+  html[data-workspace] .app-shell .accounts-panel > .panel-header .panel-header-copy > p:last-child:not(.ui-section-title) { display: none; }
+  html[data-workspace] .app-shell .accounts-toolbar { gap: 10px; }
+  html[data-workspace] .app-shell .accounts-toolbar-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+  html[data-workspace] .app-shell .accounts-toolbar-filters > .lux-input { grid-column: 1 / -1; min-width: 0; }
+  html[data-workspace] .app-shell .accounts-toolbar-filters > .lux-select { width: 100%; min-width: 0; }
+  html[data-workspace] .app-shell .accounts-toolbar-row-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  html[data-workspace] .app-shell .accounts-toolbar-action-cluster,
+  html[data-workspace] .app-shell .accounts-toolbar-group { display: contents; }
+  html[data-workspace] .app-shell .accounts-toolbar-row-actions .lux-button { width: 100%; padding-inline: 8px; }
+  html[data-workspace] .app-shell .logs-page .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html[data-workspace] .app-shell .gallery-hero .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-workspace] .app-shell .log-control-panel { gap: 12px; }
+  html[data-workspace] .app-shell .log-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  html[data-workspace] .app-shell .log-toolbar > .log-search-input,
+  html[data-workspace] .app-shell .log-toolbar > .log-date-pair { grid-column: 1 / -1; min-width: 0; }
+  html[data-workspace] .app-shell .log-toolbar > .log-filter-select { min-width: 0; }
+  html[data-workspace] .app-shell .log-toolbar > .log-filter-select > .lux-select { width: 100%; }
+
+  html[data-workspace] .app-shell .metric-strip-card { padding: 12px; }
+  html[data-workspace] .app-shell .lux-table-state { min-height: 0; }
+  html[data-workspace] .app-shell .lux-table-state .lux-empty { padding: 8px; }
+  html[data-workspace] .app-shell .lux-table-state .el-empty__image { max-width: 32px; height: 32px; padding: 6px; border-radius: var(--radius); }
+  html[data-workspace] .app-shell .lux-table-state .el-empty__description { margin-top: 6px; }
+  html[data-workspace] .app-shell .lux-table-state .el-empty__description p { margin-top: 0; line-height: 1.6; }
+
+  html[data-workspace] .app-shell .metric-strip-value { font-size: 21px; }
+}
+
+@media (max-width: 420px) {
+  html[data-workspace] .app-shell .accounts-toolbar-row-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

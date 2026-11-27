@@ -1,4 +1,4 @@
-import type { ActionMenuItem } from 'nanocat-ui'
+import type { ActionMenuItem } from '@/components/ui'
 import type { ProxyGroup, ProxyNode, ProxyTestResult, ProxyTestTone } from '@/api/proxy'
 import { actionMenuGroups } from '@/components/ai/menuItems'
 
@@ -191,8 +191,8 @@ export function proxyNodeTestClass(
 ) {
   if (isProxyNodeTesting(group, node, testingKey)) return 'text-sky-600'
   const result = testResults[proxyNodeTestKey(group, node)]
-  if (result) return result.ok ? 'text-emerald-600' : 'text-rose-600'
-  if (node.health.state === 'unhealthy') return 'text-rose-600'
-  if (node.health.state === 'healthy') return 'text-emerald-600'
+  if (result) return result.ok ? 'text-tone-success' : 'text-tone-error'
+  if (node.health.state === 'unhealthy') return 'text-tone-error'
+  if (node.health.state === 'healthy') return 'text-tone-success'
   return 'text-muted-foreground'
 }

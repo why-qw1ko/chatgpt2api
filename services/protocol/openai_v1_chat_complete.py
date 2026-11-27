@@ -6,7 +6,7 @@ from typing import Any, Iterable, Iterator
 
 from fastapi import HTTPException
 
-from services.protocol.chat_completion_cache import cache_key, chat_completion_cache, normalize_text_messages
+from services.protocol.chat_completion_cache import normalize_text_messages
 from services.protocol.conversation import (
     ConversationRequest,
     ImageOutput,
@@ -130,11 +130,20 @@ def stream_text_chat_completion(
     messages: list[dict[str, Any]],
     model: str,
     thinking_effort: str = "",
+    body: dict[str, Any] | None = None,
 ) -> Iterator[dict[str, Any]]:
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
     sent_role = False
-    request = ConversationRequest(model=model, messages=messages, thinking_effort=thinking_effort)
+    result_facts: dict[str, Any] = {}
+    request = ConversationRequest(
+        model=model,
+        messages=messages,
+        thinking_effort=thinking_effort,
+        result_facts=result_facts,
+        upstream_conversation_id=str((body or {}).get("conversation_id") or (body or {}).get("_conversation_id") or "").strip(),
+        upstream_parent_message_id=str((body or {}).get("parent_message_id") or "").strip(),
+    )
     for delta_text in stream_text_deltas(backend, request):
         if not sent_role:
             sent_role = True
@@ -152,7 +161,15 @@ def stream_text_chat_completion(
             completion_chunk(model, {"role": "assistant", "content": ""}, None, completion_id, created),
             _backend_account_email(backend),
         )
-    yield _with_log_metadata(completion_chunk(model, {}, "stop", completion_id, created), _backend_account_email(backend))
+    stop_chunk = completion_chunk(model, {}, "stop", completion_id, created)
+    if isinstance(result_facts, dict):
+        if result_facts.get("conversation_id"):
+            stop_chunk["conversation_id"] = result_facts["conversation_id"]
+        if result_facts.get("message_id"):
+            stop_chunk["message_id"] = result_facts["message_id"]
+        if result_facts.get("upstream_fallback"):
+            stop_chunk["upstream_fallback"] = True
+    yield _with_log_metadata(stop_chunk, _backend_account_email(backend))
 
 
 def collect_chat_content(chunks: Iterable[dict[str, Any]]) -> str:
@@ -192,7 +209,9 @@ def chat_image_args(body: dict[str, Any]) -> tuple[str, str, int, list[tuple[byt
 
 def text_chat_parts(body: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
     model = str(body.get("model") or "auto").strip() or "auto"
-    messages = normalize_text_messages(normalize_messages(chat_messages_from_body(body)))
+    messages = normalize_messages(chat_messages_from_body(body))
+    if body.get("_preserve_history") is not True:
+        messages = normalize_text_messages(messages)
     if has_unsupported_tools(body, WEB_SEARCH_TOOL_TYPES):
         messages.insert(0, {"role": "system", "content": TOOL_UNAVAILABLE_SYSTEM_MESSAGE})
     return model, messages
@@ -259,6 +278,7 @@ def image_chat_response(body: dict[str, Any]) -> dict[str, Any]:
         call_id=str(body.get("_call_id") or ""),
         trace_image_perf=bool(body.get("_trace_image_perf")),
         owner_id=str(body.get("owner_id") or ""),
+        image_quota=body.get("_image_quota"),
     )))
     response = completion_response(model, image_result_content(result), int(result.get("created") or 0) or None)
     usage = image_usage(
@@ -291,6 +311,7 @@ def image_chat_events(body: dict[str, Any]) -> Iterator[dict[str, Any]]:
         call_id=str(body.get("_call_id") or ""),
         trace_image_perf=bool(body.get("_trace_image_perf")),
         owner_id=str(body.get("owner_id") or ""),
+        image_quota=body.get("_image_quota"),
     ))
     yield from stream_image_chat_completion(image_outputs, model)
 
@@ -335,14 +356,26 @@ def stream_image_chat_completion(image_outputs: Iterable[ImageOutput], model: st
     yield completion_chunk(model, {}, "stop", completion_id, created)
 
 
-def text_completion_response(model: str, messages: list[dict[str, Any]], thinking_effort: str) -> dict[str, Any]:
+def text_completion_response(model: str, messages: list[dict[str, Any]], thinking_effort: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
     backend = text_backend()
+    body = body or {}
+    result_facts: dict[str, Any] = {}
     response = completion_response(
         model,
-        collect_text(backend, ConversationRequest(model=model, messages=messages, thinking_effort=thinking_effort)),
+        collect_text(backend, ConversationRequest(
+            model=model,
+            messages=messages,
+            thinking_effort=thinking_effort,
+            result_facts=result_facts,
+            upstream_conversation_id=str(body.get("conversation_id") or body.get("_conversation_id") or "").strip(),
+            upstream_parent_message_id=str(body.get("parent_message_id") or "").strip(),
+        )),
         messages=messages,
     )
-    return _with_log_metadata(response, _backend_account_email(backend))
+    for key in ("conversation_id", "message_id", "upstream_fallback"):
+        if result_facts.get(key):
+            response[key] = result_facts[key]
+    return _with_log_metadata(response, _backend_account_email(backend), str(result_facts.get("conversation_id") or ""))
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
@@ -353,19 +386,12 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         if is_web_search_chat_request(body) and not has_unsupported_tools(body, WEB_SEARCH_TOOL_TYPES):
             return stream_web_search_chat_completion(messages, model)
         thinking_effort = thinking_effort_from_body(body)
-        key = cache_key(body, messages, stream=True)
-        return chat_completion_cache.get_or_compute_stream(
-            key,
-            lambda: stream_text_chat_completion(text_backend(), messages, model, thinking_effort),
-        )
+        # A cached stream would reuse another request's upstream conversation IDs.
+        return stream_text_chat_completion(text_backend(), messages, model, thinking_effort, body)
     if is_image_chat_request(body):
         return image_chat_response(body)
     model, messages = text_chat_parts(body)
     if is_web_search_chat_request(body) and not has_unsupported_tools(body, WEB_SEARCH_TOOL_TYPES):
         return web_search_chat_response(messages, model)
     thinking_effort = thinking_effort_from_body(body)
-    key = cache_key(body, messages, stream=False)
-    return chat_completion_cache.get_or_compute_response(
-        key,
-        lambda: text_completion_response(model, messages, thinking_effort),
-    )
+    return text_completion_response(model, messages, thinking_effort, body)

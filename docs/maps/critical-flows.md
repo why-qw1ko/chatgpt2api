@@ -51,6 +51,7 @@ sequenceDiagram
     participant API as imageTasksApi
     participant Route as api/image_tasks.py
     participant Task as ImageTaskService
+    participant Quota as ImageQuotaService
     participant Upstream as Image generation services
     participant Assets as ImageStorageService
     participant Store as data/image_tasks.json
@@ -58,9 +59,11 @@ sequenceDiagram
     Studio->>API: Create generation or edit task
     API->>Route: Owner-scoped request
     Route->>Task: Create task
+    Task->>Quota: Reserve images by User Key ID
     Task->>Store: Persist queued/running projection
     Task->>Upstream: Execute attempts and account switches
     Upstream->>Assets: Publish successful Image Assets
+    Task->>Quota: Settle generated images and release unused quota
     Task->>Store: Persist terminal result
     Studio->>API: Poll owner-scoped task list
     API-->>Studio: Final task projection and asset URLs
@@ -70,6 +73,11 @@ sequenceDiagram
 terminal state. `ImageStorageService` exclusively owns Image Asset catalogue and
 storage mutations. Studio owns browser conversation presentation and polling,
 not task truth.
+
+The compatible image routes in `api/ai.py` use the same quota service. Its
+repository serializes admission for each key and keeps in-progress reservations
+separate from completed images. Rotation changes the credential hash while
+keeping the User Key ID used by quota, Studio sessions, and Call Records.
 
 ## Call Record, live monitor, and metrics
 

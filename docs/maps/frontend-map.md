@@ -15,12 +15,13 @@ The route source is
 | `/login` | `Login.vue` | Auth adapter and redirect validation |
 | `/` | `Dashboard.vue` | `dashboard/useDashboardPage.ts`, `statsApi` |
 | `/accounts` | `Accounts.vue` | `accounts/useAccountsPage.ts`, account CRUD, selection, import, bulk-operation, and test runtimes |
-| `/settings` | `Settings.vue` | Settings configuration, integrations, Prompt Sources, User Keys, backup, and external-source runtimes |
+| `/settings` | `Settings.vue` | Settings configuration, integrations, Prompt Sources, User Key usage and rotation, backup, and external-source runtimes |
+| `/theme` | `Theme.vue` | Authenticated appearance controls for administrators and User Key sessions |
 | `/proxy` | `Proxy.vue` | Default-proxy, group, and node-import runtimes; `proxyApi` |
 | `/logs` | `Logs.vue` | Query, selection, export, and detail runtimes; `logsApi` |
 | `/monitor` | `Monitor.vue` | Realtime list and detail runtimes; `monitorApi` |
 | `/gallery` | `Gallery.vue` | Query, interaction, and operation runtimes; `galleryApi` |
-| `/studio` | `Studio.vue` | Send, chat stream, image/file task, polling, conversation, prompt, model, layout, and scroll runtimes |
+| `/studio` | `Studio.vue` | Send and retry, chat branching, image/file tasks, polling, conversation history, clipboard, prompt, layout, and scroll |
 | `/debug` | Redirect only | Redirects to `/studio`; it is not a separate page |
 
 `AppShell.vue` owns authenticated product navigation and header-level overlays.
@@ -34,7 +35,8 @@ flowchart LR
     Contract["Backend JSON contract"] --> Adapter["web-vue/src/api adapter"]
     Adapter --> Runtime["Page or page-private runtime"]
     Runtime --> View["Vue page/components"]
-    Nanocat["nanocat-ui primitives"] --> View
+    ElementPlus["Element Plus controls"] --> UI["Product UI adapters / CSS theme"]
+    UI --> View
 ```
 
 - `web-vue/src/api/` owns HTTP transport, request types, response validation,
@@ -47,19 +49,40 @@ flowchart LR
 
 ## UI ownership boundary
 
-| Belongs to `nanocat-ui` | Belongs to this repository |
+| Belongs to `element-plus` | Belongs to this repository |
 | --- | --- |
-| Tokens, controls, menus, generic overlays, focus behavior, theme state, and reusable dock/modal primitives | AppShell, routes, product copy, tables, charts, domain timelines, page workflows, and product-specific responsive layout |
+| Form controls, menus, popovers, modal dialogs/drawers, keyboard focus primitives, cards, and notifications | LuxuryImage branding, CSS tokens, theme preference, UI adapters, AppShell, routes, product copy, tables, charts, non-modal panels, page workflows, and responsive layout |
 
-A visual Module moves to Nanocat only after more than one real consumer or a
-concrete cross-project use case exists. Page-specific code stays next to the
-page while it has one owner. The Nanocat source is an independent repository
-and is tested, committed, and released separately.
+`web-vue/src/components/ui/` adapts Element Plus to the product's sizing,
+semantic tones, model values, and overlay contracts. Page-specific code stays
+next to its page. `web-vue/src/style.css` owns the light/dark CSS tokens and
+maps them to Element Plus variables; `web-vue/src/lib/theme.ts` owns the shared
+light/dark mode and accent color preferences stored in the current browser.
+The authenticated shell imports
+`web-vue/src/styles/workspace.css` for console-only light/dark palettes, responsive toolbars and surface styling; its `controls.css` import owns shared
+console control sizing, filled surfaces, neutral focus states and teleported menus.
+`PanelHeader` provides an optional page eyebrow; controls in the same action group share
+a height, while primary/secondary emphasis is expressed through color.
+`useWorkspaceAtmosphere` owns the shell-scoped theme marker and delegated,
+frame-limited pointer lighting and opt-in metric-card tilt, with reduced-motion/touch
+gating and unmount cleanup. It also records keyboard versus pointer input for focus
+presentation. Pointer appearance uses native browser cursors, including text, resize,
+and disabled-control affordances. `StatCard` can animate
+numeric display values without altering the underlying metrics. `TypewriterText`
+reserves its final dimensions and accessible text while revealing a visual copy.
+Motion timers/frames stop on teardown, and reduced motion shows final content.
+`styles/motion.css` owns spinner, metric entrance, modal/drawer, overview pendulum
+and reveal animations; the login page owns its floating gradient circles.
+The login page keeps the base theme. Non-modal task panels use a non-blocking region
+because an Element Plus drawer traps focus even without a backdrop. Domain
+tables retain semantic HTML row slots and a single internal scroll container.
 
 ## Lifecycle rules
 
 - Initial load, background refresh with a retained snapshot, true empty state,
-  and error state are distinct.
+  and error state are distinct. Accounts and Proxy expose query errors inline
+  even when background-refresh toasts are suppressed. Proxy bounds its group
+  table height in contained-scroll mode.
 - Entering a page may fetch immediately; refresh timers have one owner and are
   disposed with that owner.
 - Closing an overlay returns focus according to the shared overlay contract and
@@ -67,6 +90,15 @@ and is tested, committed, and released separately.
 - A container that owns scrolling must have a bounded size in fixed-layout mode.
   In natural-height mode, document scrolling is the owner and nested regions do
   not claim the same axis.
+- New Studio conversations return the object stored in the reactive collection,
+  so the first asynchronous reply updates the same object rendered by the view.
+- Studio waits for initial history restoration before sending in an existing
+  conversation. The send runtime applies the per-conversation turn limit to
+  new submissions and resends across modes. When a new turn would exceed the
+  limit, Studio prompts the user to start a conversation. Text sends, edits, and
+  retries submit the current branch's full history through the current question.
+  Studio reports unavailable reference images. Pending conversation writes
+  and initial restoration remain scoped to the login that started the page.
 - Single-item and batch actions call the same bulk Interface with one ID when
   their business semantics are identical.
 

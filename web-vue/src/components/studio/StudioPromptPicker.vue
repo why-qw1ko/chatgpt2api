@@ -128,7 +128,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, onMounted, ref, watch } from 'vue'
-import { Button, EmptyState, Input } from 'nanocat-ui'
+import { Button, EmptyState, Input } from '@/components/ui'
 import type { PromptLibraryItem } from '@/api/prompts'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'
 import MetaChip from '@/components/ai/MetaChip.vue'
@@ -138,7 +138,7 @@ import ModalHeader from '@/components/ai/ModalHeader.vue'
 import ModalShell from '@/components/ai/ModalShell.vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import { usePromptLibraryRuntime } from '@/composables/usePromptLibraryRuntime'
 import { promptCategoryLabel, promptDisplaySummary } from '@/lib/promptLibrary'
 

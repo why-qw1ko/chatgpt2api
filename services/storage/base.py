@@ -130,6 +130,9 @@ class StorageBackend(ABC):
         """Compatibility view for callers that do not use revisions yet."""
         return self.load_auth_keys_snapshot().items
 
+    def load_auth_keys_revision(self) -> str:
+        return self.load_auth_keys_snapshot().revision
+
     @abstractmethod
     def replace_auth_keys(
         self,

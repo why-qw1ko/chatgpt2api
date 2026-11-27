@@ -56,8 +56,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button } from 'nanocat-ui'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { Button } from '@/components/ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import ListLayoutControl from '@/components/ai/ListLayoutControl.vue'
 import type { ListLayoutMode } from '@/composables/useListLayoutPreference'
 

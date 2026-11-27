@@ -82,7 +82,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { EmptyState } from 'nanocat-ui'
+import { EmptyState } from '@/components/ui'
 
 import type { RealtimeMonitorRecordDetail } from '@/api/monitor'
 import MetaChip from '@/components/ai/MetaChip.vue'

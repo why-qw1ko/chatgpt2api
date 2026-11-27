@@ -1,5 +1,5 @@
 <template>
-  <NanocatActionMenu
+  <ElementActionMenu
     :label="label"
     :items="items"
     :disabled="disabled"
@@ -17,8 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { ActionMenu as NanocatActionMenu } from 'nanocat-ui'
-import type { ActionMenuItem, ButtonSize, MenuPlacement } from 'nanocat-ui'
+import { ActionMenu as ElementActionMenu } from '@/components/ui'
+import type { ActionMenuItem, ButtonSize, MenuPlacement } from '@/components/ui'
 
 type FloatingMenuTriggerVariant = 'button' | 'input'
 

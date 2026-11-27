@@ -1,6 +1,6 @@
 import { onDeactivated, onScopeDispose, ref } from 'vue'
 
-import { userKeysApi, type UserKey } from '@/api/userKeys'
+import { userKeysApi, type UserKey, type UserKeyUpdatePayload } from '@/api/userKeys'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import type { usePageRuntime } from '@/composables/usePageRuntime'
 import { usePageQuery } from '@/composables/usePageQuery'
@@ -21,6 +21,13 @@ type SettingsUserKeysRuntimeOptions = {
 
 function createUserKeyForm(): UserKeyForm {
   return { name: '', key: '', dailyImageLimit: '' }
+}
+
+function parseDailyImageLimit(value: string): number | null | undefined {
+  const text = value.trim()
+  if (!text) return null
+  const limit = Number(text)
+  return Number.isSafeInteger(limit) && limit >= 0 ? limit : undefined
 }
 
 export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptions) {
@@ -46,18 +53,20 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
 
   function revealNewUserKey(rawKey: string) {
     clearNewUserKey()
+    if (!rawKey || !options.runtime.isActive.value) return
     newUserKey.value = rawKey
-    if (!rawKey) return
     rawKeyClearTimer = window.setTimeout(clearNewUserKey, 120000)
   }
 
   function upsertUserKey(item: UserKey) {
-    const index = userKeys.value.findIndex(candidate => candidate.id === item.id)
-    if (index < 0) {
+    const previous = userKeys.value.find(candidate => candidate.id === item.id)
+    if (!previous) {
       userKeys.value = [...userKeys.value, item]
       return
     }
-    userKeys.value = userKeys.value.map(candidate => candidate.id === item.id ? item : candidate)
+    const imageUsage = item.daily_image_limit === previous.daily_image_limit ? previous.image_usage : undefined
+    const updated = { ...item, image_usage: item.image_usage ?? imageUsage }
+    userKeys.value = userKeys.value.map(candidate => candidate.id === item.id ? updated : candidate)
   }
 
   onDeactivated(clearNewUserKey)
@@ -87,12 +96,14 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
   }
 
   function openUserKeyCreateModal() {
+    if (userKeyBusy.value) return
     clearNewUserKey()
     resetUserKeyForm()
     userKeyModal.value = 'create'
   }
 
   function openUserKeyEditModal(item: UserKey) {
+    if (userKeyBusy.value) return
     editingUserKey.value = item
     userKeyForm.value = {
       name: item.name || '',
@@ -110,6 +121,7 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
   }
 
   async function loadUserKeys() {
+    if (!options.runtime.canRun.value) return
     await userKeysQuery.run(
       () => userKeysApi.list(),
       {
@@ -117,26 +129,31 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
           userKeys.value = Array.isArray(response.items) ? response.items : []
           userKeysLoaded.value = true
         },
-        onError: (message) => {
-          userKeys.value = []
-          toast.error(message)
-        },
       },
     )
   }
 
   async function createUserKey() {
+    if (userKeyBusy.value) return
+    const dailyImageLimit = parseDailyImageLimit(userKeyForm.value.dailyImageLimit)
+    if (dailyImageLimit === undefined) {
+      toast.error('每日图片上限请输入大于或等于 0 的整数')
+      return
+    }
+    const key = userKeyForm.value.key.trim()
     userKeyBusy.value = 'create'
     try {
-      const limitText = userKeyForm.value.dailyImageLimit.trim()
-      const parsed = limitText === '' ? NaN : parseInt(limitText, 10)
-      const dailyImageLimit = !isNaN(parsed) && parsed >= 0 ? parsed : null
-      const response = await userKeysApi.create(userKeyForm.value.name.trim(), dailyImageLimit)
+      const response = await userKeysApi.create({
+        name: userKeyForm.value.name.trim(),
+        daily_image_limit: dailyImageLimit,
+        ...(key ? { key } : {}),
+      })
       upsertUserKey(response.item)
       revealNewUserKey(response.raw_key)
       toast.success('用户密钥已创建')
       userKeyModal.value = ''
       resetUserKeyForm()
+      await loadUserKeys()
     } catch (error) {
       toast.error(errorMessage(error, '创建用户密钥失败'))
     } finally {
@@ -146,21 +163,18 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
 
   async function updateUserKey() {
     const item = editingUserKey.value
-    if (!item) return
+    if (!item || userKeyBusy.value) return
     const nextName = userKeyForm.value.name.trim()
     const nextKey = userKeyForm.value.key.trim()
-    const nextDailyLimit = userKeyForm.value.dailyImageLimit.trim()
-    const updates: { name?: string; key?: string; daily_image_limit?: number | null } = {}
+    const nextDailyLimit = parseDailyImageLimit(userKeyForm.value.dailyImageLimit)
+    if (nextDailyLimit === undefined) {
+      toast.error('每日图片上限请输入大于或等于 0 的整数')
+      return
+    }
+    const updates: UserKeyUpdatePayload = {}
     if (nextName !== item.name) updates.name = nextName
     if (nextKey) updates.key = nextKey
-    if (nextDailyLimit === '') {
-      if (item.daily_image_limit != null) updates.daily_image_limit = null
-    } else {
-      const parsed = parseInt(nextDailyLimit, 10)
-      if (!isNaN(parsed) && parsed >= 0 && parsed !== item.daily_image_limit) {
-        updates.daily_image_limit = parsed
-      }
-    }
+    if (nextDailyLimit !== (item.daily_image_limit ?? null)) updates.daily_image_limit = nextDailyLimit
     if (!Object.keys(updates).length) {
       closeUserKeyModal()
       return
@@ -170,9 +184,10 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     try {
       const response = await userKeysApi.update(item.id, updates)
       upsertUserKey(response.item)
-      toast.success(nextKey ? '用户密钥已更新' : '用户名称已更新')
+      toast.success('用户密钥已更新')
       userKeyModal.value = ''
       resetUserKeyForm()
+      await loadUserKeys()
     } catch (error) {
       toast.error(errorMessage(error, '更新用户密钥失败'))
     } finally {
@@ -181,11 +196,13 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
   }
 
   async function toggleUserKey(item: UserKey) {
+    if (userKeyBusy.value) return
     userKeyBusy.value = item.id
     try {
       const response = await userKeysApi.update(item.id, { enabled: !item.enabled })
       upsertUserKey(response.item)
       toast.success(item.enabled ? '用户密钥已禁用' : '用户密钥已启用')
+      await loadUserKeys()
     } catch (error) {
       toast.error(errorMessage(error, '更新用户密钥失败'))
     } finally {
@@ -193,14 +210,39 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     }
   }
 
+  async function rotateUserKey(item: UserKey) {
+    if (userKeyBusy.value || confirmDialog.open.value) return
+    const confirmed = await confirmDialog.ask({
+      title: '轮换用户密钥',
+      message: `将为「${item.name || item.id}」生成新密钥，旧密钥将失效。请准备更新使用旧密钥的客户端。`,
+      confirmText: '生成新密钥',
+      confirmVariant: 'danger',
+    })
+    if (!confirmed || userKeyBusy.value) return
+
+    userKeyBusy.value = item.id
+    try {
+      const response = await userKeysApi.rotate(item.id)
+      upsertUserKey(response.item)
+      revealNewUserKey(response.raw_key)
+      toast.success('用户密钥已轮换')
+      await loadUserKeys()
+    } catch (error) {
+      toast.error(errorMessage(error, '轮换用户密钥失败'))
+    } finally {
+      userKeyBusy.value = ''
+    }
+  }
+
   async function deleteUserKey(item: UserKey) {
+    if (userKeyBusy.value || confirmDialog.open.value) return
     const confirmed = await confirmDialog.ask({
       title: '删除用户密钥',
       message: `确定删除用户密钥「${item.name || item.id}」吗？删除后这条密钥将无法继续调用接口。`,
       confirmText: '删除',
       cancelText: '取消',
     })
-    if (!confirmed) return
+    if (!confirmed || userKeyBusy.value) return
 
     userKeyBusy.value = item.id
     try {
@@ -211,6 +253,7 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
         resetUserKeyForm()
       }
       toast.success('用户密钥已删除')
+      await loadUserKeys()
     } catch (error) {
       toast.error(errorMessage(error, '删除用户密钥失败'))
     } finally {
@@ -228,11 +271,13 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     userKeys,
     userKeysLoaded,
     userKeysLoading,
+    userKeysError: userKeysQuery.error,
     userKeyBusy,
     userKeyModal,
     editingUserKey,
     newUserKey,
     userKeyForm,
+    clearNewUserKey,
     copyUserKey,
     resetUserKeyForm,
     openUserKeyCreateModal,
@@ -242,6 +287,7 @@ export function useSettingsUserKeysRuntime(options: SettingsUserKeysRuntimeOptio
     createUserKey,
     updateUserKey,
     toggleUserKey,
+    rotateUserKey,
     deleteUserKey,
     invalidate,
   }

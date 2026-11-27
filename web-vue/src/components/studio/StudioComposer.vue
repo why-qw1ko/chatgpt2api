@@ -1,5 +1,5 @@
 <template>
-  <footer ref="composerShellRef" class="studio-composer-shell">
+  <footer class="studio-composer-shell">
     <input
       ref="fileInputRef"
       type="file"
@@ -17,31 +17,34 @@
       @dragover.prevent="handleDragOver"
       @dragleave="handleDragLeave"
       @drop.prevent="handleDrop"
-      @click="textareaRef?.focus()"
     >
-      <div class="chat-input-panel-shell">
-        <div v-if="isEditing" class="chat-editing-bar" @click.stop>
-          <div class="chat-editing-info">
-            <Icon icon="lucide:pencil" class="h-3.5 w-3.5" />
-            <span>正在编辑原消息，发送后会替换该消息并重新生成后续回复。</span>
-          </div>
-          <button type="button" class="chat-editing-cancel" @click="$emit('cancel-edit')">
-            取消
-          </button>
-        </div>
+      <div class="chat-input-panel-shell" @click.self="focusInput">
+        <SegmentedTabs
+          :model-value="mode"
+          :options="modeOptions"
+          class="chat-mode-control"
+          aria-label="创作模式"
+          @update:model-value="selectMode"
+        />
 
-        <div
-          class="chat-input-panel-inner"
-          :class="{ 'chat-input-panel-inner-attach': references.length }"
-          @click="textareaRef?.focus()"
-        >
+        <div class="chat-input-panel-inner" @click.self="focusInput">
+          <div v-if="isEditing" class="chat-editing-bar">
+            <div class="chat-editing-info">
+              <Icon icon="lucide:pencil" class="h-3.5 w-3.5" />
+              <span>正在编辑原消息，发送后会替换该消息并重新生成后续回复。</span>
+            </div>
+            <Button size="xs" variant="ghost" @click="$emit('cancel-edit')">
+              取消
+            </Button>
+          </div>
+
           <div v-if="canAttachReferences && references.length" class="attach-images">
             <div v-for="(source, index) in references" :key="source.id" class="chat-attachment-preview">
-              <button type="button" class="studio-reference-preview" :title="source.name" @click.stop="$emit('preview-reference', source)">
+              <button type="button" class="studio-reference-preview" :aria-label="`预览 ${source.name}`" :title="source.name" @click="$emit('preview-reference', source)">
                 <img v-if="source.dataUrl" :src="source.dataUrl" :alt="source.name" />
                 <Icon v-else icon="lucide:image" class="h-5 w-5" />
               </button>
-              <button type="button" class="chat-attachment-remove" :aria-label="`移除 ${source.name}`" @click.stop="$emit('remove-reference', index)">
+              <button type="button" class="chat-attachment-remove" :aria-label="`移除 ${source.name}`" @click="$emit('remove-reference', index)">
                 <Icon icon="lucide:x" class="h-3.5 w-3.5" />
               </button>
             </div>
@@ -52,70 +55,55 @@
             v-model="textValue"
             class="chat-input custom-scrollbar"
             rows="1"
+            aria-label="创作内容"
             :placeholder="placeholderText"
             @input="resizeTextarea"
             @paste="handlePaste"
-            @keydown.enter.exact.prevent="$emit('submit')"
+            @keydown.enter.exact="submitOnEnter"
           ></textarea>
         </div>
 
-        <div class="chat-input-actions" @click.stop>
+        <div class="chat-input-actions">
           <div class="chat-input-action-row">
-            <div class="chat-menu-anchor">
-              <Button
-                icon-only
-                size="sm"
-                variant="outline"
-                root-class="chat-vision-button"
-                :disabled="isSending"
-                aria-label="上传图片"
-                title="上传图片"
-                @click.stop="handleAttachReferenceClick"
-              >
-                <Icon icon="lucide:image-plus" class="h-3.5 w-3.5" />
-              </Button>
-            </div>
-
-            <div class="chat-select-wrap chat-select-wrap--mode">
-              <GroupedSelectMenu
-                v-model="modeValue"
-                :options="modeOptions"
-                placement="top"
-                selected-indicator="none"
-                aria-label="切换模式"
-              />
-            </div>
+            <Button
+              icon-only
+              size="sm"
+              :disabled="isSending"
+              aria-label="上传图片"
+              title="上传图片"
+              @click="handleAttachReferenceClick"
+            >
+              <Icon icon="lucide:image-plus" class="h-4 w-4" aria-hidden="true" />
+            </Button>
 
             <StudioToolbarSelectButton
               v-if="mode === 'image'"
-              class="chat-prompt-button"
               :disabled="isSending"
-              @click.stop="handleOpenPrompts"
+              @click="handleOpenPrompts"
             >
-              <Icon icon="lucide:book-open" class="h-3.5 w-3.5" />
+              <Icon icon="lucide:book-open" class="h-3.5 w-3.5" aria-hidden="true" />
               <span>提示词</span>
             </StudioToolbarSelectButton>
 
             <StudioToolbarSelectButton
               v-if="mode === 'search'"
-              class="chat-search-skill-button"
               :disabled="isSending"
               title="搜索 Skill"
-              @click.stop="handleOpenSearchSkill"
+              @click="handleOpenSearchSkill"
             >
-              <Icon icon="lucide:package-plus" class="h-3.5 w-3.5" />
+              <Icon icon="lucide:package-plus" class="h-3.5 w-3.5" aria-hidden="true" />
               <span>Skill</span>
             </StudioToolbarSelectButton>
 
             <template v-if="mode === 'chat'">
-              <div class="chat-settings-anchor chat-settings-anchor--chat">
+              <div class="chat-settings-anchor--chat">
                 <FloatingActionMenu
                   :label="chatSettingsLabel"
                   :items="chatSettingsMenuItems"
                   align="left"
                   placement="top"
                   trigger-variant="input"
-                  trigger-class="shrink-0 whitespace-nowrap"
+                  trigger-class="chat-model-button"
                   :menu-min-width="220"
                   @select="handleChatSettingsMenuSelect"
                 />
@@ -123,145 +111,195 @@
             </template>
 
             <template v-else-if="mode === 'image'">
-              <div ref="settingsAnchorRef" class="chat-settings-anchor">
-                <StudioToolbarSelectButton
-                  class="chat-summary-button justify-between gap-1.5"
-                  :expanded="settingsOpen"
-                  @click.stop="toggleSettings"
-                >
-                  <Icon icon="lucide:sliders-horizontal" class="h-3.5 w-3.5" />
-                  <span>{{ imageSummaryLabel }}</span>
-                  <Icon
-                    icon="lucide:chevron-down"
-                    class="h-3.5 w-3.5 transition-transform"
-                    :class="settingsOpen ? 'rotate-180' : ''"
-                  />
-                </StudioToolbarSelectButton>
-
-                <div v-if="settingsOpen" class="studio-size-popover" @click.stop>
-                  <div class="studio-size-section">
-                    <div class="studio-size-label">模型</div>
-                    <GroupedSelectMenu
-                      v-model="imageModelValue"
-                      :options="imageModelSelectOptions"
-                      selected-indicator="none"
-                      block
+              <ElPopover
+                v-model:visible="settingsOpen"
+                trigger="click"
+                role="dialog"
+                aria-label="图片设置"
+                placement="top-end"
+                :width="384"
+                :offset="8"
+                :show-arrow="false"
+                :teleported="true"
+                :persistent="false"
+                :popper-options="{ modifiers: [{ name: 'preventOverflow', options: { padding: 12, altAxis: true, tether: false } }] }"
+                :popper-style="{ maxWidth: 'calc(100vw - 24px)', padding: '0' }"
+                @after-enter="focusImageSettings"
+              >
+                <template #reference>
+                  <Button
+                    ref="imageSettingsTrigger"
+                    root-class="chat-summary-button"
+                    size="sm"
+                    :aria-label="`图片设置，${imageSummaryLabel}`"
+                    aria-haspopup="dialog"
+                    :aria-expanded="settingsOpen"
+                    :aria-controls="settingsOpen ? imageSettingsId : undefined"
+                    :title="`图片设置，${imageSummaryLabel}`"
+                    @keydown.esc.stop.prevent="closeImageSettings"
+                  >
+                    <Icon icon="lucide:sliders-horizontal" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span class="chat-summary-label">{{ imageSummaryLabel }}</span>
+                    <Icon
+                      icon="lucide:chevron-down"
+                      class="chat-summary-caret h-3.5 w-3.5 shrink-0"
+                      :class="{ 'is-open': settingsOpen }"
+                      aria-hidden="true"
                     />
-                  </div>
-                  <div class="studio-size-section">
-                    <div class="studio-size-label">质量</div>
-                    <div class="studio-choice-grid is-quality">
-                      <Button
-                        v-for="option in IMAGE_QUALITY_OPTIONS"
-                        :key="option.value"
-                        size="sm"
-                        :variant="imageForm.quality === option.value ? 'primary' : 'outline'"
+                  </Button>
+                </template>
+
+                <section
+                  :id="imageSettingsId"
+                  ref="imageSettingsPanel"
+                  class="studio-size-popover"
+                  tabindex="-1"
+                  aria-label="图片设置"
+                  @keydown.esc.capture="handleImageSettingsEscape"
+                >
+                  <header class="studio-size-heading">
+                    <h2>图片设置</h2>
+                    <CloseButton label="关闭图片设置" @click="closeImageSettings" />
+                  </header>
+
+                  <div class="studio-size-fields">
+                    <div class="studio-size-section">
+                      <p class="studio-size-label">模型</p>
+                      <GroupedSelectMenu
+                        v-model="imageModelValue"
+                        :options="imageModelSelectOptions"
+                        :append-to="imageSettingsPanel ?? undefined"
+                        selected-indicator="none"
+                        aria-label="图片模型"
                         block
-                        root-class="studio-choice-button"
-                        @click="$emit('update:imageQuality', option.value)"
-                      >
-                        {{ option.label }}
-                      </Button>
+                      />
                     </div>
+                    <fieldset class="studio-size-section">
+                      <legend class="studio-size-label">质量</legend>
+                      <div class="studio-choice-grid">
+                        <Button
+                          v-for="option in IMAGE_QUALITY_OPTIONS"
+                          :key="option.value"
+                          size="xs"
+                          :variant="imageForm.quality === option.value ? 'primary' : 'outline'"
+                          :aria-pressed="imageForm.quality === option.value"
+                          block
+                          root-class="studio-choice-button"
+                          @click="$emit('update:imageQuality', option.value)"
+                        >
+                          {{ option.label }}
+                        </Button>
+                      </div>
+                    </fieldset>
+                    <fieldset class="studio-size-section">
+                      <legend class="studio-size-label">数量</legend>
+                      <div class="studio-choice-grid">
+                        <Button
+                          v-for="option in IMAGE_COUNT_OPTIONS"
+                          :key="option.value"
+                          size="xs"
+                          :variant="imageForm.n === option.value ? 'primary' : 'outline'"
+                          :aria-pressed="imageForm.n === option.value"
+                          block
+                          root-class="studio-choice-button"
+                          @click="$emit('update:imageCount', option.value)"
+                        >
+                          {{ option.label }}
+                        </Button>
+                      </div>
+                    </fieldset>
+                    <fieldset class="studio-size-section">
+                      <legend class="studio-size-label">比例</legend>
+                      <div class="studio-choice-grid">
+                        <Button
+                          v-for="option in ratioOptions"
+                          :key="option.value"
+                          size="xs"
+                          :variant="selectedRatio === option.value ? 'primary' : 'outline'"
+                          :aria-pressed="selectedRatio === option.value"
+                          block
+                          root-class="studio-choice-button"
+                          @click="selectRatio(option.value)"
+                        >
+                          {{ option.label }}
+                        </Button>
+                      </div>
+                    </fieldset>
+                    <fieldset class="studio-size-section">
+                      <legend class="studio-size-label">分辨率</legend>
+                      <div class="studio-choice-grid">
+                        <Button
+                          v-for="option in resolutionOptions"
+                          :key="option.value"
+                          size="xs"
+                          :variant="selectedResolution === option.value ? 'primary' : 'outline'"
+                          :aria-pressed="selectedResolution === option.value"
+                          block
+                          root-class="studio-choice-button"
+                          @click="selectResolution(option.value)"
+                        >
+                          {{ option.label }}
+                        </Button>
+                      </div>
+                      <p class="studio-size-current">{{ selectedSizeDetailLabel }}</p>
+                    </fieldset>
                   </div>
-                  <div class="studio-size-section">
-                    <div class="studio-size-label">数量</div>
-                    <div class="studio-choice-grid is-count">
-                      <Button
-                        v-for="option in IMAGE_COUNT_OPTIONS"
-                        :key="option.value"
-                        size="sm"
-                        :variant="imageForm.n === option.value ? 'primary' : 'outline'"
-                        block
-                        root-class="studio-choice-button"
-                        @click="$emit('update:imageCount', option.value)"
-                      >
-                        {{ option.label }}
-                      </Button>
-                    </div>
-                  </div>
-                  <div class="studio-size-section">
-                    <div class="studio-size-label">比例</div>
-                    <div class="studio-choice-grid is-ratio">
-                      <Button
-                        v-for="option in ratioOptions"
-                        :key="option.value"
-                        size="sm"
-                        :variant="selectedRatio === option.value ? 'primary' : 'outline'"
-                        block
-                        root-class="studio-choice-button"
-                        @click="selectRatio(option.value)"
-                      >
-                        {{ option.label }}
-                      </Button>
-                    </div>
-                  </div>
-                  <div class="studio-size-section">
-                    <div class="studio-size-label">分辨率</div>
-                    <div class="studio-choice-grid is-resolution">
-                      <Button
-                        v-for="option in resolutionOptions"
-                        :key="option.value"
-                        size="sm"
-                        :variant="selectedResolution === option.value ? 'primary' : 'outline'"
-                        block
-                        root-class="studio-choice-button"
-                        @click="selectResolution(option.value)"
-                      >
-                        {{ option.label }}
-                      </Button>
-                    </div>
-                    <p class="studio-size-current">{{ selectedSizeDetailLabel }}</p>
-                  </div>
-                </div>
-              </div>
+                </section>
+              </ElPopover>
             </template>
 
             <template v-else-if="mode === 'file'">
-              <div class="chat-select-wrap chat-select-wrap--file">
+              <div class="chat-select-wrap--file">
                 <GroupedSelectMenu
                   v-model="fileKindValue"
                   :options="fileKindOptions"
                   placement="top"
                   selected-indicator="none"
                   aria-label="选择文件类型"
+                  block
                 />
               </div>
               <StudioToolbarSelectButton
-                class="chat-recent-file-tasks-button"
                 :disabled="isSending"
                 title="最近文件任务"
-                @click.stop="handleOpenRecentFileTasks"
+                @click="handleOpenRecentFileTasks"
               >
-                <Icon icon="lucide:history" class="h-3.5 w-3.5" />
+                <Icon icon="lucide:history" class="h-3.5 w-3.5" aria-hidden="true" />
                 <span>最近</span>
               </StudioToolbarSelectButton>
             </template>
           </div>
 
           <div class="chat-input-submit-row">
-            <button
+            <Button
               v-if="isStreaming"
-              type="button"
-              class="chat-input-send chat-input-send-danger"
+              size="sm"
+              variant="danger"
+              root-class="chat-input-send"
               aria-label="停止输出"
-              @click.stop="$emit('stop')"
+              @click="$emit('stop')"
             >
-              <Icon icon="lucide:square" class="h-4 w-4" />
-              <span class="chat-input-send-label">停止</span>
-            </button>
-            <button
+              <Icon icon="lucide:square" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>停止</span>
+            </Button>
+            <Button
               v-else
               type="submit"
-              class="chat-input-send"
-              :class="text.trim() && !isSending ? 'chat-input-send-ready' : 'chat-input-send-idle'"
-              :disabled="isSending || !text.trim()"
+              size="sm"
+              variant="primary"
+              root-class="chat-input-send"
+              :disabled="isSending || isRestoringHistory || !text.trim()"
+              :loading="isSending || isRestoringHistory"
               :aria-label="submitAriaLabel"
-              @click.stop
             >
-              <Icon :icon="isSending ? 'lucide:loader-circle' : 'lucide:send-horizontal'" class="h-4 w-4" :class="{ 'animate-spin': isSending }" />
-              <span class="chat-input-send-label">{{ submitLabel }}</span>
-            </button>
+              <Icon
+                v-if="!isSending && !isRestoringHistory"
+                :icon="!isEditing && isGenerationMode ? 'lucide:sparkle' : 'lucide:send-horizontal'"
+                class="h-3.5 w-3.5 shrink-0"
+                aria-hidden="true"
+              />
+              <span>{{ submitLabel }}</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -276,11 +314,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Button } from 'nanocat-ui'
-import type { ActionMenuItem } from 'nanocat-ui'
+import { ElPopover } from 'element-plus'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+import { Button, CloseButton, GroupedSelectMenu, SegmentedTabs, type ActionMenuItem } from '@/components/ui'
 import FloatingActionMenu from '@/components/ai/FloatingActionMenu.vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
 import StudioToolbarSelectButton from '@/components/studio/StudioToolbarSelectButton.vue'
 import {
   DEFAULT_IMAGE_SIZE,
@@ -309,6 +346,7 @@ const props = defineProps<{
   imageHighResolutionEnabled: boolean
   references: StudioReference[]
   isSending: boolean
+  isRestoringHistory: boolean
   isStreaming: boolean
   isEditing: boolean
 }>()
@@ -335,14 +373,14 @@ const emit = defineEmits<{
   'open-recent-file-tasks': []
 }>()
 
-const composerShellRef = ref<HTMLElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const settingsAnchorRef = ref<HTMLElement | null>(null)
+const imageSettingsTrigger = ref<InstanceType<typeof Button> | null>(null)
+const imageSettingsPanel = ref<HTMLElement | null>(null)
+const imageSettingsId = useId()
 const isDragging = ref(false)
 const settingsOpen = ref(false)
 let textareaResizeFrame = 0
-let composerResizeObserver: ResizeObserver | null = null
 
 const modeOptions: Array<{ label: string; value: StudioComposeMode }> = [
   { label: '对话', value: 'chat' },
@@ -371,17 +409,6 @@ const chatReasoningEffortValue = computed({
   set: (value: string | string[]) => {
     const next = String(Array.isArray(value) ? value[0] : value || 'default')
     emit('update:chatReasoningEffort', next === 'default' ? '' : next)
-  },
-})
-
-const modeValue = computed({
-  get: () => props.mode,
-  set: (value: string | string[]) => {
-    const next = String(Array.isArray(value) ? value[0] : value || props.mode)
-    if (next === 'chat' || next === 'search' || next === 'image' || next === 'file') {
-      closeFloatingMenus()
-      emit('update:mode', next)
-    }
   },
 })
 
@@ -453,13 +480,11 @@ const chatSettingsMenuItems = computed<ComposerMenuItem[]>(() => [
     label: '推理',
     heading: true,
   },
-  ...chatReasoningEffortOptions
-    .filter((option) => option.value !== 'default')
-    .map((option) => ({
-      key: `reasoning:${option.value}`,
-      label: option.label,
-      active: (props.chatReasoningEffort || 'default') === option.value,
-    })),
+  ...chatReasoningEffortOptions.map((option) => ({
+    key: `reasoning:${option.value}`,
+    label: option.label,
+    active: (props.chatReasoningEffort || 'default') === option.value,
+  })),
   {
     key: 'model-menu',
     label: selectedChatModelLabel.value,
@@ -475,10 +500,14 @@ const chatSettingsMenuItems = computed<ComposerMenuItem[]>(() => [
   },
 ])
 const imageSummaryLabel = computed(() => {
+  const preset = selectedPreset.value
+  const size = preset && preset.ratio !== 'auto'
+    ? `${preset.ratio} · ${preset.resolution}`
+    : formatImageSizeLabel(props.imageForm.size, '自动尺寸')
   const count = props.imageForm.n > 1 ? ` · ${props.imageForm.n} 张` : ''
-  return `${formatImageSizeLabel(props.imageForm.size)}${count}`
+  return `${size}${count}`
 })
-const imagePlaceholder = computed(() => props.references.length ? '描述你想如何修改参考图' : '输入你想生成的画面，也可以粘贴或拖入参考图')
+const imagePlaceholder = computed(() => props.references.length ? '描述你想如何修改参考图' : '描述你想生成的画面，或添加参考图')
 const chatPlaceholder = computed(() => props.references.length ? '描述你想让模型识别或分析的图片' : '输入消息，Enter 发送，Shift+Enter 换行')
 const filePlaceholder = computed(() => {
   const kind = props.fileKind === 'psd' ? 'PSD' : 'PPT'
@@ -493,19 +522,44 @@ const placeholderText = computed(() => {
   return chatPlaceholder.value
 })
 const submitAriaLabel = computed(() => {
+  if (props.isRestoringHistory) return '正在加载历史对话'
+  if (props.isEditing) return '保存修改'
   if (props.mode === 'image') return '提交图片任务'
   if (props.mode === 'file') return `生成 ${props.fileKind === 'psd' ? 'PSD' : 'PPT'}`
+  if (props.mode === 'search') return '搜索'
   return '发送消息'
 })
+const isGenerationMode = computed(() => props.mode === 'image' || props.mode === 'file')
 const submitLabel = computed(() => {
+  if (props.isRestoringHistory) return '加载历史'
   if (props.isEditing) return '保存'
-  return props.mode === 'file' ? '生成' : '发送'
+  if (isGenerationMode.value) return '生成'
+  return props.mode === 'search' ? '搜索' : '发送'
 })
 
-function toggleSettings() {
-  const next = !settingsOpen.value
+function selectMode(mode: string | number) {
+  if (mode === 'chat' || mode === 'search' || mode === 'image' || mode === 'file') {
+    closeFloatingMenus()
+    emit('update:mode', mode)
+  }
+}
+
+function focusImageSettings() {
+  imageSettingsPanel.value?.focus({ preventScroll: true })
+}
+
+function closeImageSettings() {
+  if (!settingsOpen.value) return
   closeFloatingMenus()
-  settingsOpen.value = next
+  imageSettingsTrigger.value?.focus()
+}
+
+function handleImageSettingsEscape(event: KeyboardEvent) {
+  const target = event.target
+  if (target instanceof HTMLElement && target.matches('[role="combobox"][aria-expanded="true"]')) return
+  event.preventDefault()
+  event.stopPropagation()
+  closeImageSettings()
 }
 
 function closeFloatingMenus() {
@@ -552,6 +606,19 @@ function compactModelLabel(model: string) {
   return normalized.replace(/^gpt-/i, '')
 }
 
+function focusInput() {
+  textareaRef.value?.focus({ preventScroll: true })
+}
+
+defineExpose({ focusInput })
+
+function submitOnEnter(event: KeyboardEvent) {
+  if (event.isComposing || event.keyCode === 229) return
+  event.preventDefault()
+  if (props.isRestoringHistory) return
+  emit('submit')
+}
+
 function resizeTextarea() {
   if (typeof window === 'undefined') return
   if (textareaResizeFrame) window.cancelAnimationFrame(textareaResizeFrame)
@@ -560,22 +627,12 @@ function resizeTextarea() {
     const element = textareaRef.value
     if (!element) return
     element.style.height = 'auto'
-    const maxHeight = Number.parseFloat(window.getComputedStyle(element).maxHeight) || 192
-    const nextHeight = Math.min(element.scrollHeight, maxHeight)
-    element.style.height = `${nextHeight}px`
-    element.style.overflowY = element.scrollHeight > maxHeight + 1 ? 'auto' : 'hidden'
+    element.style.height = `${element.scrollHeight}px`
   })
 }
 
 function scheduleTextareaResize() {
   void nextTick(resizeTextarea)
-}
-
-function syncComposerHeight() {
-  const shell = composerShellRef.value
-  const parent = shell?.parentElement
-  if (!shell || !parent) return
-  parent.style.setProperty('--studio-composer-height', `${Math.ceil(shell.offsetHeight)}px`)
 }
 
 function selectRatio(ratio: string) {
@@ -642,25 +699,7 @@ function isImageFile(file: File) {
   return file.type.startsWith('image/') || /\.(avif|bmp|gif|heic|heif|ico|jpe?g|png|svg|tiff?|webp)$/i.test(file.name)
 }
 
-function handleOutsideClick(event: MouseEvent) {
-  if (!settingsOpen.value) return
-  const target = event.target as Node
-  if (settingsAnchorRef.value?.contains(target)) return
-  closeFloatingMenus()
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('click', handleOutsideClick)
-}
-
-onMounted(() => {
-  scheduleTextareaResize()
-  syncComposerHeight()
-  if (typeof ResizeObserver !== 'undefined' && composerShellRef.value) {
-    composerResizeObserver = new ResizeObserver(syncComposerHeight)
-    composerResizeObserver.observe(composerShellRef.value)
-  }
-})
+onMounted(scheduleTextareaResize)
 
 watch(
   () => [props.text, props.mode, props.references.length, props.isEditing],
@@ -674,266 +713,132 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (typeof window === 'undefined') return
   if (textareaResizeFrame) window.cancelAnimationFrame(textareaResizeFrame)
-  composerResizeObserver?.disconnect()
-  composerResizeObserver = null
-  composerShellRef.value?.parentElement?.style.removeProperty('--studio-composer-height')
-  window.removeEventListener('click', handleOutsideClick)
 })
 </script>
 
 <style scoped>
 .studio-composer-shell {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 20;
-  width: 100%;
-  background: transparent;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
   flex: 0 0 auto;
-  pointer-events: none;
-}
-
-.studio-composer-shell::before {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 3.65rem;
-  pointer-events: none;
-  background: hsl(var(--card));
-  content: '';
+  padding: 8px var(--studio-content-gutter, 24px) max(12px, env(safe-area-inset-bottom));
 }
 
 .chat-input-panel {
   position: relative;
-  z-index: 1;
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  padding: 0.35rem 1rem 0.55rem;
-  pointer-events: none;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.chat-input-panel.is-dragging {
-  pointer-events: auto;
-  background: hsl(var(--secondary) / 0.72);
+  width: min(100%, var(--studio-content-width, 48rem));
+  margin-inline: auto;
 }
 
 .chat-input-panel-shell {
-  position: relative;
-  z-index: 1;
   display: flex;
-  width: min(100%, 48rem);
-  margin: 0 auto;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.6rem;
-  border: 1px solid hsl(var(--border) / 0.82);
-  border-radius: 1.4rem;
-  background: hsl(var(--background));
-  padding: 0.55rem;
-  pointer-events: auto;
-  box-shadow: var(--shadow-elevated);
+  gap: 8px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  padding: 12px;
+  transition: border-color var(--motion-fast) var(--ease-out-soft), box-shadow var(--motion-fast) var(--ease-out-soft);
+}
+
+.chat-input-panel-shell:focus-within,
+.chat-input-panel-shell:has(.chat-summary-button[aria-expanded="true"]) {
+  border-color: hsl(var(--input));
+}
+
+.chat-input-panel-shell:has(.chat-input:focus),
+.is-dragging .chat-input-panel-shell {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.14);
+}
+
+.chat-mode-control {
+  width: fit-content;
 }
 
 .chat-editing-bar {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid hsl(var(--primary) / 0.18);
-  border-radius: 1rem;
-  background: hsl(var(--primary) / 0.07);
-  padding: 0.45rem 0.65rem;
-  color: hsl(var(--foreground));
-  font-size: 0.78rem;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: hsl(var(--secondary));
+  padding: 4px 8px;
+  color: hsl(var(--secondary-foreground));
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .chat-editing-info {
-  display: inline-flex;
+  display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.45rem;
+  gap: 8px;
+}
+
+.chat-editing-info svg {
+  flex-shrink: 0;
 }
 
 .chat-editing-info span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-editing-cancel {
-  flex: 0 0 auto;
-  border: 0;
-  background: transparent;
-  color: hsl(var(--primary));
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.chat-input-actions {
-  display: flex;
-  min-height: 2.25rem;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border-top: 1px solid hsl(var(--border) / 0.52);
-  padding-top: 0.55rem;
-}
-
-.chat-input-action-row {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.chat-menu-anchor {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-}
-
-.chat-settings-anchor {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-}
-
-.chat-summary-button,
-:deep(.chat-summary-button) {
-  max-width: min(14rem, 32vw);
-}
-
-.chat-summary-button span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-prompt-button {
-  flex: 0 0 auto;
-}
-
-.chat-vision-button {
-  flex: 0 0 auto;
-}
-
-.chat-select-wrap {
-  display: inline-flex;
-  min-width: 0;
-  max-width: min(18rem, 45vw);
-}
-
-.chat-select-wrap--mode {
-  flex: 0 0 auto;
-}
-
-.chat-select-wrap.chat-select-wrap--file {
-  min-width: 4.75rem;
-  max-width: 5.5rem;
-  flex: 0 0 auto;
-}
-
-.chat-input-submit-row {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 .chat-input-panel-inner {
-  position: relative;
-  display: block;
-  min-height: 2.7rem;
-  cursor: text;
-  border: 0;
-  border-radius: 1rem;
-  background: transparent;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-
-.chat-input-panel-inner:focus-within {
-  background: transparent;
-  box-shadow: none;
-}
-
-.chat-input-panel-inner-attach {
-  min-height: 7.5rem;
+  min-width: 0;
 }
 
 .chat-input {
+  display: block;
   width: 100%;
-  height: 2.7rem;
-  min-height: 2.7rem;
-  max-height: 8.5rem;
+  min-height: 3.5rem;
+  max-height: clamp(3.5rem, 24dvh, 9rem);
   resize: none;
-  overflow-y: hidden;
+  overflow-y: auto;
   border: 0;
-  border-radius: 1rem;
+  border-radius: 8px;
   background: transparent;
-  padding: 0.15rem 0.25rem 0.15rem 0.25rem;
+  padding: 8px 4px;
   color: hsl(var(--foreground));
-  font-family: inherit;
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  font-size: 1rem;
+  line-height: 1.5rem;
   outline: none;
 }
 
-.chat-input-panel-inner-attach .chat-input {
-  min-height: 2.7rem;
-  padding-top: 0.15rem;
-  padding-bottom: 0.2rem;
-}
-
 .chat-input::placeholder {
-  color: hsl(var(--muted-foreground) / 0.62);
-  font-family: inherit;
-  font-weight: 400;
-  letter-spacing: 0;
+  color: hsl(var(--muted-foreground));
   opacity: 1;
 }
 
 .attach-images {
-  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 2px;
   overflow-x: auto;
-  overflow-y: hidden;
-  margin-bottom: 0.45rem;
-  padding: 0.1rem 0 0.15rem;
 }
 
 .chat-attachment-preview {
   position: relative;
-  width: 4rem;
-  height: 4rem;
+  width: 3.5rem;
+  height: 3.5rem;
   flex: 0 0 auto;
   overflow: hidden;
   border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
-  background: hsl(var(--card));
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  border-radius: 8px;
 }
 
 .studio-reference-preview {
-  display: flex;
+  display: grid;
   width: 100%;
   height: 100%;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: hsl(var(--secondary) / 0.65);
+  place-items: center;
+  background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
 }
 
@@ -945,264 +850,246 @@ onBeforeUnmount(() => {
 
 .chat-attachment-remove {
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  display: inline-flex;
+  top: 4px;
+  right: 4px;
+  display: grid;
   width: 1.5rem;
   height: 1.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: rgb(15 23 42 / 0.72);
-  color: white;
-  opacity: 0;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
-  transition: opacity 0.15s, background 0.15s;
-}
-
-.chat-attachment-preview:hover .chat-attachment-remove,
-.chat-attachment-remove:focus-visible {
-  opacity: 1;
+  place-items: center;
+  border-radius: 6px;
+  background: rgb(15 23 42 / 0.86);
+  color: #fff;
+  transition: opacity var(--motion-fast) var(--ease-out-soft), background-color var(--motion-fast) var(--ease-out-soft), color var(--motion-fast) var(--ease-out-soft);
 }
 
 .chat-attachment-remove:hover {
-  background: rgb(220 38 38);
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
 }
 
-.chat-input-send {
-  display: inline-flex;
-  width: 2.35rem;
-  height: 2.35rem;
-  flex: 0 0 2.35rem;
+@media (hover: hover) and (pointer: fine) {
+  .chat-attachment-remove {
+    opacity: 0;
+  }
+
+  .chat-attachment-preview:is(:hover, :focus-within) .chat-attachment-remove {
+    opacity: 1;
+  }
+}
+
+.studio-reference-preview:focus-visible,
+.chat-attachment-remove:focus-visible {
+  outline-offset: -2px;
+}
+
+.chat-input-actions,
+.chat-input-action-row {
+  display: flex;
+  min-width: 0;
   align-items: center;
+  gap: 8px;
+}
+
+.chat-input-actions {
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.chat-input-action-row {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  column-gap: 4px;
+  row-gap: 4px;
+}
+
+.chat-input-submit-row {
+  flex: 0 0 auto;
+}
+
+.chat-input-submit-row :deep(.chat-input-send) {
   justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 650;
-  line-height: 1;
-  outline: none;
-  box-shadow: 0 10px 24px -18px rgb(15 23 42 / 0.84);
-  transition: transform 0.15s, border-color 0.15s, background 0.15s, color 0.15s, opacity 0.15s, box-shadow 0.15s;
+  padding-inline: 12px;
+  font-weight: 600;
 }
 
-.chat-input-send:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.chat-settings-anchor--chat {
+  min-width: 0;
+  max-width: min(15rem, 100%);
 }
 
-.chat-input-send-ready {
-  background: hsl(var(--foreground));
-  color: hsl(var(--background));
+.chat-settings-anchor--chat :deep(.chat-model-button),
+.chat-settings-anchor--chat :deep(.chat-model-button > span) {
+  max-width: 100%;
+  overflow: hidden;
 }
 
-.chat-input-send-idle {
-  border-color: hsl(var(--border) / 0.72);
-  background: hsl(var(--secondary) / 0.78);
-  color: hsl(var(--muted-foreground));
-  box-shadow: none;
+.chat-select-wrap--file {
+  width: 5rem;
 }
 
-.chat-input-send-ready:hover,
-.chat-input-send-ready:focus-visible {
-  background: hsl(var(--foreground) / 0.88);
-  box-shadow: 0 14px 28px -18px rgb(15 23 42 / 0.96);
-  transform: translateY(-1px);
+.chat-summary-label {
+  max-width: min(9rem, 34vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.chat-input-send-danger {
-  border-color: rgb(248 113 113 / 0.32);
-  background: rgb(254 242 242);
-  color: rgb(220 38 38);
+.chat-summary-caret {
+  transition: transform var(--motion-fast) var(--ease-spring);
 }
 
-.chat-input-send-label {
-  display: none;
+.chat-summary-caret.is-open {
+  transform: rotate(180deg);
 }
 
 .studio-size-popover {
-  position: absolute;
-  z-index: 260;
-  bottom: calc(100% + 0.5rem);
-  left: 0;
-  width: min(28rem, calc(100vw - 3rem));
-  max-height: min(34rem, calc(100dvh - 8rem));
-  overflow-y: auto;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
-  background: hsl(var(--card));
-  padding: 0.9rem;
-  box-shadow: var(--shadow-floating);
+  display: flex;
+  max-height: min(30rem, calc(100dvh - 6rem));
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-radius: 8px;
+  color: hsl(var(--foreground));
 }
 
-.studio-size-section + .studio-size-section {
-  margin-top: 0.85rem;
+.studio-size-popover:focus {
+  outline: none;
+}
+
+.studio-size-heading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.studio-size-heading h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: normal;
+}
+
+.studio-size-fields {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
+
+.studio-size-section {
+  min-width: 0;
 }
 
 .studio-size-label {
-  margin-bottom: 0.45rem;
+  margin-bottom: 4px;
   color: hsl(var(--muted-foreground));
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1rem;
 }
 
 .studio-choice-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 4px;
 }
 
-.studio-choice-grid.is-ratio {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.studio-choice-grid.is-resolution {
+  grid-template-columns: repeat(auto-fit, minmax(3rem, 1fr));
 }
 
-.studio-choice-button {
+.studio-choice-grid :deep(.studio-choice-button) {
   min-width: 0;
+  padding-inline: 4px;
 }
 
 .studio-size-current {
-  margin-top: 0.5rem;
+  margin-top: 8px;
   color: hsl(var(--muted-foreground));
   font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .studio-drop-overlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  background: hsl(var(--card) / 0.92);
-  color: hsl(var(--foreground));
+  gap: 8px;
+  pointer-events: none;
+  border-radius: 8px;
+  background: hsl(var(--secondary) / 0.96);
+  color: hsl(var(--secondary-foreground));
   font-size: 0.875rem;
-  font-weight: 700;
-  backdrop-filter: blur(8px);
+  font-weight: 600;
+  line-height: 1.25rem;
 }
 
-@media (max-width: 720px) {
+@media (max-height: 550px) {
+  .chat-attachment-preview {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+@media (max-height: 440px) {
+  .studio-composer-shell {
+    display: flex;
+    max-height: 100%;
+    flex-direction: column;
+    padding-block: 4px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .chat-input-panel,
+  .chat-input-panel-shell,
+  .chat-input-panel-inner {
+    min-height: 0;
+  }
+
   .chat-input-panel {
-    padding: 0.35rem 0.625rem 0.5rem;
+    display: flex;
+    flex-direction: column;
   }
 
   .chat-input-panel-shell {
-    border-radius: 1.2rem;
-    padding: 0.5rem;
+    gap: 4px;
+    padding: 8px;
   }
 
+  .chat-mode-control,
   .chat-input-actions {
-    align-items: center;
-    flex-direction: row;
-    gap: 0.55rem;
-  }
-
-  .chat-input-action-row {
-    width: auto;
-    flex: 1 1 auto;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.125rem;
-  }
-
-  .chat-input-submit-row {
-    width: auto;
-    justify-content: flex-end;
-  }
-
-  .chat-select-wrap {
-    min-width: 8rem;
-    max-width: 12rem;
-  }
-
-  .chat-summary-button,
-  :deep(.chat-summary-button) {
-    max-width: 11.5rem;
-  }
-
-  .studio-size-popover {
-    position: fixed;
-    right: 1rem;
-    bottom: 5.75rem;
-    left: 1rem;
-    width: auto;
-    max-height: min(30rem, calc(100dvh - 7rem));
-  }
-
-  .studio-choice-grid,
-  .studio-choice-grid.is-ratio {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .chat-input {
-    height: 3rem;
-    min-height: 3rem;
-    max-height: 7.5rem;
-    padding-right: 0.25rem;
-    font-size: 1rem;
+    flex-shrink: 0;
   }
 
   .chat-input-panel-inner {
-    min-height: 3rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
-  .chat-input-panel-inner-attach {
-    min-height: 8.5rem;
-  }
-
-  .attach-images {
-    width: 100%;
+  .chat-input {
+    min-height: 2.5rem;
+    max-height: none;
+    overflow-y: hidden;
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 380px) {
   .chat-input-actions {
-    gap: 0.375rem;
+    gap: 4px;
   }
 
-  .chat-input-action-row {
-    gap: 0.25rem;
+  .chat-input-submit-row :deep(.chat-input-send) {
+    padding-inline: 8px;
   }
 
-  .chat-select-wrap {
-    min-width: 4.75rem;
-    max-width: 4.75rem;
-  }
-
-  .chat-summary-button,
-  :deep(.chat-summary-button) {
-    max-width: clamp(5.5rem, 25vw, 7rem);
-  }
-
-  :deep(.chat-prompt-button > span) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-  }
-
-  :deep(.chat-prompt-button) {
-    width: 1.75rem;
-    justify-content: center;
-    padding-inline: 0;
-  }
-}
-
-@media (max-width: 360px) {
-  .chat-settings-anchor--chat {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  :deep(.chat-settings-anchor--chat > div),
-  :deep(.chat-settings-anchor--chat button) {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+  .chat-summary-label {
+    max-width: 5rem;
   }
 }
 </style>

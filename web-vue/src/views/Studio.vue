@@ -22,46 +22,54 @@
       ></div>
     </div>
 
-    <main class="studio-main">
-      <div class="chat-header-bar">
+    <section class="studio-main" aria-label="对话画图">
+      <header class="chat-header-bar">
         <div class="chat-header-title">
           <Button
             size="sm"
             variant="ghost"
             icon-only
-            root-class="chat-header-icon lg:hidden"
-            title="打开会话列表"
-            aria-label="打开会话列表"
+            root-class="lg:hidden"
+            title="打开对话历史"
+            aria-label="打开对话历史"
+            :aria-expanded="isMobileHistoryOpen"
             @click="openMobileHistory"
           >
             <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
           </Button>
           <div class="min-w-0">
             <div class="chat-header-name">{{ activeConversation?.title || '新对话' }}</div>
-            <div class="chat-header-subtitle">{{ activeHeaderSubtitle }}</div>
+            <div v-if="activeHeaderSubtitle" class="chat-header-subtitle">{{ activeHeaderSubtitle }}</div>
           </div>
         </div>
 
         <div class="chat-header-actions">
-          <Button size="sm" variant="outline" root-class="chat-header-action-button" @click="createConversation()">
-            <Icon icon="lucide:plus" class="h-3.5 w-3.5" />
-            <span class="chat-header-action-label hidden sm:inline">新对话</span>
-          </Button>
           <Button
             size="sm"
-            variant="outline"
-            root-class="chat-header-action-button"
-            :disabled="!activeConversation?.messages.length"
-            @click="clearCurrentConversation"
+            variant="ghost"
+            icon-only
+            root-class="chat-header-create"
+            title="新建对话"
+            aria-label="新建对话"
+            @click="createConversation()"
           >
-            <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
-            <span class="chat-header-action-label hidden sm:inline">清空</span>
+            <Icon icon="lucide:plus" class="h-4 w-4" />
           </Button>
           <Button
             size="sm"
             variant="ghost"
             icon-only
-            root-class="chat-header-action-button"
+            :disabled="!activeConversation?.messages.length"
+            title="清空当前对话"
+            aria-label="清空当前对话"
+            @click="clearCurrentConversation"
+          >
+            <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon-only
             :title="isFullscreen ? '退出全屏' : '全屏'"
             :aria-label="isFullscreen ? '退出全屏' : '全屏'"
             @click="toggleFullscreen"
@@ -69,20 +77,17 @@
             <Icon :icon="isFullscreen ? 'lucide:minimize-2' : 'lucide:maximize-2'" class="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </header>
 
       <div ref="studioContentRef" class="studio-content-layout">
-        <div class="studio-conversation-column">
+        <div class="studio-conversation-column" :class="{ 'is-empty': !activeConversation?.messages.length }">
           <StudioMessageList
             ref="messageListRef"
             :conversation="activeConversation"
-            :conversations-count="conversations.length"
             :task-by-id="taskById"
             :file-task-by-id="fileTaskById"
-            :fullscreen="isFullscreen"
-            @create="createConversation"
-            @open-history="openMobileHistory"
-            @toggle-fullscreen="toggleFullscreen"
+            :can-use-image-starter="canUseImageStarter"
+            @use-image-starter="useImageStarter"
             @retry="retryMessage"
             @edit="editMessage"
             @resend="resendMessage"
@@ -90,6 +95,7 @@
             @retry-assistant="retryAssistantMessage"
             @delete-message="deleteMessage"
             @copy-message="copyText"
+            @copy-image="copyResultImage"
             @preview="openPreview"
             @reference-image="referenceGeneratedImage"
             @inpaint-image="openInpaintModal"
@@ -98,6 +104,7 @@
           />
 
           <StudioComposer
+            ref="composerRef"
             v-model:mode="composeMode"
             v-model:text="composerText"
             v-model:chat-model="chatModel"
@@ -109,6 +116,7 @@
             :image-high-resolution-enabled="imageHighResolutionEnabled"
             :references="referenceRuntime.references.value"
             :is-sending="isSending"
+            :is-restoring-history="isWaitingForHistory"
             :is-streaming="isStreaming"
             :is-editing="Boolean(editingMessageId)"
             @update:image-model="imageForm.model = $event"
@@ -145,7 +153,7 @@
           </aside>
         </Transition>
       </div>
-    </main>
+    </section>
 
     <DrawerShell
       :open="Boolean(activeSearchSourceMessage) && !isSearchSourceDocked"
@@ -177,7 +185,8 @@
     <StudioLightbox
       :preview="referenceRuntime.preview.value"
       @close="referenceRuntime.closePreview"
-      @copy="copyText"
+      @copy-image="copyPreviewImage"
+      @copy-link="copyPreviewLink"
       @download="downloadPreviewImage"
     />
     <StudioInpaintModal
@@ -212,25 +221,30 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button, DrawerShell } from 'nanocat-ui'
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Button, DrawerShell } from '@/components/ui'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { usePageRuntime } from '@/composables/usePageRuntime'
 import { preloadPromptLibrary } from '@/composables/usePromptLibraryRuntime'
 import StudioPromptPicker from '@/components/studio/StudioPromptPicker.vue'
 import StudioSearchSourcesPanel from '@/components/studio/StudioSearchSourcesPanel.vue'
-import { writeClipboardText } from '@/lib/clipboard'
+import { writeClipboardImage, writeClipboardText } from '@/lib/clipboard'
 import { downloadUrlAsFile } from '@/lib/downloads'
 import {
   buildStudioConversationLookup,
   buildStudioConversationRuntimeIndex,
   normalizeStudioConversation,
+  mergeStudioConversations,
   type StudioConversationLookup,
   type StudioConversationRuntimeIndex,
 } from '@/views/studio/studioConversationState'
-import { loadStudioSessionState } from '@/api/studioSessions'
-import { studioErrorMessage } from '@/views/studio/studioRequestView'
+import {
+  DEFAULT_STUDIO_CONTEXT_ROUNDS,
+  isStudioContextRounds,
+} from '@/api/studioSessions'
+import { PUBLIC_SETTINGS_CHANGED_EVENT } from '@/api/settings'
+import { buildStudioInpaintPrompt, studioErrorMessage } from '@/views/studio/studioRequestView'
 import { useStudioChatStreamRuntime } from '@/views/studio/studioChatStreamRuntime'
 import { useStudioComposerRuntime } from '@/views/studio/studioComposerRuntime'
 import { useStudioConversationActionsRuntime } from '@/views/studio/studioConversationActionsRuntime'
@@ -246,6 +260,7 @@ import { useStudioMessageRuntime } from '@/views/studio/studioMessageRuntime'
 import { useStudioModelFormRuntime } from '@/views/studio/studioModelFormRuntime'
 import {
   createStudioReferenceFromFile,
+  fetchStudioImageFile,
   toStudioMessageReferenceImage,
   useStudioReferenceRuntime,
 } from '@/views/studio/studioReferenceRuntime'
@@ -260,6 +275,7 @@ import type {
   StudioImageAssetView,
   StudioImageComparePreview,
   StudioImageCompareSource,
+  StudioPreviewImage,
   StudioMessage,
   StudioReferenceImage,
 } from '@/components/studio/types'
@@ -284,6 +300,7 @@ const modelFormRuntime = useStudioModelFormRuntime()
 
 const composeMode = composerRuntime.composeMode
 const composerText = composerRuntime.composerText
+const composerRef = ref<InstanceType<typeof StudioComposer> | null>(null)
 const fileKind = composerRuntime.fileKind
 const editingMessageId = composerRuntime.editingMessageId
 const isSending = composerRuntime.isSending
@@ -326,37 +343,107 @@ const imageHighResolutionEnabled = modelFormRuntime.imageHighResolutionEnabled
 const conversations = ref<StudioConversation[]>(persistedConversationState.conversations)
 const activeConversationId = ref(persistedConversationState.activeConversationId)
 const conversationNotices = ref<Record<string, StudioConversationBadgeState>>(persistedConversationState.conversationNotices)
+const contextRounds = ref(DEFAULT_STUDIO_CONTEXT_ROUNDS)
+const isRestoringHistory = ref(true)
+const newConversationDuringRestore = ref<string | null>(null)
+const isWaitingForHistory = computed(() => (
+  isRestoringHistory.value && activeConversationId.value !== newConversationDuringRestore.value
+))
 
-let serverHydrationDone = false
+let historyLoadFailed = false
+let contextRoundsSavedHere = false
+let conversationMutationVersion = 0
 onMounted(async () => {
-  if (serverHydrationDone) return
-  serverHydrationDone = true
+  const hydrationMutationVersion = conversationMutationVersion
+  let loadedContextRounds: number | undefined
   try {
-    const result = await loadStudioSessionState()
+    let result = await conversationPersistenceRuntime.loadSession()
+    if (!conversationPersistenceRuntime.isCurrentSession()) return
+    loadedContextRounds = result.context_rounds
+    if (hydrationMutationVersion !== conversationMutationVersion) return
+    const localTombstones = conversations.value.filter((item) => item.deletedAt)
+    if (localTombstones.length) {
+      const initialState = result.state
+      const initialServerConversations = Array.isArray(initialState?.conversations)
+        ? initialState.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item))
+        : []
+      const initialServerById = new Map(initialServerConversations.map((item) => [item.id, item]))
+      const pendingTombstones = localTombstones.filter((item) => {
+        const server = initialServerById.get(item.id)
+        return !server || (item.deletedAt || '') >= server.updatedAt
+      })
+      if (pendingTombstones.length) {
+        await conversationPersistenceRuntime.syncTombstones({ conversations: pendingTombstones, conversationNotices: {} })
+        if (!conversationPersistenceRuntime.isCurrentSession()) return
+        result = await conversationPersistenceRuntime.loadSession()
+        if (!conversationPersistenceRuntime.isCurrentSession()) return
+        loadedContextRounds = result.context_rounds
+      }
+    }
+    if (hydrationMutationVersion !== conversationMutationVersion) return
     const state = result.state
     if (!state) return
     const serverConversations = Array.isArray(state.conversations)
-      ? state.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 80)
+      ? state.conversations.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item))
       : []
-    if (serverConversations.length === 0) return
-    const localNewest = conversations.value.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
-    const serverNewest = serverConversations.reduce((latest, conversation) => (conversation.updatedAt > latest ? conversation.updatedAt : latest), '')
-    if (serverNewest > localNewest) {
-      conversations.value = serverConversations
-      const serverNotices: Record<string, StudioConversationBadgeState> = {}
-      Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
-        if (notice === 'done' || notice === 'error') serverNotices[id] = notice
-      })
-      conversationNotices.value = serverNotices
-      const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
-      if (serverActiveId && serverConversations.some(conversation => conversation.id === serverActiveId)) {
-        activeConversationId.value = serverActiveId
+    const localById = new Map(conversations.value.map((item) => [item.id, item]))
+    const serverById = new Map(serverConversations.map((item) => [item.id, item]))
+    const merged = new Map<string, StudioConversation>()
+    for (const [id, local] of localById) {
+      const server = serverById.get(id)
+      if (!server) {
+        if (!local.deletedAt) merged.set(id, local)
+        continue
       }
+      if (local.deletedAt) {
+        if (!server.deletedAt && server.updatedAt > local.deletedAt) merged.set(id, server)
+        continue
+      }
+      if (server.deletedAt) continue
+      Object.assign(local, mergeStudioConversations(local, server))
+      merged.set(id, local)
+    }
+    for (const [id, server] of serverById) {
+      if (localById.has(id) || server.deletedAt) continue
+      merged.set(id, server)
+    }
+    const nextConversations = Array.from(merged.values())
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
+      .slice(0, 200)
+    conversations.value = nextConversations
+    const serverNotices: Record<string, StudioConversationBadgeState> = {}
+    Object.entries(state.conversationNotices || {}).forEach(([id, notice]) => {
+      if (notice === 'done' || notice === 'error' || notice === 'expired') serverNotices[id] = notice
+    })
+    conversationNotices.value = { ...serverNotices, ...conversationNotices.value }
+    const serverActiveId = typeof state.activeConversationId === 'string' ? state.activeConversationId : ''
+    const activeStillValid = nextConversations.some((item) => item.id === activeConversationId.value && !item.deletedAt)
+    if (!activeStillValid && serverActiveId && nextConversations.some((item) => item.id === serverActiveId)) {
+      activeConversationId.value = serverActiveId
     }
   } catch {
-    // 服务端不可用时沿用本地缓存。
+    if (conversationPersistenceRuntime.isCurrentSession()) {
+      historyLoadFailed = true
+      if (conversations.value.some((item) => !item.deletedAt)) {
+        toast.warning('未能同步历史对话，本次使用此浏览器的记录')
+      }
+      if (conversations.value.some((item) => item.deletedAt)) conversationPersistenceRuntime.scheduleConversations()
+    }
+  } finally {
+    if (conversationPersistenceRuntime.isCurrentSession()) {
+      if (!contextRoundsSavedHere && loadedContextRounds !== undefined) contextRounds.value = loadedContextRounds
+      ensureActiveConversation()
+      isRestoringHistory.value = false
+    }
   }
 })
+
+function applyContextRounds(event: Event) {
+  const rounds = (event as CustomEvent<{ studioContextRounds?: unknown }>).detail?.studioContextRounds
+  if (!isStudioContextRounds(rounds)) return
+  contextRoundsSavedHere = true
+  contextRounds.value = rounds
+}
 const conversationLookup = computed<StudioConversationLookup>(() => buildStudioConversationLookup(conversations.value))
 const conversationRuntimeIndex = computed<StudioConversationRuntimeIndex>(() => buildStudioConversationRuntimeIndex(conversations.value))
 const validConversationIds = computed(() => conversationLookup.value.validIds)
@@ -368,7 +455,7 @@ const conversationPersistenceRuntime = useStudioConversationPersistenceRuntime({
 })
 const activeConversation = computed(() => {
   return conversationLookup.value.byId.get(activeConversationId.value)
-    || conversations.value[0]
+    || conversations.value.find((item) => !item.deletedAt)
     || null
 })
 const activeSearchSourceMessage = computed(() => {
@@ -422,6 +509,10 @@ const chatStreamRuntime = useStudioChatStreamRuntime({
   scheduleScrollToBottom,
 })
 const isStreaming = chatStreamRuntime.isStreaming
+const canUseImageStarter = computed(() => (
+  !composerText.value && !referenceRuntime.references.value.length && !editingMessageId.value
+  && !isSending.value && !isStreaming.value
+))
 const activeHeaderSubtitle = computed(() => {
   if (isStreaming.value) return '正在回复'
   if (isSending.value) {
@@ -432,8 +523,15 @@ const activeHeaderSubtitle = computed(() => {
   }
   if (activeRunningTaskCount.value > 0) return `处理中 ${activeRunningTaskCount.value}`
   const count = activeConversation.value?.messages.length || 0
-  return count ? `${count} 条消息` : '准备就绪'
+  return count ? `${count} 条消息` : ''
 })
+
+function useImageStarter(prompt: string) {
+  if (!canUseImageStarter.value) return
+  composerRuntime.activateImageMode()
+  composerText.value = prompt
+  void nextTick(() => composerRef.value?.focusInput())
+}
 
 function clearSearchSourceHighlight() {
   highlightedSearchSourceIndex.value = null
@@ -501,7 +599,6 @@ const conversationSelectionRuntime = useStudioConversationSelectionRuntime({
   validConversationIds,
   hooks: {
     cancelMessageEdit: () => cancelMessageEdit(false),
-    clearConversationNotice,
   },
 })
 const conversationActionsRuntime = useStudioConversationActionsRuntime({
@@ -530,6 +627,7 @@ const sendRuntime = useStudioSendRuntime({
   fileTaskRuntime,
   chatModel,
   chatReasoningEffort,
+  contextRounds,
   imageForm,
   toast,
   hooks: {
@@ -542,13 +640,38 @@ const sendRuntime = useStudioSendRuntime({
   },
 })
 const retryMessage = sendRuntime.fillComposerFromMessage
-const editMessage = sendRuntime.editMessage
-const resendMessage = sendRuntime.resendMessage
-const retryAssistantMessage = sendRuntime.retryAssistantMessage
 const sendImageEditRequest = sendRuntime.sendImageEditRequest
-const sendMessage = sendRuntime.sendMessage
 const chatModelOptions = modelFormRuntime.chatModelOptions
 const imageModelOptions = modelFormRuntime.imageModelOptions
+
+function canUseConversation() {
+  if (!conversationPersistenceRuntime.isCurrentSession()) {
+    toast.warning('登录状态已变化，请刷新页面后继续。')
+    return false
+  }
+  return !isWaitingForHistory.value
+}
+
+function sendMessage() {
+  if (!canUseConversation()) return
+  if (historyLoadFailed && !activeConversation.value) {
+    toast.error('无法读取历史对话。请刷新页面重试，或点击「新建对话」开始。')
+    return
+  }
+  return sendRuntime.sendMessage()
+}
+
+function editMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.editMessage(message)
+}
+
+function resendMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.resendMessage(message)
+}
+
+function retryAssistantMessage(message: StudioMessage) {
+  if (canUseConversation()) return sendRuntime.retryAssistantMessage(message)
+}
 
 function ensureConversation(content = '') {
   return conversationActionsRuntime.ensureConversation(content)
@@ -556,6 +679,7 @@ function ensureConversation(content = '') {
 
 function createConversation(seed = '') {
   const conversation = conversationActionsRuntime.createConversation(seed)
+  if (isRestoringHistory.value) newConversationDuringRestore.value = conversation.id
   isMobileHistoryOpen.value = false
   return conversation
 }
@@ -579,10 +703,18 @@ async function deleteConversation(id: string) {
     title: '删除对话',
     message: `确定删除“${conversation.title || '未命名对话'}”吗？本地历史会被移除。`,
     confirmText: '删除',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.deleteConversation(id)
+  conversationMutationVersion += 1
+  const removeReferences = referenceRuntime.prepareReferenceRemoval(conversation.messages)
+  try {
+    await conversationActionsRuntime.deleteConversation(id)
+    removeReferences(remainingStudioMessages())
+  } catch {
+    toast.error('删除失败，请稍后重试')
+  }
 }
 
 async function confirmClearHistory() {
@@ -591,11 +723,19 @@ async function confirmClearHistory() {
     title: '清空历史',
     message: '确定清空本地对话画图历史吗？已生成的图片文件不会删除。',
     confirmText: '清空',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.clearHistory()
-  isMobileHistoryOpen.value = false
+  conversationMutationVersion += 1
+  const removeReferences = referenceRuntime.prepareReferenceRemoval()
+  try {
+    await conversationActionsRuntime.clearHistory()
+    removeReferences()
+    isMobileHistoryOpen.value = false
+  } catch {
+    toast.error('清空失败，请稍后重试')
+  }
 }
 
 async function clearCurrentConversation() {
@@ -605,18 +745,28 @@ async function clearCurrentConversation() {
     title: '清空当前对话',
     message: `确定清空“${conversation.title || '未命名对话'}”中的消息吗？`,
     confirmText: '清空',
+    confirmVariant: 'danger',
     cancelText: '取消',
   })
   if (!ok) return
-  conversationActionsRuntime.clearCurrentConversation(conversation.id)
+  const removeReferences = referenceRuntime.prepareReferenceRemoval(conversation.messages)
+  if (conversationActionsRuntime.clearCurrentConversation(conversation.id)) removeReferences(remainingStudioMessages())
 }
 
 function deleteMessage(messageId: string) {
+  const message = activeConversation.value?.messages.find((item) => item.id === messageId)
+  if (!message) return
+  const removeReferences = referenceRuntime.prepareReferenceRemoval([message])
   if (editingMessageId.value === messageId) cancelMessageEdit()
-  messageRuntime.deleteActiveMessage(messageId)
+  if (messageRuntime.deleteActiveMessage(messageId)) removeReferences(remainingStudioMessages())
+}
+
+function remainingStudioMessages() {
+  return conversations.value.flatMap((item) => item.messages)
 }
 
 function cancelMessageEdit(clearComposer = true) {
+  if (editingMessageId.value) referenceRuntime.clear()
   composerRuntime.cancelMessageEdit(clearComposer)
 }
 
@@ -637,8 +787,13 @@ function stopStreaming() {
 }
 
 async function appendFiles(files: File[]) {
-  const added = await referenceRuntime.append(files)
-  if (added && composeMode.value !== 'chat' && composeMode.value !== 'file') composerRuntime.activateImageMode()
+  const conversation = activeConversation.value
+  try {
+    const added = await referenceRuntime.append(files, undefined, () => activeConversation.value === conversation)
+    if (added && composeMode.value !== 'chat' && composeMode.value !== 'file') composerRuntime.activateImageMode()
+  } catch (error) {
+    toast.error(studioErrorMessage(error, '读取参考图失败'))
+  }
 }
 
 function cleanAssetText(value: unknown) {
@@ -682,19 +837,7 @@ function imageCompareSource(asset: StudioImageAssetView, name: string): StudioIm
 }
 
 async function imageAssetToFile(asset: StudioImageAssetView, name: string) {
-  const filename = imageAssetFilename(asset, name)
-  const source = imageAssetSource(asset)
-  if (!source) throw new Error('图片没有可读取的地址')
-
-  const response = /^data:/i.test(source)
-    ? await fetch(source)
-    : await fetch(source, { credentials: 'same-origin' })
-  if (!response.ok) throw new Error(`读取图片失败：HTTP ${response.status}`)
-
-  const blob = await response.blob()
-  if (!blob.size) throw new Error('读取到的图片为空')
-  if (blob.type && !blob.type.startsWith('image/')) throw new Error('读取到的内容不是图片')
-  return new File([blob], filename, { type: blob.type || 'image/png' })
+  return fetchStudioImageFile(imageAssetSource(asset), imageAssetFilename(asset, name))
 }
 
 async function messageReferenceImageFromFile(file: File): Promise<StudioReferenceImage> {
@@ -703,19 +846,23 @@ async function messageReferenceImageFromFile(file: File): Promise<StudioReferenc
 }
 
 async function referenceGeneratedImage(asset: StudioImageAssetView, name: string) {
-  let file: File
+  const conversation = activeConversation.value
   try {
-    file = await imageAssetToFile(asset, name)
+    const file = await imageAssetToFile(asset, name)
+    if (activeConversation.value !== conversation) return
+    const added = await referenceRuntime.append(
+      [file], imageCompareSource(asset, name) || undefined, () => activeConversation.value === conversation,
+    )
+    if (activeConversation.value !== conversation) return
+    if (!added) {
+      toast.error('最多只能添加 8 张参考图')
+      return
+    }
   } catch (error) {
     toast.error(studioErrorMessage(error, '引用图片读取失败'))
     return
   }
 
-  const added = await referenceRuntime.append([file])
-  if (!added) {
-    toast.error('最多只能添加 8 张参考图')
-    return
-  }
   composerRuntime.activateImageMode()
   toast.success('已引用到输入框')
   scheduleScrollToBottom()
@@ -745,30 +892,31 @@ function openImageCompare(source: StudioImageCompareSource, asset: StudioImageAs
 
 async function submitInpaintEdit(payload: { prompt: string; markedImage: File }) {
   const target = inpaintTarget.value
+  const conversation = activeConversation.value
   const prompt = cleanAssetText(payload.prompt)
-  if (!target || !prompt) return
+  if (!target || !prompt || !canUseConversation()) return
+  if (conversation && !sendRuntime.canSendRound(conversation)) return
 
   let sourceFile: File
-  let referenceImage: StudioReferenceImage
+  let referenceImages: StudioReferenceImage[]
   try {
     sourceFile = await imageAssetToFile(target.asset, target.name)
-    referenceImage = await messageReferenceImageFromFile(payload.markedImage)
+    const [original, marked] = await Promise.all([
+      messageReferenceImageFromFile(sourceFile),
+      messageReferenceImageFromFile(payload.markedImage),
+    ])
+    referenceImages = [{ ...original, source: target.source }, marked]
   } catch (error) {
     toast.error(studioErrorMessage(error, '局部修改图片读取失败'))
     return
   }
 
-  const requestPrompt = [
-    '你会收到两张参考图：第一张是原图，第二张是带蓝色标记的原图。',
-    '只修改蓝色标记覆盖的局部区域，蓝色标记只是区域说明，不要出现在最终图片里。',
-    '未标记区域尽量保持与第一张原图一致。',
-    `局部修改要求：${prompt}`,
-  ].join('\n')
+  if (inpaintTarget.value !== target || activeConversation.value !== conversation || !canUseConversation()) return
   const ok = await sendImageEditRequest({
-    prompt: requestPrompt,
+    prompt: buildStudioInpaintPrompt(prompt),
     files: [sourceFile, payload.markedImage],
     userContent: `局部修改：${prompt}`,
-    referenceImages: [referenceImage],
+    referenceImages,
     assistantContent: '局部修改任务已提交',
     inpaintSource: target.source,
     imageCount: 1,
@@ -804,6 +952,29 @@ async function copyText(value: string) {
   }
 }
 
+async function copyResultImage(asset: StudioImageAssetView, name: string) {
+  try {
+    await writeClipboardImage(() => imageAssetToFile(asset, name))
+    toast.success('已复制图片')
+  } catch (error) {
+    toast.error(studioErrorMessage(error, '复制图片失败，请使用下载'))
+  }
+}
+
+function copyPreviewImage(preview: StudioPreviewImage) {
+  return copyResultImage({ url: preview.src, path: preview.localPath || '' }, preview.name)
+}
+
+function copyPreviewLink(preview: StudioPreviewImage) {
+  const src = imageAssetSource({ url: preview.src, path: preview.localPath || '' })
+  try {
+    const url = new URL(src, window.location.origin)
+    if (url.protocol === 'http:' || url.protocol === 'https:') return copyText(url.href)
+  } catch {
+    toast.error('图片链接无效')
+  }
+}
+
 async function downloadPreviewImage() {
   const previewImage = referenceRuntime.preview.value
   if (!previewImage) return
@@ -829,6 +1000,7 @@ function cancelScheduledScroll() {
 
 function stopTransientStudioUi() {
   layoutRuntime.stopSidebarResize()
+  closeMobileHistory()
   conversationSelectionRuntime.cancel()
   closeSearchSourcePanel()
   isSearchSkillOpen.value = false
@@ -842,11 +1014,7 @@ async function resumeImageTask(message: StudioMessage) {
 }
 
 function ensureActiveConversation() {
-  // 不自动创建空对话：用户未点「新对话」时保持空状态。
-  if (!conversations.value.length) return
-  if (!activeConversationId.value || !conversationLookup.value.validIds.has(activeConversationId.value)) {
-    activeConversationId.value = conversations.value[0]?.id || ''
-  }
+  activeConversationId.value = activeConversation.value?.id || ''
 }
 
 function initializeStudio() {
@@ -883,7 +1051,6 @@ function disposeStudio() {
   imageTaskRuntime.dispose()
   fileTaskRuntime.dispose()
   chatStreamRuntime.dispose()
-  conversationPersistenceRuntime.flush()
   conversationPersistenceRuntime.dispose()
   conversationSelectionRuntime.dispose()
   layoutRuntime.dispose()
@@ -927,9 +1094,11 @@ pageRuntime.onShow(() => {
 
 onMounted(() => {
   bindSearchSourceLayoutObserver()
+  window.addEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, applyContextRounds)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener(PUBLIC_SETTINGS_CHANGED_EVENT, applyContextRounds)
   searchSourceLayoutObserver?.disconnect()
   searchSourceLayoutObserver = null
   disposeStudio()
@@ -938,7 +1107,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .studio-workspace {
-  --studio-content-width: min(100%, clamp(48rem, 68vw, 78rem));
+  --studio-content-width: min(100%, 48rem);
+  --studio-content-gutter: 1.5rem;
   --ui-card-border: hsl(var(--border));
   --ui-card-bg: hsl(var(--card));
   --ui-panel-border: hsl(var(--border));
@@ -960,9 +1130,9 @@ onBeforeUnmount(() => {
   --ui-active-bg: hsl(var(--secondary));
   --ui-active-fg: hsl(var(--foreground));
   --ui-divider: hsl(var(--border));
-  --ui-danger-fg: rgb(220 38 38);
-  --ui-danger-bg: rgb(254 242 242 / 0.88);
-  --ui-danger-border: rgb(248 113 113 / 0.35);
+  --ui-danger-fg: hsl(var(--tone-error-foreground));
+  --ui-danger-bg: hsl(var(--tone-error-bg));
+  --ui-danger-border: hsl(var(--tone-error-border));
   --ui-duration-fast: 150ms;
   --ui-duration-normal: 220ms;
   --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -972,7 +1142,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex: 1 1 0%;
   grid-template-columns: var(--studio-history-width) minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -982,8 +1152,7 @@ onBeforeUnmount(() => {
   z-index: 180;
   height: 100dvh;
   min-height: 0;
-  background: hsl(var(--background));
-  padding: 1rem 1.25rem 1.25rem;
+  background: hsl(var(--card));
 }
 
 .studio-sidebar-wrap {
@@ -996,20 +1165,18 @@ onBeforeUnmount(() => {
   display: none;
   position: absolute;
   top: 0;
-  right: -0.5rem;
+  right: -0.25rem;
   bottom: 0;
   z-index: 10;
-  width: 0.75rem;
-  /* 自定义双向箭头光标：深色箭头 + 浅色描边，明暗主题下都清晰 */
-  cursor: ew-resize;
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23000000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 5 L4 12 L8 19 M16 5 L20 12 L16 19' fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E") 12 12, ew-resize;
-  border-radius: 999px;
+  width: 0.5rem;
+  cursor: col-resize;
   touch-action: none;
-  transition: background 0.15s;
+  transition: background-color var(--motion-fast) var(--ease-out-soft);
 }
 
-.studio-history-resizer:hover {
-  background: transparent;
+.studio-history-resizer:hover,
+:global(.studio-resizing .studio-history-resizer) {
+  background-color: hsl(var(--primary) / 0.12);
 }
 
 .studio-main {
@@ -1019,10 +1186,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1.25rem;
-  background: hsl(var(--card) / 0.88);
-  box-shadow: 0 16px 44px -36px rgba(15, 23, 42, 0.45);
+  background: hsl(var(--card));
 }
 
 .studio-content-layout {
@@ -1041,6 +1205,11 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   flex-direction: column;
   overflow: hidden;
+}
+
+.studio-conversation-column.is-empty::after {
+  flex: 0 1 min(24dvh, 14rem);
+  content: '';
 }
 
 .studio-search-sources-dock {
@@ -1092,10 +1261,10 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--card) / 0.84);
-  padding: 0.625rem 0.875rem;
+  background: hsl(var(--card));
+  padding: 0.5rem var(--studio-content-gutter);
 }
 
 .chat-header-title {
@@ -1107,13 +1276,14 @@ onBeforeUnmount(() => {
 
 .chat-header-name {
   min-width: 0;
-  max-width: min(32rem, 48vw);
+  max-width: 36rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: hsl(var(--foreground));
   font-size: 0.875rem;
-  font-weight: 700;
+  line-height: 1.25rem;
+  font-weight: 600;
 }
 
 .chat-header-subtitle {
@@ -1127,12 +1297,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.375rem;
-}
-
-.chat-header-action-button,
-.chat-header-icon {
-  border-radius: 0.75rem;
+  gap: 0.25rem;
 }
 
 :global(.studio-resizing) {
@@ -1144,6 +1309,10 @@ onBeforeUnmount(() => {
   .studio-history-resizer {
     display: block;
   }
+
+  .chat-header-actions .chat-header-create {
+    display: none;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -1154,15 +1323,18 @@ onBeforeUnmount(() => {
   .studio-sidebar-wrap {
     display: none;
   }
+}
 
-  .studio-workspace.is-fullscreen {
-    height: 100dvh;
+@media (max-width: 639px) {
+  .studio-workspace {
+    --studio-content-gutter: 0.75rem;
   }
+}
 
-  .chat-header-name {
-    max-width: 42vw;
+@media (max-height: 620px) {
+  .studio-conversation-column.is-empty::after {
+    display: none;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {

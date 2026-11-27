@@ -61,11 +61,11 @@ export function useStudioFileTaskRuntime(input: StudioFileTaskRuntimeInput) {
     const changedConversations = new Set<StudioConversation>()
     input.conversationRuntimeIndex.value.fileTaskMessageEntries.forEach(({ conversation, message }) => {
       if (!message.fileTaskId || !missing.has(message.fileTaskId)) return
-      if (message.status === 'error') return
+      const changed = message.status !== 'error' || message.error !== '文件任务已过期或不存在'
       message.status = 'error'
       message.error = '文件任务已过期或不存在'
-      changedConversations.add(conversation)
-      input.hooks.markConversationNotice(conversation.id, 'error')
+      if (changed) changedConversations.add(conversation)
+      input.hooks.markConversationNotice(conversation.id, 'expired')
     })
     changedConversations.forEach(input.hooks.touchConversation)
   }

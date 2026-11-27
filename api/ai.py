@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from anyio import CancelScope
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.image_inputs import parse_image_edit_request, read_image_sources
@@ -15,6 +16,12 @@ from services.editable_file_task_service import (
     EditableFileTaskNotTerminalError,
     editable_file_task_service,
 )
+from services.image_quota_service import (
+    ImageQuotaExceededError,
+    ImageQuotaReservation,
+    ImageQuotaUnavailableError,
+    image_quota_service,
+)
 from services.log_service import LoggedCall
 from services.protocol import (
     anthropic_v1_messages,
@@ -25,7 +32,8 @@ from services.protocol import (
     openai_v1_response,
     openai_search,
 )
-from utils.helper import has_response_image_generation_tool, is_image_chat_request
+from services.protocol.error_response import openai_error_response
+from utils.helper import has_response_image_generation_tool, is_image_chat_request, parse_image_count
 
 
 class ImageGenerationRequest(BaseModel):
@@ -110,6 +118,56 @@ async def filter_or_log(call: LoggedCall, text: str) -> None:
         raise
 
 
+async def _finish_image_quota(quota: ImageQuotaReservation) -> None:
+    with CancelScope(shield=True):
+        await run_in_threadpool(quota.finish)
+
+
+class _ImageQuotaStream(StreamingResponse):
+    def __init__(self, response: StreamingResponse, quota: ImageQuotaReservation) -> None:
+        super().__init__(
+            response.body_iterator,
+            status_code=response.status_code,
+            headers=response.headers,
+            background=response.background,
+        )
+        self.quota = quota
+
+    async def __call__(self, scope, receive, send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            await _finish_image_quota(self.quota)
+
+
+async def _run_image_call(call: LoggedCall, handler, payload: dict, count: object):
+    quota = None
+    stream_owns_quota = False
+    try:
+        n = parse_image_count(count)
+        with CancelScope(shield=True):
+            quota = await run_in_threadpool(image_quota_service.reserve, call.identity, n)
+    except HTTPException as exc:
+        call.log("调用失败", status="failed", error=str(exc.detail))
+        raise
+    except ImageQuotaExceededError as exc:
+        call.log("调用失败", status="failed", error=str(exc), extra={"error_code": exc.code})
+        return openai_error_response(str(exc), 429, code=exc.code)
+    except ImageQuotaUnavailableError as exc:
+        call.log("调用失败", status="failed", error=str(exc), extra={"error_code": exc.code})
+        return openai_error_response(str(exc), 503, code=exc.code)
+    try:
+        payload["_image_quota"] = quota
+        response = await call.run(handler, payload)
+        if quota is not None and isinstance(response, StreamingResponse):
+            response = _ImageQuotaStream(response, quota)
+            stream_owns_quota = True
+        return response
+    finally:
+        if quota is not None and not stream_owns_quota:
+            await _finish_image_quota(quota)
+
+
 def create_router() -> APIRouter:
     router = APIRouter()
 
@@ -144,7 +202,7 @@ def create_router() -> APIRouter:
         attach_trace_headers(call, request)
         call.attach_trace_metadata(payload)
         await filter_or_log(call, body.prompt)
-        return await call.run(openai_v1_image_generations.handle, payload)
+        return await _run_image_call(call, openai_v1_image_generations.handle, payload, body.n)
 
     @router.post("/v1/images/edits")
     async def edit_images(
@@ -164,7 +222,7 @@ def create_router() -> APIRouter:
             payload["mask"] = await read_image_sources(mask_sources)
         payload["base_url"] = resolve_image_base_url(request)
         payload["owner_id"] = str(identity.get("id") or "")
-        return await call.run(openai_v1_image_edit.handle, payload)
+        return await _run_image_call(call, openai_v1_image_edit.handle, payload, payload.get("n"))
 
     @router.post("/v1/chat/completions")
     async def create_chat_completion(body: ChatCompletionRequest, request: Request, authorization: str | None = Header(default=None)):
@@ -187,6 +245,8 @@ def create_router() -> APIRouter:
         attach_trace_headers(call, request)
         call.attach_trace_metadata(payload)
         await filter_or_log(call, request_preview)
+        if image_chat:
+            return await _run_image_call(call, openai_v1_chat_complete.handle, payload, body.n)
         return await call.run(openai_v1_chat_complete.handle, payload)
 
     @router.post("/v1/responses")
@@ -208,6 +268,8 @@ def create_router() -> APIRouter:
         )
         call.attach_trace_metadata(payload)
         await filter_or_log(call, request_preview)
+        if image_response:
+            return await _run_image_call(call, openai_v1_response.handle, payload, 1)
         return await call.run(openai_v1_response.handle, payload)
 
     @router.post("/v1/messages")

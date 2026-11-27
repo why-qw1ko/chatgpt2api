@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Checkbox, Tooltip } from 'nanocat-ui'
+import { Checkbox, Tooltip } from '@/components/ui'
 import type { GalleryFile } from '@/api/gallery'
 
 const props = defineProps<{
@@ -268,19 +268,16 @@ function handleTagClick(tag: string) {
   inset: auto 8px 8px 8px;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
-  opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
-}
-
-.media-wrapper:hover .media-overlay,
-.gallery-item.is-selected .media-overlay {
-  opacity: 1;
 }
 
 .overlay-btn {
   display: inline-flex;
+  flex: 0 0 auto;
   width: 30px;
   height: 30px;
   align-items: center;
@@ -290,8 +287,29 @@ function handleTagClick(tag: string) {
   background: var(--gallery-float-bg);
   color: var(--gallery-float-fg);
   cursor: pointer;
+  pointer-events: auto;
   transition: background 0.15s, color 0.15s, transform 0.15s;
   backdrop-filter: blur(8px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .media-overlay {
+    opacity: 0;
+  }
+
+  .overlay-btn {
+    pointer-events: none;
+  }
+
+  .media-wrapper:is(:hover, :focus-within) .media-overlay,
+  .gallery-item.is-selected .media-overlay {
+    opacity: 1;
+  }
+
+  .media-wrapper:is(:hover, :focus-within) .overlay-btn,
+  .gallery-item.is-selected .overlay-btn {
+    pointer-events: auto;
+  }
 }
 
 .overlay-btn:hover {

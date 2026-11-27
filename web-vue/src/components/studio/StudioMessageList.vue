@@ -1,9 +1,23 @@
 <template>
-  <section class="studio-chat-panel" :class="{ 'is-fullscreen': fullscreen }">
+  <section class="studio-chat-panel" aria-label="对话消息">
     <div ref="scrollEl" class="studio-chat-scroll custom-scrollbar" @scroll="handleScroll">
-      <div v-if="!displayedConversation || !displayedConversation.messages.length" class="studio-chat-empty">
-        <h1>对话画图</h1>
-        <p>输入文字可以直接对话；切到画图后，在同一个窗口里生成图片、上传参考图和继续编辑。</p>
+      <div v-if="!allMessages.length" class="studio-chat-empty">
+        <div class="studio-starter-mark" aria-hidden="true">
+          <Icon icon="lucide:wand-sparkles" class="h-6 w-6" />
+        </div>
+        <h1>今天想创作什么？</h1>
+        <p>输入你的想法，或从一个画图示例开始。</p>
+        <div class="studio-image-starters" role="group" aria-label="画图示例">
+          <Button
+            v-for="starter in imageStarters"
+            :key="starter.label"
+            size="xs"
+            :disabled="!canUseImageStarter"
+            @click="emit('use-image-starter', starter.prompt)"
+          >
+            {{ starter.label }}
+          </Button>
+        </div>
       </div>
 
       <div v-else ref="turnsEl" class="studio-turns">
@@ -19,6 +33,8 @@
           v-memo="[message.memoKey]"
           :message="message"
           @action="handleMessageAction"
+          @copy-message="emit('copy-message', $event)"
+          @copy-image="forwardCopyImage"
           @toggle-expanded="toggleMessageExpanded"
           @open-search-sources="openSearchSourcePanel"
           @citation-click="openCitationSource"
@@ -54,6 +70,7 @@ import {
   type ImageTaskAsset,
 } from '@/api/imageTasks'
 import type { EditableFileTask } from '@/api/editableFileTasks'
+import { Button } from '@/components/ui'
 import { splitStudioSearchCalls } from '@/lib/studioToolCalls'
 import StudioMessageItem, {
   type StudioMessageActionKey,
@@ -70,16 +87,13 @@ import type {
 
 const props = defineProps<{
   conversation: StudioConversation | null
-  conversationsCount: number
   taskById: Map<string, ImageTask>
   fileTaskById: Map<string, EditableFileTask>
-  fullscreen: boolean
+  canUseImageStarter: boolean
 }>()
 
 const emit = defineEmits<{
-  create: []
-  'open-history': []
-  'toggle-fullscreen': []
+  'use-image-starter': [prompt: string]
   retry: [message: StudioMessage]
   edit: [message: StudioMessage]
   resend: [message: StudioMessage]
@@ -87,6 +101,7 @@ const emit = defineEmits<{
   'retry-assistant': [message: StudioMessage]
   'delete-message': [messageId: string]
   'copy-message': [content: string]
+  'copy-image': [asset: StudioImageAssetView, name: string]
   preview: [src: string, name: string, localPath?: string]
   'reference-image': [asset: StudioImageAssetView, name: string, message: StudioMessage]
   'inpaint-image': [asset: StudioImageAssetView, name: string, message: StudioMessage]
@@ -106,6 +121,12 @@ const SINGLE_IMAGE_MIN_WIDTH_REM = 11.5
 const MULTI_IMAGE_MAX_WIDTH_REM = 26
 const STICK_TO_BOTTOM_DISTANCE_PX = 160
 
+const imageStarters = [
+  { label: '海报设计', prompt: '设计一张城市书店周末活动海报，主题是「读书交换日」。粗体大标题，几何图形和暖白纸质底，竖版构图。' },
+  { label: '产品摄影', prompt: '拍摄一只放在浅灰石台上的墨绿色陶瓷杯，突出釉面纹理，使用柔和侧光和干净的浅色背景。' },
+  { label: '插画创作', prompt: '画一间雨夜灯光温暖的小书店，窗外有雨滴和湿润的街道。采用手绘插画风格，以暖黄和深蓝形成对比。' },
+]
+
 const scrollEl = ref<HTMLElement | null>(null)
 const turnsEl = ref<HTMLElement | null>(null)
 const showScrollLatest = ref(false)
@@ -116,7 +137,7 @@ const displayedConversation = shallowRef<StudioConversation | null>(props.conver
 const messageViewCache = new Map<string, { signature: MessageViewSignature; revision: number; view: StudioMessageView }>()
 let scrollLatestFrameId: number | null = null
 let scrollLatestToken = 0
-let turnsResizeObserver: ResizeObserver | null = null
+let messageResizeObserver: ResizeObserver | null = null
 let stickToBottom = true
 
 const allMessages = computed(() => displayedConversation.value?.messages || [])
@@ -124,7 +145,9 @@ const visibleMessages = computed(() => {
   const messages = allMessages.value
   if (messages.length <= visibleMessageLimit.value) return messages
   const recentStart = Math.max(0, messages.length - visibleMessageLimit.value)
-  return messages.filter((message, index) => index >= recentStart || isLiveMessage(message))
+  const visible = messages.filter((message, index) => index >= recentStart || isLiveMessage(message))
+  const visibleIds = new Set(visible.flatMap((message) => message.replyToId ? [message.id, message.replyToId] : [message.id]))
+  return messages.filter((message) => visibleIds.has(message.id))
 })
 const hiddenMessageCount = computed(() => Math.max(0, allMessages.value.length - visibleMessages.value.length))
 const messageViews = computed(() => {
@@ -266,6 +289,7 @@ function referenceImagesSignature(images: StudioReferenceImage[] | undefined) {
       compactStringSignature(image.type),
       image.size || 0,
       compactStringSignature(image.dataUrl),
+      imageCompareSourceSignature(image.source),
     ].join('\u001e'))
     .join('\u001f')
 }
@@ -345,18 +369,13 @@ watch(() => displayedConversation.value?.id, () => {
   settleScrollToLatest()
 })
 
-watch(turnsEl, (element, previousElement) => {
-  if (turnsResizeObserver && previousElement) {
-    turnsResizeObserver.unobserve(previousElement)
-  }
-  if (!element) return
+watch([scrollEl, turnsEl], ([scroll, turns]) => {
   if (typeof ResizeObserver === 'undefined') return
-  if (!turnsResizeObserver) {
-    turnsResizeObserver = new ResizeObserver(() => {
-      keepLatestMessageAnchored()
-    })
-  }
-  turnsResizeObserver.observe(element)
+  messageResizeObserver ??= new ResizeObserver(keepLatestMessageAnchored)
+  messageResizeObserver.disconnect()
+  if (!scroll || !turns) return
+  messageResizeObserver.observe(scroll)
+  messageResizeObserver.observe(turns)
   if (stickToBottom) scrollToBottomNow()
 })
 
@@ -494,8 +513,8 @@ onActivated(() => {
 
 onBeforeUnmount(() => {
   cancelScheduledScrollToLatest()
-  turnsResizeObserver?.disconnect()
-  turnsResizeObserver = null
+  messageResizeObserver?.disconnect()
+  messageResizeObserver = null
 })
 
 function isTextLikeMessage(message: StudioMessage) {
@@ -553,13 +572,16 @@ async function showOlderMessages() {
 }
 
 function handleMessageAction(action: StudioMessageActionKey, message: StudioMessage) {
-  if (action === 'copy') emit('copy-message', message.content)
-  else if (action === 'edit') emit('edit', message)
+  if (action === 'edit') emit('edit', message)
   else if (action === 'resend') emit('resend', message)
   else if (action === 'fill') emit('retry', message)
   else if (action === 'resume-poll') emit('resume-image-task', message)
   else if (action === 'retry') emit('retry-assistant', message)
   else if (action === 'delete') emit('delete-message', message.id)
+}
+
+function forwardCopyImage(asset: StudioImageAssetView, name: string) {
+  emit('copy-image', asset, name)
 }
 
 function forwardPreview(src: string, name: string, localPath = '') {
@@ -594,7 +616,7 @@ function scrollToBottomNow() {
   const el = scrollEl.value
   if (!el) return false
   stickToBottom = true
-  el.scrollTop = el.scrollHeight
+  el.scrollTop = allMessages.value.length ? el.scrollHeight : 0
   showScrollLatest.value = false
   return true
 }
@@ -627,40 +649,61 @@ defineExpose({
   min-height: 0;
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   overflow-anchor: none;
   scroll-behavior: auto;
-  overscroll-behavior: contain;
-  padding: 1rem clamp(0.75rem, 2.4vw, 1.75rem) calc(var(--studio-composer-height, 10rem) + 0.5rem);
+  padding: 1.5rem var(--studio-content-gutter, 1rem) 1rem;
 }
 
 .studio-chat-empty {
   display: flex;
-  min-height: calc(100% - 1rem);
+  min-height: 100%;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: clamp(2rem, 7vh, 5rem) 1rem 1rem;
+  justify-content: flex-end;
+  padding-block: 0.5rem;
   text-align: center;
 }
 
-.studio-chat-panel.is-fullscreen .studio-chat-empty {
-  padding-top: clamp(3rem, 10vh, 7rem);
+.studio-starter-mark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  place-items: center;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
 }
 
 .studio-chat-empty h1 {
   color: hsl(var(--foreground));
-  font-size: clamp(1.8rem, 5vw, 3.2rem);
-  font-weight: 700;
-  letter-spacing: 0;
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 2.25rem;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .studio-chat-empty p {
-  margin-top: 0.875rem;
-  width: max-content;
-  max-width: 100%;
+  margin-top: 0.5rem;
   color: hsl(var(--muted-foreground));
   font-size: 0.875rem;
-  line-height: 1.8;
+  line-height: 1.25rem;
+  text-wrap: pretty;
+}
+
+.studio-image-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.studio-image-starters :deep(.lux-button + .lux-button) {
+  margin-left: 0;
 }
 
 .studio-turns {
@@ -668,8 +711,7 @@ defineExpose({
   display: flex;
   width: var(--studio-content-width);
   flex-direction: column;
-  gap: 1.25rem;
-  padding-bottom: 0.5rem;
+  gap: 1.5rem;
 }
 
 .studio-load-earlier-row {
@@ -702,7 +744,7 @@ defineExpose({
 .studio-scroll-latest {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--studio-composer-height, 10rem) + 0.75rem);
+  bottom: 0.75rem;
   z-index: 30;
   display: inline-flex;
   width: 2.75rem;
@@ -712,19 +754,24 @@ defineExpose({
   justify-content: center;
   border: 1px solid hsl(var(--border));
   border-radius: 999px;
-  background: hsl(var(--card) / 0.95);
+  background: hsl(var(--card));
   color: hsl(var(--foreground));
-  box-shadow: 0 18px 42px -24px rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+}
+
+.studio-scroll-latest:hover {
+  border-color: hsl(var(--primary) / 0.42);
+  color: hsl(var(--primary));
 }
 
 @media (max-width: 720px) {
   .studio-chat-scroll {
-    padding: 0.75rem 0.75rem calc(var(--studio-composer-height, 9rem) + 0.5rem);
+    padding-block: 0.75rem;
   }
 
-  .studio-scroll-latest {
-    bottom: calc(var(--studio-composer-height, 9rem) + 0.5rem);
+  .studio-chat-empty h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
   }
 
   .studio-turns {

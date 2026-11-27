@@ -1,68 +1,61 @@
 <template>
-  <Teleport to="body">
-    <div v-if="open" class="studio-mobile-history-backdrop" @click.self="$emit('close')">
-      <div class="studio-mobile-history">
-        <div class="studio-mobile-history-header">
-          <p>历史记录</p>
-          <CloseButton label="关闭历史记录" @click="$emit('close')" />
-        </div>
-        <div ref="historyListRef" class="studio-mobile-history-list custom-scrollbar" @scroll="handleWindowScroll">
-          <div
-            v-if="topSpacerHeight > 0"
-            class="studio-mobile-history-window-spacer"
-            :style="{ height: `${topSpacerHeight}px` }"
-            aria-hidden="true"
-          ></div>
-          <div v-for="{ item: conversation } in visibleConversationEntries" :key="conversation.id" class="studio-mobile-history-window-row">
-            <div
-              class="studio-mobile-history-item"
-              :class="{ 'is-active': conversation.id === activeConversationId }"
-            >
-              <button
-                type="button"
-                class="studio-mobile-history-main"
-                @click="$emit('select', conversation.id); $emit('close')"
-              >
-                <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
-                <span class="studio-mobile-history-meta">
-                  {{ conversation.messages.length }} 条 · {{ formatTime(conversation.updatedAt) }}
-                </span>
-                <span
-                  v-if="badges[conversation.id]"
-                  class="studio-mobile-history-badge"
-                  :class="`is-${badges[conversation.id].state}`"
-                >
-                  {{ badges[conversation.id].label }}
-                </span>
-              </button>
-              <button
-                type="button"
-                class="studio-mobile-history-delete"
-                title="删除对话"
-                aria-label="删除对话"
-                @click.stop="$emit('delete', conversation.id)"
-              >
-                <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          <div
-            v-if="bottomSpacerHeight > 0"
-            class="studio-mobile-history-window-spacer"
-            :style="{ height: `${bottomSpacerHeight}px` }"
-            aria-hidden="true"
-          ></div>
+  <DrawerShell :open="open" title="对话历史" max-width="24rem" :z-index="260" @close="$emit('close')">
+    <div ref="historyListRef" class="studio-mobile-history-list custom-scrollbar" @scroll="handleWindowScroll">
+      <div
+        v-if="topSpacerHeight > 0"
+        class="studio-mobile-history-window-spacer"
+        :style="{ height: `${topSpacerHeight}px` }"
+        aria-hidden="true"
+      ></div>
+      <div
+        v-for="{ item: conversation } in visibleConversationEntries"
+        :key="conversation.id"
+        class="studio-mobile-history-window-row"
+      >
+        <div
+          class="studio-mobile-history-item"
+          :class="{ 'is-active': conversation.id === activeConversationId }"
+        >
+          <button
+            type="button"
+            class="studio-mobile-history-main"
+            :aria-current="conversation.id === activeConversationId ? 'true' : undefined"
+            @click="$emit('select', conversation.id); $emit('close')"
+          >
+            <span class="studio-mobile-history-title">{{ conversation.title || '未命名对话' }}</span>
+            <span class="studio-mobile-history-meta">
+              {{ conversation.messages.length }} 条 · {{ formatTime(conversation.updatedAt) }}
+            </span>
+            <StudioConversationStatus v-if="badges[conversation.id]" :badge="badges[conversation.id]" class="studio-mobile-history-status" />
+          </button>
+          <button
+            type="button"
+            class="studio-mobile-history-delete"
+            title="删除对话"
+            aria-label="删除对话"
+            @click.stop="$emit('delete', conversation.id)"
+          >
+            <Icon icon="lucide:trash-2" class="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+      <div
+        v-if="bottomSpacerHeight > 0"
+        class="studio-mobile-history-window-spacer"
+        :style="{ height: `${bottomSpacerHeight}px` }"
+        aria-hidden="true"
+      ></div>
+      <p v-if="!conversations.length" class="studio-mobile-history-empty">暂无对话记录</p>
     </div>
-  </Teleport>
+  </DrawerShell>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, ref, watch } from 'vue'
-import { CloseButton } from 'nanocat-ui'
+import { DrawerShell } from '@/components/ui'
 import { useWindowedList } from '@/composables/useWindowedList'
+import StudioConversationStatus from './StudioConversationStatus.vue'
 import type { StudioConversation, StudioConversationBadge } from './types'
 
 const props = defineProps<{
@@ -113,38 +106,6 @@ function formatTime(value: string) {
 </script>
 
 <style scoped>
-.studio-mobile-history-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 260;
-  background: rgb(15 23 42 / 0.36);
-  padding: 0.75rem;
-}
-
-.studio-mobile-history {
-  display: flex;
-  width: min(24rem, 92vw);
-  max-height: calc(100dvh - 1.5rem);
-  flex-direction: column;
-  gap: 0.75rem;
-  overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
-  background: hsl(var(--card));
-  padding: 0.75rem;
-  box-shadow: var(--shadow-floating);
-}
-
-.studio-mobile-history-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.25rem 0.25rem 0;
-  color: hsl(var(--foreground));
-  font-weight: 650;
-}
-
 .studio-mobile-history-delete {
   display: inline-flex;
   align-items: center;
@@ -156,8 +117,18 @@ function formatTime(value: string) {
 .studio-mobile-history-list {
   display: flex;
   min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem;
+}
+
+.studio-mobile-history-empty {
+  padding: 1rem;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  font-size: 0.875rem;
 }
 
 .studio-mobile-history-window-spacer {
@@ -169,74 +140,65 @@ function formatTime(value: string) {
 .studio-mobile-history-window-row {
   display: flex;
   min-height: 0;
-  height: 4.5rem;
-  flex: 0 0 4.5rem;
-  padding-bottom: 0.375rem;
+  flex: 0 0 72px;
+  padding-bottom: 0.25rem;
 }
 
 .studio-mobile-history-item {
-  position: relative;
+  display: flex;
   width: 100%;
+  align-items: center;
+  gap: 0.5rem;
   border: 1px solid transparent;
-  border-radius: 0.875rem;
-  padding: 0.7rem 0.75rem;
+  border-radius: var(--control-radius, 0.375rem);
+  padding: 0.5rem 0.75rem;
 }
 
 .studio-mobile-history-item.is-active {
-  border-color: hsl(var(--primary) / 0.28);
-  background: hsl(var(--primary) / 0.08);
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
 }
 
 .studio-mobile-history-main {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-right: 1.85rem;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'title status' 'meta status';
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   text-align: left;
 }
 
 .studio-mobile-history-delete {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.45rem;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+}
+
+.studio-mobile-history-delete:hover {
+  color: hsl(var(--tone-error-foreground));
+  background: hsl(var(--tone-error-bg));
 }
 
 .studio-mobile-history-title {
+  grid-area: title;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.875rem;
-  font-weight: 650;
+  font-weight: 600;
+  line-height: 1.25rem;
 }
 
 .studio-mobile-history-meta {
+  grid-area: meta;
   font-size: 0.75rem;
+  line-height: 1rem;
   color: hsl(var(--muted-foreground));
 }
 
-.studio-mobile-history-badge {
-  width: fit-content;
-  border-radius: 999px;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 650;
-}
+.studio-mobile-history-status { grid-area: status; }
 
-.studio-mobile-history-badge.is-running {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.studio-mobile-history-badge.is-done {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.studio-mobile-history-badge.is-error {
-  background: #fef2f2;
-  color: #dc2626;
-}
 </style>

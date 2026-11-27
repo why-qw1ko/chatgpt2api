@@ -4,14 +4,14 @@
     :class="{ 'monitor-page--ready': Boolean(monitorData) }"
   >
     <PagePanel class="monitor-overview-panel space-y-5">
-      <PanelHeader title="实时监控" align="start">
+      <PanelHeader page title="实时监控" align="start">
         <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">
             进程内实时窗口，用于观察入口、账号、出口、上游生成、断流和本地拒绝/繁忙；入口排队高时关注 CHATGPT2API_THREAD_TOKENS；最近更新：{{ monitorData?.updated_at || '未获取' }}
           </p>
         </template>
         <template #actions>
-          <StateBadge :tone="autoRefresh ? 'success' : 'muted'" shape="rounded">
+          <StateBadge :tone="autoRefresh ? 'accent' : 'muted'" shape="rounded">
             {{ autoRefresh ? '自动刷新' : '已暂停' }}
           </StateBadge>
           <label class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -239,8 +239,8 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue'
-import { Button, EmptyState, Input, TableShell } from 'nanocat-ui'
-import type { SegmentedOption, SegmentedValue } from 'nanocat-ui'
+import { Button, EmptyState, Input, TableShell } from '@/components/ui'
+import type { SegmentedOption, SegmentedValue } from '@/components/ui'
 import {
   monitorApi,
   type RealtimeMonitorResponse,
@@ -575,7 +575,7 @@ pageRuntime.onDeactivate(() => {
 
 @media (min-width: 1024px) {
   .monitor-page--ready {
-    grid-auto-rows: minmax(0, 1fr);
+    grid-template-rows: auto minmax(24rem, 1fr);
   }
 
   .monitor-page--ready > .monitor-overview-panel,
@@ -584,7 +584,7 @@ pageRuntime.onDeactivate(() => {
   }
 
   .monitor-page--ready > .monitor-detail-panel {
-    contain: size;
+    min-height: 24rem;
   }
 }
 

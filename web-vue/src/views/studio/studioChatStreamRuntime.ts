@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { StudioConversation, StudioConversationBadgeState, StudioMessage } from '@/components/studio/types'
-import { streamStudioChatReply, studioErrorMessage } from './studioRequestView'
+import { streamStudioChatReply, studioErrorMessage, type StudioChatContextInput } from './studioRequestView'
 
 export type StudioChatStreamRuntimeHooks = {
   touchConversation: (conversation: StudioConversation) => void
@@ -8,11 +8,12 @@ export type StudioChatStreamRuntimeHooks = {
   markConversationNotice: (conversationId: string, state: StudioConversationBadgeState) => void
 }
 
-export type StudioChatStreamInput = {
-  conversation: StudioConversation
+export type StudioChatStreamInput = Omit<StudioChatContextInput, 'signal'> & {
   assistantMessage: StudioMessage
   model: string
   reasoningEffort: string
+  isMessageRetained: (messageId: string) => boolean
+  onContextNotice: (message: string) => void
 }
 
 export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) {
@@ -49,22 +50,24 @@ export function useStudioChatStreamRuntime(hooks: StudioChatStreamRuntimeHooks) 
     }
 
     try {
-      await streamStudioChatReply({
-        conversation: input.conversation,
-        currentAssistantId: input.assistantMessage.id,
-        model: input.model,
-        reasoningEffort: input.reasoningEffort,
+      const submitted = await streamStudioChatReply({
+        ...input,
         signal: controller.signal,
+        canSubmit: () => input.isMessageRetained(input.questionId)
+          && input.isMessageRetained(input.assistantMessage.id),
         handlers: {
           onDelta: scheduleDeltaFlush,
         },
       })
+      if (!submitted) return 'discarded'
       flushPendingDelta()
+      if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
       input.assistantMessage.status = 'done'
       if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '上游没有返回内容。'
       hooks.markConversationNotice(input.conversation.id, 'done')
     } catch (error) {
       flushPendingDelta()
+      if (!input.conversation.messages.some((message) => message.id === input.assistantMessage.id)) return
       if (controller.signal.aborted) {
         input.assistantMessage.status = 'done'
         if (!input.assistantMessage.content.trim()) input.assistantMessage.content = '已停止。'

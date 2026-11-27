@@ -1,12 +1,15 @@
 <template>
   <div
     class="accounts-page relative"
-    :class="{ 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col': isWorkspaceLayout }"
+    :class="{ 'flex min-h-0 flex-1 flex-col': isWorkspaceLayout }"
   >
     <PagePanel
       class="accounts-panel flex flex-col gap-5"
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
+      <PanelHeader page title="账号管理">
+        <template #copy><p class="mt-1 text-xs text-muted-foreground">管理账号、分组与可用额度。</p></template>
+      </PanelHeader>
       <div class="accounts-toolbar">
         <div class="accounts-toolbar-row accounts-toolbar-row-main">
           <FilterToolbar class="accounts-toolbar-filters" :bordered="false">
@@ -105,8 +108,14 @@
         </div>
       </div>
 
+      <div v-if="listError && hasListSnapshot" class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+        刷新失败，当前保留上次数据。{{ listError }}
+      </div>
+      <StateBlock v-if="listError && !hasListSnapshot" title="账号加载失败" :description="listError">
+        <Button variant="outline" root-class="mt-4" :loading="loading" @click="loadData">重新加载</Button>
+      </StateBlock>
       <PageLoadingState
-        v-if="viewMode === 'cards' && loading && visibleAccounts.length === 0"
+        v-else-if="viewMode === 'cards' && loading && visibleAccounts.length === 0"
         title="正在加载账号"
         description="读取账号列表、分组和分页状态。"
       />
@@ -121,20 +130,19 @@
         loading-description="读取账号列表、分组和分页状态。"
         :show-empty="!loading && visibleAccounts.length === 0"
         :empty-colspan="10"
-        :scroll-class="isWorkspaceLayout ? 'max-h-[min(36rem,60dvh)] lg:max-h-none' : ''"
+        :scroll-class="isWorkspaceLayout ? 'max-h-none' : ''"
         table-class="min-w-[980px] w-full"
         head-class="tracking-[0.16em]"
       >
         <template #head>
           <tr>
-              <th class="w-12 py-2.5 pr-4">
+              <th class="lux-table-selection">
                 <Checkbox
+                  aria-label="全选当前页账号"
                   :model-value="allVisibleSelected"
                   :indeterminate="someVisibleSelected"
                   @update:model-value="toggleSelectAllVisible"
-                >
-                  <span class="sr-only">全选当前页账号</span>
-                </Checkbox>
+                />
               </th>
               <th class="py-2.5 pr-5">AT / RT</th>
               <th class="py-2.5 pr-5">来源 / 套餐</th>
@@ -416,7 +424,7 @@
             </ModalBody>
 
             <ModalFooter :bordered="false">
-              <Button size="xs" variant="primary" root-class="min-w-14 justify-center" :disabled="saving" @click="saveAccount">
+              <Button size="xs" variant="primary" root-class="min-w-14 justify-center" :loading="saving" @click="saveAccount">
                 {{ saving ? '保存中...' : '保存' }}
               </Button>
             </ModalFooter>
@@ -539,7 +547,7 @@
                       <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                           <p class="font-medium text-foreground">{{ group.name }}</p>
-                          <StateBadge :tone="group.enabled ? 'success' : 'muted'" size="xs">
+                          <StateBadge :tone="group.enabled ? 'accent' : 'muted'" size="xs">
                             {{ group.enabled ? '启用' : '停用' }}
                           </StateBadge>
                         </div>
@@ -770,7 +778,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
-import { Button, Checkbox, EmptyState, GroupedSelectMenu, Input, TableShell, ViewModeSwitch } from 'nanocat-ui'
+import { Button, Checkbox, EmptyState, GroupedSelectMenu, Input, TableShell, ViewModeSwitch } from '@/components/ui'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'
 import FloatingActionMenu from '@/components/ai/FloatingActionMenu.vue'
 import FormSection from '@/components/ai/FormSection.vue'
@@ -783,6 +791,7 @@ import ModalHeader from '@/components/ai/ModalHeader.vue'
 import ModalShell from '@/components/ai/ModalShell.vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import PanelHeader from '@/components/ai/PanelHeader.vue'
 import StateBadge from '@/components/ai/StateBadge.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'
 import SurfaceBox from '@/components/ai/SurfaceBox.vue'
@@ -808,6 +817,8 @@ defineOptions({ name: 'Accounts' })
 const RemoteAccountImportPanel = defineAsyncComponent(() => import('@/components/ai/RemoteAccountImportPanel.vue'))
 
 const {
+  listError,
+  hasListSnapshot,
   loading,
   saving,
   showModal,

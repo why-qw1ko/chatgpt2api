@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <FormSection title="账号策略">
+    <FormSection body-class="space-y-4" title="账号策略">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -41,7 +41,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="图片确认">
+    <FormSection body-class="space-y-4" title="图片确认">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -70,7 +70,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="图片放大">
+    <FormSection body-class="space-y-4" title="图片放大">
       <div class="settings-check-grid settings-check-grid--single">
         <div class="settings-check-item">
           <div class="settings-check-control">
@@ -94,7 +94,7 @@
       </FormField>
     </FormSection>
 
-    <FormSection title="控制台日志级别">
+    <FormSection body-class="space-y-4" title="控制台日志级别">
       <div class="settings-check-grid settings-check-grid--single mt-3">
         <div
           v-for="level in logLevelOptions"
@@ -119,8 +119,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Checkbox, FormField, FormSection, HelpTip } from 'nanocat-ui'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { Checkbox, FormField, FormSection, HelpTip } from '@/components/ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import type { Settings } from '@/types/api'
 import SettingsNumberInput from '@/views/settings/SettingsNumberInput.vue'
 import {

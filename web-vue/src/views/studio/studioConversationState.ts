@@ -18,6 +18,8 @@ import {
   splitStudioLegacySearchResult,
 } from './studioSearchView'
 
+export const MAX_SYNCED_STUDIO_REFERENCE_CHARS = 300_000
+
 export type StudioImageTaskMessageEntry = {
   conversation: StudioConversation
   message: StudioMessage
@@ -56,27 +58,47 @@ export function buildStudioConversationTitle(content: string) {
 export function loadStudioConversations(): StudioConversation[] {
   const items = getJsonPreference<unknown[]>(preferenceKeys.studioConversations, [])
   if (!Array.isArray(items)) return []
-  return items.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 80)
+  return items.map(normalizeStudioConversation).filter((item): item is StudioConversation => Boolean(item)).slice(0, 200)
 }
 
 export function loadStudioConversationNotices(): Record<string, StudioConversationBadgeState> {
   const raw = getJsonPreference<Record<string, unknown>>(preferenceKeys.studioConversationBadges, {})
   const notices: Record<string, StudioConversationBadgeState> = {}
   Object.entries(raw || {}).forEach(([id, state]) => {
-    if (state === 'done' || state === 'error') notices[id] = state
+    if (state === 'done' || state === 'error' || state === 'expired') notices[id] = state
   })
   return notices
 }
 
 export function persistStudioConversations(conversations: StudioConversation[]) {
-  const payload = conversations.slice(0, 80).map((conversation) => ({
+  const payload = conversations.slice(0, 200).map((conversation) => ({
     ...conversation,
-    messages: conversation.messages.slice(-160).map((message) => ({
-      ...message,
+    messages: conversation.messages.slice(-400).map((message) => ({
+      ...studioMessageForPersistence(message),
       status: message.status === 'streaming' || message.status === 'sending' ? 'done' : message.status,
     })),
   }))
-  setJsonPreference(preferenceKeys.studioConversations, payload)
+  try {
+    setJsonPreference(preferenceKeys.studioConversations, payload)
+  } catch {
+    // Server synchronization remains available when the browser cache is full.
+  }
+}
+
+export function studioMessageForPersistence(message: StudioMessage) {
+  if (message.mode === 'chat') {
+    const referenceImages = message.referenceImages?.map((image) => image.originalInBrowser
+      && image.dataUrl.length > MAX_SYNCED_STUDIO_REFERENCE_CHARS ? { ...image, dataUrl: '' } : image)
+    return { ...message, referenceImages }
+  }
+  if (message.mode !== 'image') return message
+  const referenceImages = message.referenceImages?.map((image) => image.dataUrl.length > MAX_SYNCED_STUDIO_REFERENCE_CHARS
+    ? { ...image, dataUrl: '' }
+    : image)
+  const inpaintSource = message.inpaintSource && message.inpaintSource.src.length <= MAX_SYNCED_STUDIO_REFERENCE_CHARS
+    ? message.inpaintSource
+    : undefined
+  return { ...message, referenceImages, inpaintSource }
 }
 
 export function persistStudioConversationNotices(
@@ -84,7 +106,7 @@ export function persistStudioConversationNotices(
   validIds: Set<string>,
 ) {
   const payload = Object.fromEntries(
-    Object.entries(notices).filter(([id, state]) => validIds.has(id) && (state === 'done' || state === 'error')),
+    Object.entries(notices).filter(([id, state]) => validIds.has(id) && (state === 'done' || state === 'error' || state === 'expired')),
   )
   setJsonPreference(preferenceKeys.studioConversationBadges, payload)
 }
@@ -146,18 +168,81 @@ export function isStudioFileMessageRunning(message: StudioMessage) {
   return message.mode === 'file' && (message.status === 'queued' || message.status === 'running')
 }
 
+function sortStudioMessages(messages: StudioMessage[]) {
+  const questionIds = new Set(messages.filter((message) => message.role === 'user').map((message) => message.id))
+  const linkedIds = new Set(messages.map((message) => message.replyToId).filter((id) => id && questionIds.has(id)))
+  const keys = new Map(messages.map((message) => {
+    const role = message.role === 'user' ? '0' : '1'
+    const turn = message.role === 'user' ? message.id : message.replyToId
+    const position = turn && linkedIds.has(turn) ? `2:${turn}:${role}:${message.id}` : `${role}:${message.id}`
+    return [message.id, `${message.createdAt}:${position}`] as const
+  }))
+  return messages.sort((a, b) => {
+    const aKey = keys.get(a.id)!
+    const bKey = keys.get(b.id)!
+    return aKey < bKey ? -1 : aKey > bKey ? 1 : 0
+  })
+}
+
+export function mergeStudioConversations(local: StudioConversation, remote: StudioConversation): StudioConversation {
+  const messageById = new Map<string, StudioMessage>()
+  for (const message of [...remote.messages, ...(remote.messageTombstones || []), ...local.messages, ...(local.messageTombstones || [])]) {
+    const existing = messageById.get(message.id)
+    if (!existing || (message.deletedAt && (!existing.deletedAt || message.deletedAt >= existing.deletedAt))) {
+      messageById.set(message.id, message)
+      continue
+    }
+    if (existing.deletedAt || message.deletedAt) continue
+    if (message.baseUpdatedAt) {
+      if ((existing.updatedAt || existing.createdAt) <= message.baseUpdatedAt) messageById.set(message.id, message)
+      continue
+    }
+    if ((message.updatedAt || message.createdAt) >= (existing.updatedAt || existing.createdAt)) {
+      messageById.set(message.id, message)
+    }
+  }
+  const localReplacedAt = local.messagesReplacedAt || ''
+  const remoteReplacedAt = remote.messagesReplacedAt || ''
+  const replaceWinner = localReplacedAt >= remoteReplacedAt ? local : remote
+  const replacedAt = localReplacedAt >= remoteReplacedAt ? localReplacedAt : remoteReplacedAt
+  const retainedIds = new Set(replaceWinner.messages.map((message) => message.id))
+  const messages = sortStudioMessages(Array.from(messageById.values())
+    .filter((message) => !message.deletedAt)
+    .filter((message) => !replacedAt || retainedIds.has(message.id) || message.createdAt > replacedAt))
+  const messageTombstones = Array.from(messageById.values()).filter((message) => Boolean(message.deletedAt))
+  const base = (remote.updatedAt || '') >= (local.updatedAt || '') ? remote : local
+  const messagesReplacedAt = [local.messagesReplacedAt, remote.messagesReplacedAt]
+    .filter(Boolean)
+    .sort()
+    .at(-1)
+  return {
+    ...base,
+    title: (remote.updatedAt || '') >= (local.updatedAt || '') ? (remote.title || local.title) : local.title,
+    updatedAt: (remote.updatedAt || '') > (local.updatedAt || '') ? remote.updatedAt : local.updatedAt,
+    messagesReplacedAt,
+    messages,
+    messageTombstones,
+  }
+}
+
 export function normalizeStudioConversation(item: unknown): StudioConversation | null {
   if (!item || typeof item !== 'object') return null
   const raw = item as Partial<StudioConversation>
-  const messages = Array.isArray(raw.messages)
-    ? raw.messages.map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message)).slice(-160)
-    : []
+  const normalizedMessages = [
+    ...(Array.isArray(raw.messages) ? raw.messages : []),
+    ...(Array.isArray(raw.messageTombstones) ? raw.messageTombstones : []),
+  ].map(normalizeStudioMessage).filter((message): message is StudioMessage => Boolean(message))
+  const messages = sortStudioMessages(normalizedMessages.filter((message) => !message.deletedAt)).slice(-400)
+  const messageTombstones = normalizedMessages.filter((message) => Boolean(message.deletedAt))
   return {
     id: cleanStudioText(raw.id) || createStudioId('studio'),
     title: cleanStudioText(raw.title) || '新对话',
     createdAt: cleanStudioText(raw.createdAt) || new Date().toISOString(),
     updatedAt: cleanStudioText(raw.updatedAt) || new Date().toISOString(),
+    deletedAt: cleanStudioText(raw.deletedAt) || undefined,
+    messagesReplacedAt: cleanStudioText(raw.messagesReplacedAt) || undefined,
     messages,
+    messageTombstones,
   }
 }
 
@@ -168,9 +253,22 @@ function normalizeStudioMessage(item: unknown): StudioMessage | null {
   const taskId = cleanStudioText(raw.taskId)
   const fileTaskId = cleanStudioText(raw.fileTaskId)
   const fileTaskDeleted = raw.fileTaskDeleted === true
-  if (!content && !taskId && !fileTaskId && !fileTaskDeleted) return null
+  if (!content && !taskId && !fileTaskId && !fileTaskDeleted && !cleanStudioText(raw.deletedAt)) return null
   const id = cleanStudioText(raw.id) || createStudioId('message')
   const mode = raw.mode === 'chat' || raw.mode === 'search' || raw.mode === 'file' ? raw.mode : 'image'
+  const deletedAt = cleanStudioText(raw.deletedAt)
+  if (deletedAt) {
+    return {
+      id,
+      role: raw.role === 'assistant' ? 'assistant' : 'user',
+      mode,
+      content: '',
+      replyToId: cleanStudioText(raw.replyToId) || undefined,
+      createdAt: cleanStudioText(raw.createdAt) || deletedAt,
+      updatedAt: deletedAt,
+      deletedAt,
+    }
+  }
   const normalizedContent = mode === 'search' ? cleanStudioSearchAnswer(content) : content
   const migratedSearchResult = mode === 'search'
     ? splitStudioLegacySearchResult(normalizedContent)
@@ -188,10 +286,18 @@ function normalizeStudioMessage(item: unknown): StudioMessage | null {
       ? linkStudioSearchCitations(migratedSearchResult.content, id, searchSources?.length || 0)
       : migratedSearchResult.content,
     createdAt: cleanStudioText(raw.createdAt) || new Date().toISOString(),
+    updatedAt: cleanStudioText(raw.updatedAt) || undefined,
+    baseUpdatedAt: cleanStudioText(raw.baseUpdatedAt) || undefined,
+    replyToId: cleanStudioText(raw.replyToId) || undefined,
     status: normalizeStudioMessageStatus(raw.status),
     model: cleanStudioText(raw.model) || undefined,
     imageSize: cleanStudioText(raw.imageSize) || undefined,
     imageCount: Number.isFinite(Number(raw.imageCount)) ? normalizeImageCount(raw.imageCount) : undefined,
+    imageInputCount: typeof raw.imageInputCount === 'number' && Number.isInteger(raw.imageInputCount) && raw.imageInputCount >= 0 && raw.imageInputCount <= 8
+      ? raw.imageInputCount
+      : undefined,
+    imageQuality: cleanStudioText(raw.imageQuality) || undefined,
+    imageEditPrompt: cleanStudioText(raw.imageEditPrompt) || undefined,
     taskId: taskId || undefined,
     fileTaskId: fileTaskId || undefined,
     fileTaskDeleted: mode === 'file' && fileTaskDeleted ? true : undefined,
@@ -220,17 +326,20 @@ function normalizeStudioImageCompareSource(value: unknown): StudioImageCompareSo
 function normalizeStudioReferenceImages(value: unknown): StudioReferenceImage[] | undefined {
   if (!Array.isArray(value)) return undefined
   const images = value
-    .map((item, index) => {
+    .map((item, index): StudioReferenceImage | null => {
       if (!item || typeof item !== 'object') return null
       const raw = item as Partial<StudioReferenceImage>
       const dataUrl = cleanStudioText(raw.dataUrl)
-      if (!dataUrl) return null
+      const source = normalizeStudioImageCompareSource(raw.source)
+      if (!dataUrl && !source && raw.originalInBrowser !== true) return null
       return {
         id: cleanStudioText(raw.id) || createStudioId('source'),
         name: cleanStudioText(raw.name) || `参考图 ${index + 1}`,
         type: cleanStudioText(raw.type) || 'image/png',
         size: Number.isFinite(Number(raw.size)) ? Number(raw.size) : 0,
         dataUrl,
+        originalInBrowser: raw.originalInBrowser === true || undefined,
+        source,
       }
     })
     .filter((item): item is StudioReferenceImage => Boolean(item))

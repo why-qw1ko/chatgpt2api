@@ -1,7 +1,7 @@
 <template>
-  <div class="panel-header" :class="`panel-header--align-${align}`">
+  <div class="panel-header" :class="[`panel-header--align-${align}`, { 'panel-header--page': page }]">
     <div class="panel-header-copy">
-      <p v-if="title" class="ui-section-title">{{ title }}</p>
+      <component :is="page ? 'h1' : 'h2'" v-if="title" class="ui-section-title">{{ title }}</component>
       <slot name="copy" />
     </div>
     <div v-if="$slots.actions" class="panel-header-actions">
@@ -12,6 +12,7 @@
 
 <script setup lang="ts">
 withDefaults(defineProps<{
+  page?: boolean
   title?: string
   align?: 'center' | 'start'
 }>(), {

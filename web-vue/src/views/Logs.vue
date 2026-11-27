@@ -1,14 +1,17 @@
 <template>
   <div
     class="logs-page"
-    :class="{ 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col': isWorkspaceLayout }"
+    :class="{ 'flex min-h-0 flex-1 flex-col': isWorkspaceLayout }"
   >
     <PagePanel
       class="log-main-panel flex flex-col gap-4"
       :class="{ 'min-h-0 flex-1': isWorkspaceLayout }"
     >
       <div class="log-control-panel">
-        <PanelHeader title="日志管理" align="start">
+        <PanelHeader page title="日志管理" align="start">
+          <template #copy>
+            <p v-if="keyFilter" class="mt-1 break-all text-xs text-muted-foreground">用户密钥 {{ keyFilter }}</p>
+          </template>
           <template #actions>
             <Button size="sm" variant="outline" :disabled="isFetching" @click="fetchLogs">
               {{ isFetching ? '刷新中...' : '刷新' }}
@@ -150,6 +153,7 @@
       :title="deleteConfirmation.title"
       :message="deleteConfirmation.message"
       confirm-text="删除"
+      confirm-variant="danger"
       cancel-text="取消"
       @confirm="logSelectionRuntime.confirmDeleteRequest"
       @cancel="closeDeleteConfirmation"
@@ -159,10 +163,10 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, reactive, ref, toRef, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { Button, Input } from 'nanocat-ui'
+import { useRoute, useRouter } from 'vue-router'
+import { Button, Input } from '@/components/ui'
 import ConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
-import { GroupedSelectMenu } from 'nanocat-ui'
+import { GroupedSelectMenu } from '@/components/ui'
 import DateRangeInputs from '@/components/ai/DateRangeInputs.vue'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'
 import MetricStrip from '@/components/ai/MetricStrip.vue'
@@ -180,6 +184,7 @@ import { usePageRuntime } from '@/composables/usePageRuntime'
 import { useListLayoutPreference } from '@/composables/useListLayoutPreference'
 import { usePageDebouncedAction, usePagedQuery, usePageVisibilityReload } from '@/composables/usePageQuery'
 import { useGalleryFileActions } from '@/composables/useGalleryFileActions'
+import { writeClipboardText } from '@/lib/clipboard'
 import { errorMessage } from '@/lib/errorMessage'
 import { getNumberPreference, preferenceKeys, setNumberPreference } from '@/lib/preferences'
 import { useLogDetailRuntime } from '@/views/logs/logDetailRuntime'
@@ -213,6 +218,8 @@ type LogRow = SystemLogRow
 
 const toast = useToast()
 const route = useRoute()
+const router = useRouter()
+const keyFilter = computed(() => queryValue(route.query.key_id))
 const { listLayoutMode, isWorkspaceLayout } = useListLayoutPreference()
 const pageRuntime = usePageRuntime('logs')
 const apiBaseUrl = import.meta.env.VITE_API_URL || window.location.origin
@@ -363,6 +370,7 @@ const systemLogsQuery = usePagedQuery({
     model: filters.model || undefined,
     account: filters.account || undefined,
     conversation_id: filters.conversationId || undefined,
+    key_id: keyFilter.value || undefined,
     search: filters.search || undefined,
     limit: pageSize,
     offset: (page - 1) * pageSize,
@@ -411,7 +419,7 @@ const exportSystemLogs = logExportRuntime.exportSystemLogs
 
 const systemMetricItems = computed(() => buildSystemMetricItems(logMeta))
 
-const activeSystemFilterCount = computed(() => countActiveSystemFilters(filters))
+const activeSystemFilterCount = computed(() => countActiveSystemFilters(filters) + Number(Boolean(keyFilter.value)))
 
 const systemQuickFilterSelection = computed(() => buildSystemQuickFilterSelection(filters))
 
@@ -476,6 +484,10 @@ function applyRouteQuery() {
 }
 
 function resetFilters() {
+  if (keyFilter.value) {
+    void router.replace({ query: { log_id: route.query.log_id } })
+    return
+  }
   runWithSilentSystemFilters(() => {
     filters.type = 'call'
     filters.status = ''
@@ -532,7 +544,7 @@ async function copyText(value: string) {
   const text = cleanString(value)
   if (!text) return
   try {
-    await navigator.clipboard.writeText(text)
+    await writeClipboardText(text)
     toast.success('已复制')
   } catch {
     toast.error('复制失败')

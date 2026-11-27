@@ -186,6 +186,7 @@ class _SettingsEditableFields(_StrictModel):
     image_retention_hours: int = _numeric_field("image_retention_hours")
     log_retention_hours: int = _numeric_field("log_retention_hours")
     console_request_timeout_secs: int = _numeric_field("console_request_timeout_secs")
+    studio_context_rounds: int = _numeric_field("studio_context_rounds")
     image_poll_timeout_secs: int = _numeric_field("image_poll_timeout_secs")
     image_stream_timeout_secs: int = _numeric_field("image_stream_timeout_secs")
     image_poll_initial_wait_secs: float = _numeric_field("image_poll_initial_wait_secs")

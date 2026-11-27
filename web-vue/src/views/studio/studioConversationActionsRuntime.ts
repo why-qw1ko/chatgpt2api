@@ -24,7 +24,10 @@ export type StudioConversationActionsRuntimeInput = {
   activeConversation: Ref<StudioConversation | null>
   conversationNotices: Ref<Record<string, StudioConversationBadgeState>>
   conversationLookup: StudioConversationLookupRef
-  persistenceRuntime: Pick<StudioConversationPersistenceRuntime, 'scheduleConversationNotices' | 'scheduleConversations'>
+  persistenceRuntime: Pick<
+    StudioConversationPersistenceRuntime,
+    'scheduleConversationNotices' | 'scheduleConversations' | 'removeConversation' | 'clearAllConversations'
+  >
   selectionRuntime: Pick<StudioConversationSelectionRuntime, 'cancel' | 'select'>
   hooks: StudioConversationActionsRuntimeHooks
 }
@@ -50,7 +53,8 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     input.conversations.value = [conversation, ...input.conversations.value]
     input.activeConversationId.value = conversation.id
     input.hooks.scheduleScrollToBottom()
-    return conversation
+    // Return the stored reactive object so the first reply updates the view.
+    return input.conversations.value[0]
   }
 
   function selectConversation(conversationId: string) {
@@ -82,10 +86,12 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     return input.conversationLookup.value.byId.get(conversationId) || null
   }
 
-  function deleteConversation(conversationId: string) {
+  async function deleteConversation(conversationId: string) {
+    await input.persistenceRuntime.removeConversation(conversationId)
     input.conversations.value = input.conversations.value.filter((item) => item.id !== conversationId)
     clearConversationNotice(conversationId)
     if (input.activeConversationId.value === conversationId) {
+      input.hooks.cancelMessageEdit(false)
       input.activeConversationId.value = input.conversations.value[0]?.id || ''
     }
     input.persistenceRuntime.scheduleConversations()
@@ -96,12 +102,14 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
     return input.conversations.value.length > 0
   }
 
-  function clearHistory() {
+  async function clearHistory() {
+    await input.persistenceRuntime.clearAllConversations()
     input.hooks.cancelMessageEdit()
     input.conversations.value = []
     input.hooks.resetTasks()
     input.conversationNotices.value = {}
     input.activeConversationId.value = ''
+    input.persistenceRuntime.scheduleConversations()
   }
 
   function clearCurrentConversation(conversationId?: string) {
@@ -110,6 +118,7 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
       : input.activeConversation.value
     if (!conversation?.messages.length) return null
     input.hooks.cancelMessageEdit()
+    conversation.messagesReplacedAt = new Date(Math.max(Date.now(), Date.parse(conversation.updatedAt) || 0)).toISOString()
     conversation.messages = []
     conversation.title = '新对话'
     clearConversationNotice(conversation.id)
@@ -120,14 +129,16 @@ export function useStudioConversationActionsRuntime(input: StudioConversationAct
   }
 
   function touchConversation(conversation: StudioConversation) {
-    conversation.updatedAt = new Date().toISOString()
+    const previousUpdatedAt = Date.parse(conversation.updatedAt)
+    conversation.updatedAt = new Date(Math.max(Date.now(), Number.isFinite(previousUpdatedAt) ? previousUpdatedAt + 1 : 0)).toISOString()
     input.persistenceRuntime.scheduleConversations()
   }
 
   function markConversationNotice(conversationId: string, state: StudioConversationBadgeState) {
     if (!conversationId) return
     const current = input.conversationNotices.value[conversationId]
-    const nextState = current === 'error' && state === 'done' ? current : state
+    const nextState = (current === 'error' || current === 'expired') && state === 'done' ? current : state
+    if (current === nextState) return
     input.conversationNotices.value = {
       ...input.conversationNotices.value,
       [conversationId]: nextState,

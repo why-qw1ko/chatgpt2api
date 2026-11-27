@@ -16,7 +16,7 @@ import { computed } from 'vue'
 import MetaChip from './MetaChip.vue'
 
 const props = withDefaults(defineProps<{
-  tone?: 'success' | 'danger' | 'warning' | 'info' | 'muted'
+  tone?: 'success' | 'danger' | 'warning' | 'info' | 'muted' | 'accent'
   size?: 'xs' | 'sm'
   shape?: 'pill' | 'rounded'
   bordered?: boolean

@@ -60,6 +60,12 @@
           <SettingsNumberInput :field="consoleRequestTimeoutField" />
         </FormField>
 
+        <FormField label="对话轮数上限">
+          <template #label-extra>
+            <HelpTip text="每个会话最多提交的轮数，默认 3 轮，当前提问计入。对话、画图、搜索和文件共用上限。达到上限后请新建对话继续。" />
+          </template>
+          <SettingsNumberInput :field="studioContextRoundsField" />
+        </FormField>
       </div>
     </FormSection>
 
@@ -98,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { FormField, FormSection, HelpTip, Input } from 'nanocat-ui'
+import { FormField, FormSection, HelpTip, Input } from '@/components/ui'
 import type { Settings } from '@/types/api'
 import SettingsNumberInput from '@/views/settings/SettingsNumberInput.vue'
 import { settingsFieldReadOnly, type SettingsFields } from '@/views/settings/settingsView'
@@ -111,6 +117,7 @@ const props = defineProps<{
   imageRetentionHoursField: NumberSettingField
   logRetentionHoursField: NumberSettingField
   consoleRequestTimeoutField: NumberSettingField
+  studioContextRoundsField: NumberSettingField
   imagePollTimeoutField: NumberSettingField
   imageStreamTimeoutField: NumberSettingField
   imagePollInitialWaitField: NumberSettingField

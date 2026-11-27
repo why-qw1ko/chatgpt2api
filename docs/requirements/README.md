@@ -29,7 +29,10 @@ requirements may move to `archive/` after links and this index are updated.
 
 ## Active requirements
 
-No active PRDs are currently tracked.
+- [Console interaction and visual redesign](0001-console-interaction-redesign.md)
+- [Console theme preferences](0002-console-theme-preferences.md)
+- [Studio continuity and User Key operations](0003-studio-continuity-and-user-key-operations.md)
+- [Studio chat context](0004-studio-chat-context.md)
 
 PRDs are planning evidence, never proof that the product already behaves as
 described.

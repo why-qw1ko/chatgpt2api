@@ -2,12 +2,9 @@
   <article class="proxy-node-summary-card" :class="{ 'proxy-node-summary-card--disabled': !isEnabled }">
     <div class="proxy-node-summary-card__header">
       <p class="proxy-node-summary-card__name">{{ displayName }}</p>
-      <span
-        class="proxy-node-summary-card__status"
-        :class="isEnabled ? 'proxy-node-summary-card__status--enabled' : 'proxy-node-summary-card__status--disabled'"
-      >
+      <StateBadge :tone="isEnabled ? 'accent' : 'muted'" size="xs" shape="rounded" class="shrink-0 whitespace-nowrap">
         {{ isEnabled ? '启用' : '停用' }}
-      </span>
+      </StateBadge>
     </div>
     <p class="proxy-node-summary-card__url">{{ maskedUrl || emptyText }}</p>
     <p class="proxy-node-summary-card__meta">图片并发 {{ imageLimit > 0 ? imageLimit : '不限' }}</p>
@@ -17,6 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ProxyNode } from '@/api/proxy'
+import StateBadge from './StateBadge.vue'
 
 const props = withDefaults(defineProps<{
   node: Pick<ProxyNode, 'id' | 'name' | 'url' | 'enabled' | 'image_concurrency_limit'>
@@ -66,19 +64,6 @@ function maskProxy(value: unknown) {
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.proxy-node-summary-card__status {
-  flex: 0 0 auto;
-  font-size: 11px;
-}
-
-.proxy-node-summary-card__status--enabled {
-  color: hsl(var(--success, 142 71% 45%));
-}
-
-.proxy-node-summary-card__status--disabled {
-  color: hsl(var(--muted-foreground));
 }
 
 .proxy-node-summary-card__url {

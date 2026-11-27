@@ -4,6 +4,7 @@ import { errorMessage as formatErrorMessage } from '@/lib/errorMessage'
 declare module 'axios' {
   export interface AxiosRequestConfig {
     preserveResponse?: boolean
+    expectedAuthToken?: string
   }
 }
 
@@ -77,6 +78,9 @@ export function handleUnauthorizedResponse() {
 apiClient.interceptors.request.use(
   (config) => {
     const token = getAuthToken()
+    if (config.expectedAuthToken !== undefined && config.expectedAuthToken !== token) {
+      throw new axios.CanceledError('登录状态已变化，请刷新页面后继续。')
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -93,7 +97,9 @@ apiClient.interceptors.response.use(
     const isAuthProbe = requestUrl.includes('/auth/status')
     const isLoginRequest = requestUrl.includes('/auth/login')
 
-    if (status === 401 && !isLoginRequest && !isAuthProbe) {
+    const expectedAuthToken = error.config?.expectedAuthToken
+    if (status === 401 && !isLoginRequest && !isAuthProbe
+      && (expectedAuthToken === undefined || expectedAuthToken === getAuthToken())) {
       handleUnauthorizedResponse()
     }
 

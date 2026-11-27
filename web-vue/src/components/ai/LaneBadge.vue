@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { StatusPill } from 'nanocat-ui'
+import { StatusPill } from '@/components/ui'
 import type { AccountLane } from '@/api/accounts'
 import {
   laneEnabled,

@@ -23,6 +23,7 @@
         >
           <Icon :icon="message.role === 'user' ? 'lucide:user' : 'lucide:bot'" class="h-4 w-4" />
         </div>
+        <span class="chat-message-speaker">{{ message.role === 'user' ? '你' : '助手' }}</span>
 
         <div class="chat-message-actions">
           <Button
@@ -34,7 +35,7 @@
             root-class="chat-message-action"
             :title="action.label"
             :aria-label="action.label"
-            @click="$emit('action', action.key, message)"
+            @click="handleAction(action.key, message)"
           >
             <Icon :icon="action.icon" class="h-3.5 w-3.5" />
           </Button>
@@ -70,7 +71,7 @@
           >
             <template v-if="message.role === 'user'">
               <p v-if="message.content" class="studio-user-prompt">{{ message.content }}</p>
-              <div v-if="message.attachments?.length && !message.referenceImages?.length" class="studio-attachment-line">
+              <div v-if="message.attachments?.length && visibleReferenceImages(message).length < message.attachments.length" class="studio-attachment-line">
                 <Icon icon="lucide:paperclip" class="h-3.5 w-3.5" />
                 {{ message.attachments.join('、') }}
               </div>
@@ -182,7 +183,7 @@
                 :class="{ 'is-error': message.task?.status === 'failed' }"
               >
                 <Icon :icon="message.task?.status === 'text_review' ? 'lucide:message-square-text' : 'lucide:circle-alert'" class="h-4 w-4" />
-                <span>{{ message.primaryMessage || message.error || '上游没有返回可用图片。' }}</span>
+                <span>{{ imageIssueText(message) }}</span>
               </div>
 
               <div
@@ -190,6 +191,7 @@
                 class="studio-result-block"
                 :class="{ 'studio-result-block-pending': message.pendingSlots.length > 0 }"
               >
+                <p v-if="message.failedSlots.length" class="studio-error-text">{{ imageIssueText(message) }}</p>
                 <div class="studio-result-grid" :class="{ 'is-single': message.imageSlotCount <= 1 }">
                   <div
                     v-for="(asset, assetIndex) in message.assets"
@@ -219,12 +221,22 @@
                           size="xs"
                           variant="outline"
                           root-class="studio-result-action"
-                          title="引用到输入框"
-                          aria-label="引用到输入框"
+                          title="用这张图继续修改"
+                          aria-label="用这张图继续修改"
                           @click="$emit('reference-image', asset, `结果 ${assetIndex + 1}`, message)"
                         >
                           <Icon icon="lucide:image-plus" class="h-3.5 w-3.5" />
                           <span>引用</span>
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          root-class="studio-result-action"
+                          :title="`复制图片 ${assetIndex + 1}`"
+                          :aria-label="`复制图片 ${assetIndex + 1}`"
+                          @click="$emit('copy-image', asset, `结果 ${assetIndex + 1}`)"
+                        >
+                          <Icon icon="lucide:copy" class="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="xs"
@@ -299,18 +311,18 @@
       </div>
 
       <div
-        v-if="message.role === 'user' && message.referenceImages?.length"
+        v-if="message.role === 'user' && visibleReferenceImages(message).length"
         class="studio-message-reference-strip"
       >
         <button
-          v-for="(reference, referenceIndex) in message.referenceImages"
+          v-for="(reference, referenceIndex) in visibleReferenceImages(message)"
           :key="reference.id || `${message.id}-reference-${referenceIndex}`"
           type="button"
           class="studio-message-reference-thumb"
           :title="reference.name"
-          @click="$emit('preview', reference.dataUrl, reference.name || `参考图 ${referenceIndex + 1}`)"
+          @click="$emit('preview', reference.dataUrl || reference.source?.src || '', reference.name || `参考图 ${referenceIndex + 1}`, reference.source?.localPath)"
         >
-          <img :src="reference.dataUrl" :alt="reference.name || `参考图 ${referenceIndex + 1}`" loading="lazy" />
+          <img :src="reference.dataUrl || reference.source?.src" :alt="reference.name || `参考图 ${referenceIndex + 1}`" loading="lazy" />
         </button>
       </div>
     </div>
@@ -319,7 +331,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from 'nanocat-ui'
+import { Button } from '@/components/ui'
 import type { CSSProperties } from 'vue'
 import type { EditableFileTask } from '@/api/editableFileTasks'
 import type { ImageTask } from '@/api/imageTasks'
@@ -365,8 +377,10 @@ defineProps<{
   message: StudioMessageView
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   action: [key: StudioMessageActionKey, message: StudioMessage]
+  'copy-message': [content: string]
+  'copy-image': [asset: StudioImageAssetView, name: string]
   'toggle-expanded': [message: StudioMessage]
   'open-search-sources': [message: StudioMessage]
   'citation-click': [href: string]
@@ -386,7 +400,8 @@ const {
 
 function actionsForMessage(message: StudioMessageView): StudioMessageAction[] {
   const actions: StudioMessageAction[] = []
-  if (message.content) actions.push({ key: 'copy', label: '复制', icon: 'lucide:copy' })
+  const copy = messageCopyAction(message)
+  if (copy) actions.push({ key: 'copy', label: copy.label, icon: 'lucide:copy' })
   if (message.role === 'user') {
     if (message.content) actions.push({ key: 'edit', label: '编辑', icon: 'lucide:pencil' })
     actions.push({ key: 'resend', label: '重发', icon: 'lucide:refresh-cw' })
@@ -404,12 +419,46 @@ function actionsForMessage(message: StudioMessageView): StudioMessageAction[] {
   return actions
 }
 
+function messageCopyAction(message: StudioMessageView) {
+  if (message.isImageMessage) {
+    if (!isImageMessageWithoutResult(message) && !message.failedSlots.length) return null
+    return {
+      label: message.task?.status === 'text_review' ? '复制说明' : '复制错误',
+      value: imageIssueText(message),
+    }
+  }
+  if (message.role === 'assistant' && message.mode === 'file' && fileTaskStatus(message) === 'error') {
+    return { label: '复制错误', value: fileTaskError(message) }
+  }
+  if (message.role === 'assistant' && message.status === 'error') {
+    return { label: '复制错误', value: standaloneErrorText(message) }
+  }
+  return message.content ? { label: '复制', value: message.content } : null
+}
+
+function handleAction(action: StudioMessageActionKey, message: StudioMessageView) {
+  if (action === 'copy') {
+    const copy = messageCopyAction(message)
+    if (copy?.value) emit('copy-message', copy.value)
+  } else {
+    emit('action', action, message)
+  }
+}
+
 function isImageTaskWithoutResult(task: ImageTask | undefined) {
   return task?.status === 'failed' || task?.status === 'text_review'
 }
 
 function isImageMessageWithoutResult(message: StudioMessageView) {
   return isImageTaskWithoutResult(message.task) || (!message.task && message.status === 'error')
+}
+
+function imageIssueText(message: StudioMessageView) {
+  return message.primaryMessage || message.error || (message.assets.length ? '部分图片未生成。' : '上游没有返回可用图片。')
+}
+
+function visibleReferenceImages(message: StudioMessageView) {
+  return message.referenceImages?.filter((image) => image.dataUrl || image.source?.src) || []
 }
 
 function textValue(value: string | null | undefined) {
@@ -533,6 +582,7 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-container.is-user {
+  max-width: min(88%, var(--studio-message-width, 44rem));
   align-items: flex-end;
 }
 
@@ -544,12 +594,20 @@ async function handleFileTaskDownload(
   display: flex;
   min-height: 1.75rem;
   align-items: center;
-  gap: 0.375rem;
-  margin-bottom: 0.25rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .chat-message-header.is-user {
   flex-direction: row-reverse;
+}
+
+.chat-message-speaker {
+  flex: none;
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
 }
 
 .chat-message-avatar {
@@ -559,18 +617,14 @@ async function handleFileTaskDownload(
   flex: 0 0 1.75rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--ui-control-border, hsl(var(--border)));
-  border-radius: 999px;
-  background: var(--ui-control-bg, hsl(var(--background)));
-  color: var(--ui-fg-muted, hsl(var(--muted-foreground)));
-  font-size: 0.6875rem;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  background: hsl(var(--secondary));
+  color: hsl(var(--primary));
 }
 
 .chat-message-avatar-user {
-  border-color: var(--ui-accent-border, hsl(var(--foreground) / 0.18));
-  background: var(--ui-accent-soft, hsl(var(--secondary)));
-  color: var(--ui-accent-strong, hsl(var(--foreground)));
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
 }
 
 .chat-message-actions {
@@ -584,7 +638,7 @@ async function handleFileTaskDownload(
   transition: opacity var(--ui-duration-normal, 180ms) var(--ui-ease-out, ease);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
   .chat-message-actions {
     pointer-events: none;
     opacity: 0;
@@ -608,13 +662,12 @@ async function handleFileTaskDownload(
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--ui-panel-border, hsl(var(--border)));
-  border-radius: 18px;
+  border-radius: 0.5rem;
   background: var(--ui-panel-bg, hsl(var(--card)));
-  box-shadow: var(--ui-panel-shadow, 0 8px 24px rgb(15 23 42 / 0.045));
   color: var(--ui-fg-strong, hsl(var(--foreground)));
-  padding: 0.625rem 0.875rem;
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  line-height: 1.75;
+  line-height: 1.5rem;
 }
 
 .chat-message-bubble-wrap {
@@ -634,10 +687,10 @@ async function handleFileTaskDownload(
   max-width: var(--studio-message-width, min(100%, 44rem));
   align-items: flex-start;
   gap: 0.55rem;
-  border: 1px solid rgb(254 202 202);
-  border-radius: 14px;
-  background: rgb(254 242 242);
-  color: rgb(190 18 60);
+  border: 1px solid hsl(var(--tone-error-border));
+  border-radius: 0.75rem;
+  background: hsl(var(--tone-error-bg));
+  color: hsl(var(--tone-error-foreground));
   padding: 0.62rem 0.78rem;
   font-size: 0.835rem;
   line-height: 1.55;
@@ -727,14 +780,21 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-bubble-user {
-  --studio-bubble-fade-bg: hsl(var(--secondary));
-  border-color: var(--ui-accent-border, hsl(var(--foreground) / 0.16));
-  background: var(--ui-accent-soft, hsl(var(--secondary)));
+  --studio-bubble-fade-bg: color-mix(in srgb, hsl(var(--primary)) 8%, hsl(var(--card)));
+  border-color: transparent;
+  background: var(--studio-bubble-fade-bg);
 }
 
-.chat-message-bubble-assistant {
-  --studio-bubble-fade-bg: hsl(var(--card));
-  border-color: var(--ui-panel-border, hsl(var(--border)));
+.chat-message-bubble-assistant:not(.chat-message-bubble-image, .chat-message-bubble-error) {
+  border-color: transparent;
+  background: transparent;
+  padding-top: 0;
+  padding-left: 0;
+}
+
+.chat-message-container.is-file-message .chat-message-bubble-assistant:not(.chat-message-bubble-error) {
+  border-color: hsl(var(--border));
+  padding: 0.75rem 1rem;
 }
 
 .chat-message-bubble-image {
@@ -751,9 +811,9 @@ async function handleFileTaskDownload(
 }
 
 .chat-message-bubble-error {
-  --studio-bubble-fade-bg: rgb(254 242 242);
-  border-color: rgb(254 202 202);
-  background: rgb(254 242 242);
+  --studio-bubble-fade-bg: hsl(var(--tone-error-bg));
+  border-color: hsl(var(--tone-error-border));
+  background: var(--studio-bubble-fade-bg);
 }
 
 .studio-user-prompt {
@@ -961,17 +1021,15 @@ async function handleFileTaskDownload(
   align-items: center;
   gap: 0.42rem;
   margin-top: 0.65rem;
-  border: 1px solid hsl(var(--primary) / 0.18);
-  border-radius: 999px;
-  background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--muted) / 0.42));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--control-radius, 0.375rem);
+  background: hsl(var(--card));
   color: hsl(var(--foreground));
   padding: 0.34rem 0.68rem 0.34rem 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 720;
-  line-height: 1;
-  box-shadow: 0 8px 22px hsl(var(--primary) / 0.08);
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  transition: border-color var(--motion-fast) var(--ease-out-soft), background-color var(--motion-fast) var(--ease-out-soft);
 }
 
 .studio-search-source-chip-icon {
@@ -995,25 +1053,22 @@ async function handleFileTaskDownload(
   border-radius: 999px;
   background: hsl(var(--primary) / 0.13);
   color: hsl(var(--primary));
-  font-size: 0.68rem;
-  font-weight: 820;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .studio-search-source-chip small {
   border-left: 1px solid hsl(var(--primary) / 0.16);
   padding-left: 0.42rem;
   color: hsl(var(--muted-foreground));
-  font-size: 0.68rem;
-  font-weight: 780;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .studio-search-source-chip:hover,
 .studio-search-source-chip:focus-visible {
-  border-color: hsl(var(--primary) / 0.34);
-  background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.14), hsl(var(--secondary) / 0.72));
-  box-shadow: 0 10px 26px hsl(var(--primary) / 0.12);
-  transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.45);
+  background: hsl(var(--primary) / 0.08);
 }
 
 .studio-search-image-groups {
@@ -1297,7 +1352,7 @@ async function handleFileTaskDownload(
 
 .studio-error-text {
   margin-top: 0.45rem;
-  color: rgb(190 18 60);
+  color: hsl(var(--tone-error-foreground));
   font-size: 0.8125rem;
   line-height: 1.6;
 }
@@ -1330,7 +1385,7 @@ async function handleFileTaskDownload(
 
 .studio-image-status.is-error {
   align-items: flex-start;
-  color: rgb(185 28 28);
+  color: hsl(var(--tone-error-foreground));
 }
 
 .studio-result-block {
@@ -1499,10 +1554,7 @@ async function handleFileTaskDownload(
   }
 
   .chat-message-actions {
-    max-width: calc(100vw - 5.5rem);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 1px;
+    max-width: calc(100vw - 7.5rem);
   }
 
   .studio-message-reference-strip {

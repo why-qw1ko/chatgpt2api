@@ -306,6 +306,19 @@ def create_router(app_version: str) -> APIRouter:
             raise HTTPException(status_code=400, detail={"error": "state 必须是对象"})
         return await run_in_threadpool(studio_session_service.save, owner_id, state)
 
+    @router.delete("/api/studio-sessions/conversations/{conversation_id}")
+    async def delete_studio_conversation(
+        conversation_id: str,
+        authorization: str | None = Header(default=None),
+    ):
+        identity = require_identity(authorization)
+        owner_id = str(identity.get("id") or "")
+        return await run_in_threadpool(
+            studio_session_service.delete_conversation,
+            owner_id,
+            conversation_id,
+        )
+
     @router.delete("/api/studio-sessions")
     async def clear_studio_sessions(authorization: str | None = Header(default=None)):
         identity = require_identity(authorization)
@@ -387,6 +400,7 @@ def create_router(app_version: str) -> APIRouter:
         account: str = "",
         conversation_id: str = "",
         search: str = "",
+        key_id: str = "",
         limit: int = Query(default=200, ge=1, le=20000),
         offset: int = Query(default=0, ge=0),
         authorization: str | None = Header(default=None),
@@ -403,6 +417,7 @@ def create_router(app_version: str) -> APIRouter:
             account=account.strip(),
             conversation_id=conversation_id.strip(),
             search=search.strip(),
+            key_id=key_id.strip(),
             limit=limit,
             offset=offset,
         )

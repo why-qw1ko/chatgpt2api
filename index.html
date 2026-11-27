@@ -1,0 +1,614 @@
+<!-- AI生成 -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuxuryImage · 主题预览</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiko:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand-accent: #149dff;
+      --brand-ink: #00141f;
+      --brand-blue-deep: #0a72c9;
+      --brand-peach: #ffb375;
+      --brand-lime: #b9ff47;
+      --background: #f5fbff;
+      --foreground: #00141f;
+      --card: #ffffff;
+      --primary: #149dff;
+      --primary-foreground: #ffffff;
+      --secondary: #e8f4ff;
+      --secondary-foreground: #0a72c9;
+      --muted: #eef5fa;
+      --muted-foreground: #5a7180;
+      --accent: #b9ff47;
+      --accent-foreground: #00141f;
+      --border: #d3e3ee;
+      --input: #c2d7e6;
+      --ring: #149dff;
+      --radius: 12px;
+      --sidebar-bg: #f0f7fc;
+      --headline: #00141f;
+      --body: #334552;
+      --shadow-elevated: 0 18px 50px rgba(8, 48, 82, 0.12);
+      --shadow-floating: 0 8px 28px rgba(8, 48, 82, 0.10);
+      --shadow-soft: 0 2px 10px rgba(8, 48, 82, 0.06);
+      --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    html { font-size: 16px; }
+    body {
+      margin: 0;
+      font-family: 'Amiko', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--background);
+      color: var(--body);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 { color: var(--headline); font-weight: 700; letter-spacing: -0.035em; line-height: 1.25; margin: 0; }
+    h1 { font-size: 2.074rem; }
+    h2 { font-size: 1.728rem; }
+    h3 { font-size: 1.44rem; }
+    h4 { font-size: 1.2rem; }
+    small { font-size: 0.833rem; }
+
+    .page {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 100dvh;
+    }
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+    }
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(20, 157, 255, 0.28);
+    }
+    .wordmark { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.04em; color: var(--headline); }
+    .caption { font-size: 0.625rem; color: var(--muted-foreground); letter-spacing: 0.04em; margin-top: 2px; }
+    .nav-label {
+      padding: 0 12px 8px;
+      font-size: 0.625rem;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      color: var(--muted-foreground);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      margin: 0 4px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      color: var(--body);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: transform 140ms var(--ease-out-soft), background 140ms var(--ease-out-soft), color 140ms;
+    }
+    .nav-item:hover { transform: translateX(2px); background: rgba(20, 157, 255, 0.06); }
+    .nav-item.active {
+      background: rgba(20, 157, 255, 0.12);
+      color: var(--primary);
+      box-shadow: inset 0 0 0 1px rgba(20, 157, 255, 0.16);
+    }
+    .nav-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      background: rgba(20, 157, 255, 0.08);
+      color: var(--primary);
+      font-size: 0.75rem;
+    }
+    .nav-item.active .nav-icon { background: var(--primary); color: #fff; }
+
+    .main { padding: 28px 32px 48px; }
+    .intro {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--primary);
+      font-size: 0.625rem;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+    }
+    .intro p.lead { margin: 8px 0 0; color: var(--muted-foreground); font-size: 0.8125rem; max-width: 46rem; }
+    .intro-mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, rgba(20,157,255,0.16), rgba(185,255,71,0.28));
+      color: var(--primary);
+      box-shadow: var(--shadow-soft);
+      flex-shrink: 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+    .grid-2 { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-soft);
+      transition: box-shadow 220ms var(--ease-out-soft);
+    }
+    .card:hover { box-shadow: var(--shadow-floating); }
+    .card h3 { margin-bottom: 6px; }
+    .card .hint { margin: 0 0 18px; color: var(--muted-foreground); font-size: 0.8125rem; }
+
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--headline);
+      letter-spacing: -0.01em;
+    }
+    .control {
+      width: 100%;
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid var(--input);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--foreground);
+      font: inherit;
+      font-size: 0.8125rem;
+      transition: border-color 140ms var(--ease-out-soft), box-shadow 140ms var(--ease-out-soft);
+    }
+    .control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(20, 157, 255, 0.16);
+    }
+    .row { display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: 16px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: transform 140ms var(--ease-out-soft), box-shadow 140ms var(--ease-out-soft), background 140ms, border-color 140ms, color 140ms;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+    .btn-primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(20, 157, 255, 0.22);
+    }
+    .btn-primary:hover {
+      background: var(--brand-blue-deep);
+      border-color: var(--brand-blue-deep);
+      box-shadow: 0 10px 22px rgba(20, 157, 255, 0.28);
+    }
+    .btn-sm { height: 26px; padding: 0 9px; font-size: 0.6875rem; border-radius: 7px; }
+    .btn-lg { height: 38px; padding: 0 16px; font-size: 0.875rem; border-radius: 10px; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+    .swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .swatch {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--card);
+    }
+    .swatch .chip { height: 64px; }
+    .swatch .meta { padding: 10px; font-size: 0.6875rem; color: var(--muted-foreground); }
+    .swatch .meta strong { display: block; color: var(--headline); font-size: 0.75rem; margin-bottom: 2px; }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .stat-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: var(--secondary);
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+    .stat-icon.warm { background: #fff1e5; color: #d97b2b; }
+    .stat-icon.lime { background: #f2ffd0; color: #5a8f00; }
+    .stat-label { font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); }
+    .stat-value { font-size: 1.728rem; font-weight: 700; letter-spacing: -0.04em; color: var(--foreground); font-variant-numeric: tabular-nums; line-height: 1.15; }
+
+    .type-scale > div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .type-scale > div:last-child { border-bottom: 0; }
+    .type-scale .sample { color: var(--headline); font-weight: 700; letter-spacing: -0.035em; }
+    .type-scale .meta { color: var(--muted-foreground); font-size: 0.75rem; white-space: nowrap; }
+
+    .lightbox-demo {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(185,255,71,0.35), transparent 30%),
+        linear-gradient(160deg, #0b3a58, #149dff 55%, #7ec8ff);
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .lightbox-frame {
+      width: min(100%, 320px);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.28);
+      background: #fff;
+      animation: rise 240ms var(--ease-spring);
+    }
+    .lightbox-frame img { display: block; width: 100%; height: 180px; object-fit: cover; }
+    .lightbox-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(8,22,34,0.55);
+      backdrop-filter: blur(12px);
+      color: rgba(255,255,255,0.86);
+      font-size: 12px;
+    }
+    .lightbox-btn {
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .lightbox-btn:hover { background: rgba(255,255,255,0.16); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .login-split {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+    .login-story {
+      border-radius: 24px;
+      padding: 36px;
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(185,255,71,0.35), transparent 28%),
+        radial-gradient(circle at 18% 82%, rgba(255,179,117,0.32), transparent 32%),
+        linear-gradient(155deg, #dff3ff 0%, #f5fbff 48%, #e8f7ff 100%);
+      color: #00141f;
+    }
+    .login-story h2 { font-size: clamp(1.75rem, 3vw, 2.4rem); margin: 18px 0 12px; }
+    .login-story p { margin: 0; color: #334552; font-size: 0.875rem; line-height: 1.9; }
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow-floating);
+    }
+    .login-card h3 { font-size: 1.728rem; margin: 12px 0; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 22px;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--muted);
+      color: var(--muted-foreground);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+    .tag svg { flex-shrink: 0; width: 12px; height: 12px; }
+    .tag.blue { background: var(--secondary); border-color: transparent; color: var(--secondary-foreground); }
+    .tag.lime { background: #f2ffd0; border-color: transparent; color: #5a8f00; }
+    .tag.peach { background: #fff1e5; border-color: transparent; color: #d97b2b; }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 36px 0 14px;
+    }
+    .section-title h2 { font-size: 1.44rem; }
+    .section-title span { color: var(--muted-foreground); font-size: 0.8125rem; }
+
+    @media (max-width: 960px) {
+      .page { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .grid-2, .grid-3, .login-split, .row, .swatches { grid-template-columns: 1fr; }
+      .main { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<p data-aigc-mark="1" style="margin:0 0 8px;font-size:10px;line-height:1.3;color:#6b6560;font-weight:400;">AI生成</p>
+
+  <div class="page">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect width="64" height="64" rx="18" fill="#149dff"/>
+          <path d="M18 18v28h28" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="m40 12 3.5 10.5L54 26l-10.5 3.5L40 40l-3.5-10.5L26 26l10.5-3.5Z" fill="#ffffff"/>
+          <circle cx="49" cy="46" r="4" fill="#ffb375"/>
+        </svg>
+        <div>
+          <div class="wordmark">LuxuryImage</div>
+          <div class="caption">创作与管理控制台</div>
+        </div>
+      </div>
+      <div>
+        <div class="nav-label">导航</div>
+        <a class="nav-item active" href="#"><span class="nav-icon">⌂</span>概览</a>
+        <a class="nav-item" href="#"><span class="nav-icon">✦</span>创作台</a>
+        <a class="nav-item" href="#"><span class="nav-icon">▦</span>图库</a>
+        <a class="nav-item" href="#"><span class="nav-icon">⇄</span>代理</a>
+        <a class="nav-item" href="#"><span class="nav-icon">⚙</span>设置</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="intro">
+        <div>
+          <p class="eyebrow">DESIGN SYSTEM</p>
+          <h1>冰蓝画布 · 电光蓝主色</h1>
+          <p class="lead">在 Element Plus 之上重建主题与密度：Amiko 字体、1.2 字阶、轻量按钮、补全表单间距，并以内容尺寸收缩图片预览。</p>
+        </div>
+        <div class="intro-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card stat">
+          <div class="stat-icon">◎</div>
+          <div>
+            <div class="stat-label">今日生成</div>
+            <div class="stat-value">1,284</div>
+          </div>
+        </div>
+        <div class="card stat">
+          <div class="stat-icon warm">◈</div>
+          <div>
+            <div class="stat-label">代理可用率</div>
+            <div class="stat-value">98.6%</div>
+          </div>
+        </div>
+        <div class="card stat">
+          <div class="stat-icon lime">✧</div>
+          <div>
+            <div class="stat-label">创作时长</div>
+            <div class="stat-value">42h</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>表单密度与控件</h2>
+        <span>按钮收窄 · 标签与控件 8px 间距 · 焦点光环</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>代理管理</h3>
+          <p class="hint">出口优先级：账号个人代理 &gt; 账号组代理/代理组 &gt; 默认出口。</p>
+          <div class="row">
+            <div class="field">
+              <label for="mode">默认出口模式</label>
+              <select class="control" id="mode">
+                <option>代理组</option>
+                <option>自定义代理</option>
+                <option>直连</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="group">默认出口代理组</label>
+              <select class="control" id="group">
+                <option>亚太高速组</option>
+                <option>欧美备用组</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="url">自定义代理 URL</label>
+            <input class="control" id="url" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:7890" />
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-sm">测试默认出口</button>
+            <button class="btn btn-sm">设为直连</button>
+            <button class="btn btn-sm btn-primary">保存出口配置</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>控件层级</h3>
+          <p class="hint">主按钮用电光蓝，次级按钮保持中性描边，强调用柠檬绿与蜜桃橙点缀。</p>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-lg btn-primary">主操作</button>
+            <button class="btn">次操作</button>
+            <button class="btn btn-sm">小按钮</button>
+          </div>
+          <div class="btn-row">
+            <span class="tag blue"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>1.24s</span>
+            <span class="tag lime">高速</span>
+            <span class="tag peach">备用</span>
+            <span class="tag">中性</span>
+          </div>
+          <div class="field" style="margin-top:18px">
+            <label for="q">搜索</label>
+            <input class="control" id="q" placeholder="筛选代理组、节点或账号…" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>色板与字阶</h2>
+        <span>建议值已落到 CSS 变量，可继续微调</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="swatches">
+            <div class="swatch"><div class="chip" style="background:#f5fbff"></div><div class="meta"><strong>Background</strong>#f5fbff</div></div>
+            <div class="swatch"><div class="chip" style="background:#00141f"></div><div class="meta"><strong>Text</strong>#00141f</div></div>
+            <div class="swatch"><div class="chip" style="background:#149dff"></div><div class="meta"><strong>Primary</strong>#149dff</div></div>
+            <div class="swatch"><div class="chip" style="background:#ffb375"></div><div class="meta"><strong>Secondary</strong>#ffb375</div></div>
+            <div class="swatch"><div class="chip" style="background:#b9ff47"></div><div class="meta"><strong>Accent</strong>#b9ff47</div></div>
+          </div>
+        </div>
+        <div class="card type-scale">
+          <div><div class="sample" style="font-size:2.074rem">H1 标题</div><div class="meta">2.074rem / 33.18px</div></div>
+          <div><div class="sample" style="font-size:1.728rem">H2 标题</div><div class="meta">1.728rem / 27.65px</div></div>
+          <div><div class="sample" style="font-size:1.44rem">H3 标题</div><div class="meta">1.44rem / 23.04px</div></div>
+          <div><div class="sample" style="font-size:1.2rem">H4 标题</div><div class="meta">1.2rem / 19.2px</div></div>
+          <div><div class="sample" style="font-size:1rem;font-weight:400">正文 Body</div><div class="meta">1rem / 16px</div></div>
+          <div><div class="sample" style="font-size:0.833rem;font-weight:400">辅助 Small</div><div class="meta">0.833rem / 13.3px</div></div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>图片预览</h2>
+        <span>按内容收缩 · 无两侧空白 · 毛玻璃操作条</span>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="lightbox-demo">
+          <div>
+            <div class="lightbox-frame">
+              <svg viewBox="0 0 640 360" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="示例图片">
+                <defs>
+                  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#149dff"/>
+                    <stop offset="55%" stop-color="#7ec8ff"/>
+                    <stop offset="100%" stop-color="#b9ff47"/>
+                  </linearGradient>
+                </defs>
+                <rect width="640" height="360" fill="url(#g)"/>
+                <circle cx="500" cy="90" r="48" fill="#ffb375"/>
+                <path d="M80 300 L220 150 L320 230 L400 170 L560 300 Z" fill="rgba(0,20,31,0.18)"/>
+              </svg>
+            </div>
+            <div class="lightbox-bar">
+              <strong style="color:#fff">aurora-study-03.png</strong>
+              <span>2.4 MB</span>
+              <button class="lightbox-btn">下载</button>
+              <button class="lightbox-btn">复制链接</button>
+              <button class="lightbox-btn">标签</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>登录页气质</h2>
+        <span>左侧品牌叙事 · 右侧聚焦表单</span>
+      </div>
+      <div class="login-split">
+        <div class="login-story">
+          <div>
+            <div class="brand" style="padding:0">
+              <svg class="logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                <rect width="64" height="64" rx="18" fill="#149dff"/>
+                <path d="M18 18v28h28" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="m40 12 3.5 10.5L54 26l-10.5 3.5L40 40l-3.5-10.5L26 26l10.5-3.5Z" fill="#ffffff"/>
+                <circle cx="49" cy="46" r="4" fill="#ffb375"/>
+              </svg>
+              <div>
+                <div class="wordmark">LuxuryImage</div>
+                <div class="caption" style="color:#5a7180">YOUR CREATIVE WORKSPACE</div>
+              </div>
+            </div>
+            <h2>让灵感，<br />成为图像。</h2>
+            <p>从对话到创作，从灵感到管理。<br />在一个工作空间里，有序展开。</p>
+          </div>
+          <small style="color:#5a7180;letter-spacing:0.15em">对话 · 图像 · 工作空间</small>
+        </div>
+        <div class="login-card">
+          <p class="eyebrow">WELCOME BACK</p>
+          <h3>登录工作空间</h3>
+          <p class="hint">输入管理密钥，继续你的创作与管理。</p>
+          <div class="field">
+            <label for="key">管理密钥</label>
+            <input class="control" id="key" type="password" placeholder="输入 Bearer key" />
+          </div>
+          <button class="btn btn-lg btn-primary" style="width:100%">登录 →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

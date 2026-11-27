@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { Button, Checkbox } from 'nanocat-ui'
+import { Button, Checkbox } from '@/components/ui'
 import type { PromptSource } from '@/api/prompts'
 import MetaChip from '@/components/ai/MetaChip.vue'
 import OperationProgressDrawer from '@/components/ai/OperationProgressDrawer.vue'

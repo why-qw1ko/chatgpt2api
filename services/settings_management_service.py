@@ -53,6 +53,7 @@ _MANAGED_TOP_LEVEL_FIELDS = (
     "image_retention_hours",
     "log_retention_hours",
     "console_request_timeout_secs",
+    "studio_context_rounds",
     "image_poll_timeout_secs",
     "image_stream_timeout_secs",
     "image_poll_initial_wait_secs",
@@ -242,6 +243,7 @@ _FIELD_SPECS: dict[str, dict[str, Any]] = {
     "image_retention_hours": _numeric_field_metadata("image_retention_hours"),
     "log_retention_hours": _numeric_field_metadata("log_retention_hours"),
     "console_request_timeout_secs": _numeric_field_metadata("console_request_timeout_secs"),
+    "studio_context_rounds": _numeric_field_metadata("studio_context_rounds"),
     "image_poll_timeout_secs": _numeric_field_metadata("image_poll_timeout_secs"),
     "image_stream_timeout_secs": _numeric_field_metadata("image_stream_timeout_secs"),
     "image_poll_initial_wait_secs": _numeric_field_metadata("image_poll_initial_wait_secs"),
@@ -499,6 +501,10 @@ class SettingsManagementService:
             console_request_timeout_secs=normalize_integer_setting(
                 "console_request_timeout_secs",
                 effective.get("console_request_timeout_secs"),
+            ),
+            studio_context_rounds=normalize_integer_setting(
+                "studio_context_rounds",
+                effective.get("studio_context_rounds"),
             ),
             image_poll_timeout_secs=normalize_integer_setting(
                 "image_poll_timeout_secs",

@@ -9,6 +9,7 @@ Status: current
 
 | 操作 | 文档 |
 | --- | --- |
+| 版本维护、标签发布与部署升级 | [`release.md`](release.md) |
 | Docker 与源码部署、备份和升级 | [`../deployment.md`](../deployment.md) |
 
 ## 编写要求

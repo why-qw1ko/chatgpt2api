@@ -4,6 +4,7 @@ type ConfirmOptions = {
   title?: string
   message: string
   confirmText?: string
+  confirmVariant?: 'primary' | 'danger'
   cancelText?: string
 }
 
@@ -12,6 +13,7 @@ const open = ref(false)
 const title = ref('确认操作')
 const message = ref('')
 const confirmText = ref('确定')
+const confirmVariant = ref<NonNullable<ConfirmOptions['confirmVariant']>>('primary')
 const cancelText = ref('取消')
 let resolver: ((value: boolean) => void) | null = null
 
@@ -21,6 +23,7 @@ export function useConfirmDialog() {
       title.value = options.title || '确认操作'
       message.value = options.message
       confirmText.value = options.confirmText || '确定'
+      confirmVariant.value = options.confirmVariant ?? 'primary'
       cancelText.value = options.cancelText || '取消'
       open.value = true
       resolver = resolve
@@ -43,6 +46,7 @@ export function useConfirmDialog() {
     title,
     message,
     confirmText,
+    confirmVariant,
     cancelText,
     ask,
     confirm,

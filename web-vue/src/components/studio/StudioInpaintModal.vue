@@ -162,7 +162,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Button, Input } from 'nanocat-ui'
+import { Button, Input } from '@/components/ui'
 import ModalFooter from '@/components/ai/ModalFooter.vue'
 import ModalHeader from '@/components/ai/ModalHeader.vue'
 import type { StudioImageCompareSource } from './types'

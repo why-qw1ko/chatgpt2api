@@ -1,7 +1,14 @@
 <template>
   <div class="space-y-6">
+    <StateBlock v-if="loadError && !hasSnapshot" title="代理配置加载失败" :description="loadError">
+      <Button variant="outline" root-class="mt-4" :loading="loading" @click="loadData">重新加载</Button>
+    </StateBlock>
+    <template v-else>
+    <div v-if="loadError" class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+      刷新失败，当前保留上次配置。{{ loadError }}
+    </div>
     <PagePanel class="space-y-5">
-      <PanelHeader title="代理管理" align="start">
+      <PanelHeader page title="代理管理" align="start">
         <template #copy>
           <p class="mt-1 text-xs text-muted-foreground">
             出口优先级：账号个人代理 > 账号组代理/代理组 > 默认出口；默认出口可配置代理组、代理 URL 或直连。
@@ -11,15 +18,15 @@
           <Button size="sm" variant="outline" :disabled="loading" @click="loadData">
             {{ loading ? '刷新中...' : '刷新' }}
           </Button>
-          <Button size="sm" variant="primary" :disabled="savingDefaultProxy || loading" @click="saveDefaultProxy">
+          <Button size="sm" variant="primary" :disabled="loading" :loading="savingDefaultProxy" @click="saveDefaultProxy">
             {{ savingDefaultProxy ? '保存中...' : '保存出口配置' }}
           </Button>
         </template>
       </PanelHeader>
 
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <FormSection density="roomy">
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
             <label class="block text-xs">
               <span class="ui-field-label">默认出口模式</span>
               <GroupedSelectMenu
@@ -60,7 +67,7 @@
               未指定账号或账号组代理时直连。
             </div>
           </div>
-          <ActionRow class="mt-3" gap="tight">
+          <ActionRow class="mt-4" gap="tight">
             <Button size="xs" variant="outline" :disabled="testingKey === DEFAULT_TEST_KEY || !canTestDefaultProxy" @click="testDefaultProxy">
               {{ testingKey === DEFAULT_TEST_KEY ? '测试中...' : '测试默认出口' }}
             </Button>
@@ -68,8 +75,8 @@
               设为直连
             </Button>
           </ActionRow>
-          <div class="mt-4 border-t border-border pt-4">
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="mt-5 border-t border-border pt-5">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
               <label class="block text-xs">
                 <span class="ui-field-label">备用出口模式</span>
                 <GroupedSelectMenu
@@ -119,11 +126,11 @@
         <FormSection density="roomy" surface="background">
           <p class="text-xs text-muted-foreground">默认出口测试结果</p>
           <div v-if="defaultTestResult" class="mt-3 space-y-1 text-xs">
-            <p :class="defaultTestResult.ok ? 'text-emerald-600' : 'text-rose-600'">
+            <p :class="defaultTestResult.ok ? 'text-tone-success' : 'text-tone-error'">
               {{ defaultTestResult.ok ? '可用' : '不可用' }}
             </p>
             <p class="text-muted-foreground">HTTP {{ defaultTestResult.status || '-' }} · {{ defaultTestResult.latency_ms || 0 }}ms</p>
-            <p v-if="defaultTestResult.error" class="break-all text-rose-600">{{ defaultTestResult.error }}</p>
+            <p v-if="defaultTestResult.error" class="break-all text-tone-error">{{ defaultTestResult.error }}</p>
           </div>
           <p v-else class="mt-3 text-xs text-muted-foreground">尚未测试</p>
         </FormSection>
@@ -149,6 +156,7 @@
         </template>
       </PanelHeader>
       <TableShell
+        :class="{ 'h-[clamp(20rem,52dvh,40rem)]': isWorkspaceLayout }"
         unframed
         hover-rows
         sticky-header
@@ -160,7 +168,7 @@
         :empty-colspan="6"
         empty-title="暂无代理组"
         empty-description="新建代理组后，可绑定账号组、账号或默认出口使用。"
-        :scroll-class="isWorkspaceLayout ? 'max-h-[min(36rem,65dvh)]' : ''"
+        :scroll-class="isWorkspaceLayout ? 'max-h-none' : ''"
         table-class="min-w-[1080px] w-full table-fixed text-left text-sm"
         head-class="tracking-[0.16em]"
       >
@@ -202,6 +210,8 @@
         </template>
       </TableShell>
     </PagePanel>
+
+    </template>
 
     <ModalShell
       :open="showGroupModal"
@@ -382,7 +392,7 @@ import {
   GroupedSelectMenu,
   Input,
   TableShell,
-} from 'nanocat-ui'
+} from '@/components/ui'
 import ActionRow from '@/components/ai/ActionRow.vue'
 import ListLayoutControl from '@/components/ai/ListLayoutControl.vue'
 import FormSection from '@/components/ai/FormSection.vue'
@@ -392,6 +402,7 @@ import ModalHeader from '@/components/ai/ModalHeader.vue'
 import ModalShell from '@/components/ai/ModalShell.vue'
 import OperationProgressDrawer from '@/components/ai/OperationProgressDrawer.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import StateBlock from '@/components/ai/StateBlock.vue'
 import PanelHeader from '@/components/ai/PanelHeader.vue'
 import { usePageVisibilityReload } from '@/composables/usePageQuery'
 import { usePageRuntime } from '@/composables/usePageRuntime'
@@ -452,6 +463,8 @@ const proxyDefaultRuntime = useProxyDefaultRuntime({
   testingKey,
   updateGroups,
 })
+const loadError = proxyDefaultRuntime.loadError
+const hasSnapshot = proxyDefaultRuntime.hasSnapshot
 const loading = proxyDefaultRuntime.loading
 const savingDefaultProxy = proxyDefaultRuntime.savingDefaultProxy
 const defaultProxyMode = proxyDefaultRuntime.defaultProxyMode

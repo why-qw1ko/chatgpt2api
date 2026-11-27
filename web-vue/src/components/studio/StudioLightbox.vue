@@ -6,8 +6,11 @@
     :copied="false"
     :show-actions="true"
     :show-tag-action="false"
+    copy-label="复制图片"
+    :show-copy-link-action="canCopyLink"
     @close="$emit('close')"
     @copy="copyPreview"
+    @copy-link="copyPreviewLink"
     @download="$emit('download')"
   />
 </template>
@@ -24,7 +27,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  copy: [value: string]
+  'copy-image': [preview: StudioPreviewImage]
+  'copy-link': [preview: StudioPreviewImage]
   download: []
 }>()
 
@@ -55,8 +59,13 @@ const lightboxFile = computed<GalleryFile | null>(() => {
   }
 })
 
+const canCopyLink = computed(() => Boolean(props.preview?.localPath || /^https?:|^\//i.test(props.preview?.src || '')))
+
 function copyPreview() {
-  if (!props.preview?.src) return
-  emit('copy', props.preview.src)
+  if (props.preview) emit('copy-image', props.preview)
+}
+
+function copyPreviewLink() {
+  if (props.preview) emit('copy-link', props.preview)
 }
 </script>

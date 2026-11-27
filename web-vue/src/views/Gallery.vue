@@ -1,7 +1,7 @@
 <template>
   <div class="gallery-page" :class="{ 'gallery-page--contained': isWorkspaceLayout }">
     <PagePanel class="gallery-hero">
-      <PanelHeader title="图片管理">
+      <PanelHeader page title="图片管理">
         <template #actions>
           <Button size="sm" variant="outline" :disabled="isLoading" @click="openStorageModal">
             存储管理
@@ -295,7 +295,7 @@ import {
   type GalleryFile,
   type ImageStorageStats,
 } from '@/api/gallery'
-import { Button, Checkbox, CloseButton, GroupedSelectMenu, Input } from 'nanocat-ui'
+import { Button, Checkbox, CloseButton, GroupedSelectMenu, Input } from '@/components/ui'
 import ActionRow from '@/components/ai/ActionRow.vue'
 import DateRangeInputs from '@/components/ai/DateRangeInputs.vue'
 import FilterToolbar from '@/components/ai/FilterToolbar.vue'
@@ -535,12 +535,10 @@ pageRuntime.onShow(() => {
   gap: 16px;
 }
 
-@media (min-width: 1024px) {
-  .gallery-page--contained {
-    min-height: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-  }
+.gallery-page--contained {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .gallery-hero {
@@ -560,14 +558,16 @@ pageRuntime.onShow(() => {
   min-width: 8rem;
 }
 
+.gallery-filter-field :deep(.lux-select) { width: 100%; }
+
 .gallery-filter-field--tag {
   flex-basis: 9rem;
 }
 
 .gallery-date-range {
-  --date-range-flex: 0 1 17rem;
-  --date-range-min-width: min(100%, 16rem);
-  --date-range-input-min-width: 7.25rem;
+  --date-range-flex: 0 1 20rem;
+  --date-range-min-width: min(100%, 20rem);
+  --date-range-input-min-width: 0px;
 }
 
 @media (max-width: 640px) {

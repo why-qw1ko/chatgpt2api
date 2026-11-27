@@ -6,7 +6,6 @@ import secrets
 import uuid
 from datetime import datetime, timezone
 from threading import Lock
-from time import monotonic
 from typing import Literal
 
 from services.config import config
@@ -18,8 +17,6 @@ from services.storage.base import (
 
 AuthRole = Literal["admin", "user"]
 _CAS_ATTEMPTS = 4
-_AUTH_SNAPSHOT_REFRESH_INTERVAL_SECONDS = 5.0
-_AUTH_SNAPSHOT_MAX_STALE_SECONDS = 30.0
 
 
 def _now_iso() -> str:
@@ -34,12 +31,9 @@ class AuthService:
     def __init__(self, storage: StorageBackend):
         self.storage = storage
         self._lock = Lock()
-        self._snapshot_refresh_lock = Lock()
         self._items: list[dict[str, object]] = []
         self._revision: str | None = None
         self._last_used_flush_at: dict[str, datetime] = {}
-        self._last_snapshot_refresh_attempt_at = 0.0
-        self._last_snapshot_refresh_success_at = 0.0
         self._reload_locked(suppress_errors=True)
 
     @staticmethod
@@ -103,57 +97,13 @@ class AuthService:
             raise
         self._items = items
         self._revision = revision
-        refreshed_at = monotonic()
-        self._last_snapshot_refresh_attempt_at = refreshed_at
-        self._last_snapshot_refresh_success_at = refreshed_at
+        active_ids = {self._clean(item.get("id")) for item in items}
+        self._last_used_flush_at = {
+            item_id: flushed_at
+            for item_id, flushed_at in self._last_used_flush_at.items()
+            if item_id in active_ids
+        }
         return True
-
-    def _snapshot_is_usable(self, now: float | None = None) -> bool:
-        checked_at = monotonic() if now is None else now
-        return (
-            self._last_snapshot_refresh_success_at > 0
-            and checked_at - self._last_snapshot_refresh_success_at
-            <= _AUTH_SNAPSHOT_MAX_STALE_SECONDS
-        )
-
-    def _refresh_snapshot_if_due(self) -> bool:
-        now = monotonic()
-        if (
-            now - self._last_snapshot_refresh_attempt_at
-            < _AUTH_SNAPSHOT_REFRESH_INTERVAL_SECONDS
-        ):
-            return self._snapshot_is_usable(now)
-        if not self._snapshot_refresh_lock.acquire(blocking=False):
-            return self._snapshot_is_usable(now)
-        try:
-            now = monotonic()
-            if (
-                now - self._last_snapshot_refresh_attempt_at
-                < _AUTH_SNAPSHOT_REFRESH_INTERVAL_SECONDS
-            ):
-                return self._snapshot_is_usable(now)
-            self._last_snapshot_refresh_attempt_at = now
-            with self._lock:
-                expected_local_revision = self._revision
-            try:
-                items, revision = self._load_snapshot()
-            except Exception:
-                return self._snapshot_is_usable()
-            with self._lock:
-                if self._revision != expected_local_revision:
-                    return self._snapshot_is_usable()
-                self._items = items
-                self._revision = revision
-                self._last_snapshot_refresh_success_at = monotonic()
-                active_ids = {self._clean(item.get("id")) for item in items}
-                self._last_used_flush_at = {
-                    item_id: flushed_at
-                    for item_id, flushed_at in self._last_used_flush_at.items()
-                    if item_id in active_ids
-                }
-                return True
-        finally:
-            self._snapshot_refresh_lock.release()
 
     def _set_cached_item_locked(self, item: dict[str, object], revision: str) -> None:
         item_id = self._clean(item.get("id"))
@@ -228,13 +178,23 @@ class AuthService:
         candidate = self._clean(raw_key)
         if not candidate:
             raise ValueError("请输入新的专用密钥")
-        admin_key = self._clean(config.auth_key)
-        if admin_key and hmac.compare_digest(candidate, admin_key):
-            raise ValueError("这个密钥和管理员密钥冲突了，请换一个新的密钥")
+        if len(candidate) > 512 or any(not 33 <= ord(character) <= 126 for character in candidate):
+            raise ValueError("密钥最多支持 512 个字符，请使用不含空格的英文字母、数字或符号")
         key_hash = _hash_key(candidate)
+        admin_key = self._clean(config.auth_key)
+        if admin_key and hmac.compare_digest(key_hash, _hash_key(admin_key)):
+            raise ValueError("这个密钥和管理员密钥冲突了，请换一个新的密钥")
         if self._has_key_hash_locked(key_hash, exclude_id=exclude_id):
             raise ValueError("这个专用密钥已经存在，请换一个新的密钥")
         return key_hash
+
+    def _generate_key_locked(self) -> tuple[str, str]:
+        while True:
+            raw_key = f"sk-{secrets.token_urlsafe(24)}"
+            try:
+                return raw_key, self._build_key_hash_locked(raw_key)
+            except ValueError:
+                continue
 
     def _has_name_locked(self, name: str, *, role: AuthRole | None = None, exclude_id: str = "") -> bool:
         candidate = self._clean(name)
@@ -275,18 +235,17 @@ class AuthService:
         role: AuthRole,
         name: str = "",
         daily_image_limit: int | None = None,
+        key: str | None = None,
     ) -> tuple[dict[str, object], str]:
         with self._lock:
             for attempt in range(_CAS_ATTEMPTS):
                 self._reload_locked()
                 normalized_name = self._build_name_locked(name, role=role)
-                while True:
-                    raw_key = f"sk-{secrets.token_urlsafe(24)}"
-                    try:
-                        key_hash = self._build_key_hash_locked(raw_key)
-                        break
-                    except ValueError:
-                        continue
+                raw_key = self._clean(key)
+                if raw_key:
+                    key_hash = self._build_key_hash_locked(raw_key)
+                else:
+                    raw_key, key_hash = self._generate_key_locked()
                 existing_ids = {self._clean(item.get("id")) for item in self._items}
                 while True:
                     item_id = uuid.uuid4().hex[:12]
@@ -329,6 +288,20 @@ class AuthService:
         *,
         role: AuthRole | None = None,
     ) -> dict[str, object] | None:
+        result = self._update_key(key_id, updates, role=role)
+        return result[0] if result is not None else None
+
+    def rotate_key(self, key_id: str, *, role: AuthRole) -> tuple[dict[str, object], str] | None:
+        return self._update_key(key_id, {}, role=role, rotate=True)
+
+    def _update_key(
+        self,
+        key_id: str,
+        updates: dict[str, object],
+        *,
+        role: AuthRole | None = None,
+        rotate: bool = False,
+    ) -> tuple[dict[str, object], str] | None:
         normalized_id = self._clean(key_id)
         if not normalized_id:
             return None
@@ -348,7 +321,10 @@ class AuthService:
                     )
                 if "enabled" in updates and updates.get("enabled") is not None:
                     next_item["enabled"] = bool(updates.get("enabled"))
-                if "key" in updates and updates.get("key") is not None:
+                raw_key = ""
+                if rotate:
+                    raw_key, next_item["key_hash"] = self._generate_key_locked()
+                elif "key" in updates and updates.get("key") is not None:
                     next_item["key_hash"] = self._build_key_hash_locked(str(updates.get("key") or ""), exclude_id=normalized_id)
                 if "daily_image_limit" in updates:
                     limit_value = updates.get("daily_image_limit")
@@ -372,7 +348,7 @@ class AuthService:
                         raise
                     continue
                 self._set_cached_item_locked(next_item, result.revision)
-                return self._public_item(next_item)
+                return self._public_item(next_item), raw_key
         return None
 
     def delete_key(self, key_id: str, *, role: AuthRole | None = None) -> bool:
@@ -405,9 +381,13 @@ class AuthService:
         if not candidate:
             return None
         candidate_hash = _hash_key(candidate)
-        if not self._refresh_snapshot_if_due():
+        try:
+            revision = self.storage.load_auth_keys_revision()
+        except Exception:
             return None
         with self._lock:
+            if self._revision != revision and not self._reload_locked(suppress_errors=True):
+                return None
             now = datetime.now(timezone.utc)
             for attempt in range(_CAS_ATTEMPTS):
                 index = self._find_hash_index_locked(candidate_hash)

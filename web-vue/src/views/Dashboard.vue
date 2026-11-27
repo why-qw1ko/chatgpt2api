@@ -1,5 +1,20 @@
 <template>
-  <div class="space-y-5">
+  <div class="dashboard-page space-y-5">
+    <header class="page-intro workspace-hero" data-spotlight>
+      <div class="workspace-pendulum" aria-hidden="true"><span></span><i></i></div>
+      <div class="workspace-hero-copy">
+        <p class="page-eyebrow"><span class="workspace-eyebrow-line" aria-hidden="true"></span>LUXURYIMAGE / OVERVIEW</p>
+        <h1>工作空间概览<span class="workspace-title-dot" aria-hidden="true">.</span></h1>
+        <p><TypewriterText text="把创作交给灵感，把运行状态尽收眼底。" /></p>
+        <div class="workspace-hero-caption"><span>账号资源</span><span>调用趋势</span><span>运行状态</span></div>
+        <div class="workspace-reveal-note"><i aria-hidden="true"></i> 灵感有序，创作自由。</div>
+      </div>
+      <div class="workspace-orbit" aria-hidden="true">
+        <i></i><i></i><i></i>
+        <div class="workspace-orbit-core"><img src="/logo.svg" alt="" /></div>
+        <span>CREATIVE OPERATIONS</span>
+      </div>
+    </header>
     <PageLoadingState
       v-if="!dashboardDataReady && !dashboardLoadError"
       title="正在加载概览"
@@ -33,6 +48,8 @@
       <StatCard
         v-for="stat in accountStats"
         :key="stat.label"
+        animate
+        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -48,6 +65,8 @@
       <StatCard
         v-for="stat in callStats"
         :key="stat.label"
+        animate
+        data-tilt
         :label="stat.label"
         :value="stat.value"
         :icon="stat.icon"
@@ -222,8 +241,9 @@
 </template>
 
 <script setup lang="ts">
+import TypewriterText from '@/components/ui/TypewriterText.vue'
 import { computed } from 'vue'
-import { Button, ChartCard, HelpTip, HoverCard, StatCard } from 'nanocat-ui'
+import { Button, ChartCard, HelpTip, HoverCard, StatCard } from '@/components/ui'
 import { Icon } from '@iconify/vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
@@ -327,25 +347,25 @@ const runtimeResourceMetrics = computed(() => {
       label: '应用 CPU',
       value: formatPercent(runtime?.process_cpu_percent),
       icon: 'lucide:cpu',
-      iconClass: 'text-sky-600 dark:text-sky-400',
+      iconClass: 'text-primary',
       progress: runtime?.process_cpu_percent ?? null,
-      progressClass: 'text-sky-500 dark:text-sky-400',
+      progressClass: 'text-primary',
     },
     {
       label: '应用内存',
       value: formatBytes(runtime?.process_memory_bytes),
       icon: 'lucide:memory-stick',
-      iconClass: 'text-indigo-600 dark:text-indigo-400',
+      iconClass: 'text-primary',
       progress: runtime?.process_memory_percent ?? null,
-      progressClass: 'text-indigo-500 dark:text-indigo-400',
+      progressClass: 'text-primary',
     },
     {
       label: memoryScopeLabel(runtime?.memory_scope),
       value: formatPercent(runtime?.memory_percent),
       icon: 'lucide:memory-stick',
-      iconClass: 'text-amber-600 dark:text-amber-400',
+      iconClass: 'text-primary',
       progress: runtime?.memory_percent ?? null,
-      progressClass: 'text-amber-500 dark:text-amber-400',
+      progressClass: 'text-primary',
     },
     {
       label: '数据盘',
@@ -509,6 +529,145 @@ function activityTooltipItems(bucket: DashboardBucket) {
 </script>
 
 <style scoped>
+.workspace-hero {
+  --workspace-hero-bg: #edf1fc;
+  --workspace-hero-text: #202c49;
+  --workspace-hero-muted: #536885;
+  --workspace-hero-accent: hsl(176 55% 24%);
+  --workspace-hero-divider: hsl(222 22% 15% / 0.2);
+  --workspace-hero-note: rgb(255 255 255 / 0.35);
+  --workspace-hero-glow: 0.35;
+  position: relative;
+  isolation: isolate;
+  min-height: 216px;
+  overflow: hidden;
+  padding: 30px 36px;
+  border: 1px solid rgb(173 193 255 / 0.18);
+  border-radius: 14px;
+  background: var(--workspace-hero-bg);
+  box-shadow: 0 12px 30px -16px rgb(21 38 82 / 0.38);
+}
+
+html[data-theme="dark"] .workspace-hero {
+  --workspace-hero-bg: #121c34;
+  --workspace-hero-text: #f3f6ff;
+  --workspace-hero-muted: #a6b6d0;
+  --workspace-hero-accent: hsl(171 53% 73%);
+  --workspace-hero-divider: hsl(222 25% 94% / 0.2);
+  --workspace-hero-note: hsl(224 25% 11% / 0.35);
+  --workspace-hero-glow: 1;
+}
+
+.workspace-hero::before { content: ''; position: absolute; z-index: -1; inset: -40%; background: radial-gradient(ellipse at 72% 42%, rgb(45 188 190 / 0.38), transparent 26%), radial-gradient(ellipse at 53% 58%, rgb(103 73 212 / 0.46), transparent 36%); transform: rotate(-12deg); opacity: var(--workspace-hero-glow); }
+.workspace-hero-copy { z-index: 1; }
+.workspace-hero .page-eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; color: var(--workspace-hero-muted); font-size: 9px; letter-spacing: 0.19em; }
+.workspace-eyebrow-line { width: 22px; height: 1px; background: var(--workspace-hero-accent); }
+.workspace-hero h1 { color: var(--workspace-hero-text); font-size: clamp(24px, 2.6vw, 36px); letter-spacing: -0.06em; font-weight: 600; }
+.workspace-title-dot { color: var(--workspace-hero-accent); margin-left: 5px; }
+.workspace-hero h1 + p { color: var(--workspace-hero-muted); font-size: 12px; margin-top: 12px; }
+.workspace-hero-caption { display: flex; gap: 16px; margin-top: 22px; color: var(--workspace-hero-muted); font-size: 10px; }
+.workspace-hero-caption span + span { border-left: 1px solid var(--workspace-hero-divider); padding-left: 16px; }
+.workspace-orbit { position: relative; width: 260px; height: 156px; flex-shrink: 0; display: grid; place-items: center; }
+.workspace-orbit > i { position: absolute; width: 210px; height: 94px; border: 1px solid rgb(161 213 235 / 0.26); border-radius: 50%; transform: rotate(-25deg); }
+.workspace-orbit > i:nth-child(2) { transform: rotate(35deg); width: 184px; height: 120px; border-color: rgb(168 166 255 / 0.4); }
+.workspace-orbit > i:nth-child(3) { transform: rotate(95deg); width: 184px; height: 120px; border-color: rgb(100 223 211 / 0.35); }
+.workspace-orbit-core { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 18px; transform: rotate(-10deg); background: rgb(210 223 255 / 0.08); border: 1px solid rgb(226 238 255 / 0.25); box-shadow: 0 0 54px rgb(133 148 255 / 0.2); backdrop-filter: blur(8px); }
+.workspace-orbit-core img { width: 40px; height: 40px; transform: rotate(10deg); }
+.workspace-orbit > span { position: absolute; bottom: -10px; color: var(--workspace-hero-muted); font-size: 8px; letter-spacing: 0.23em; }
+
+.workspace-pendulum { position: absolute; top: 0; left: 20px; width: 14px; height: 35px; transform-origin: top center; pointer-events: none; }
+.workspace-pendulum span { display: block; width: 1px; height: 24px; margin: auto; background: var(--workspace-hero-muted); opacity: 0.5; }
+.workspace-pendulum i { display: block; width: 10px; height: 10px; margin: auto; border-radius: 3px; background: var(--workspace-hero-accent); box-shadow: 0 0 12px color-mix(in srgb, var(--workspace-hero-accent) 18%, transparent); }
+@keyframes workspace-swing { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(-24deg); } }
+.workspace-reveal-note { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 6px 10px; border-radius: 6px; background: var(--workspace-hero-note); color: var(--workspace-hero-muted); font-size: 10px; }
+.workspace-reveal-note > i { width: 5px; height: 5px; border-radius: 50%; background: var(--workspace-hero-accent); }
+@keyframes workspace-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+.workspace-hero::after,
+.dashboard-page :deep(.lux-stat-card[data-tilt]::after) {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(280px circle at var(--light-x, 50%) var(--light-y, 50%), rgb(120 148 255 / 0.1), transparent 75%);
+  opacity: 0;
+  pointer-events: none;
+  content: '';
+  transition: opacity var(--motion-base);
+}
+
+.workspace-hero[data-lit]::after,
+.dashboard-page :deep(.lux-stat-card[data-tilt][data-lit]::after) {
+  opacity: 1;
+}
+
+.dashboard-page :deep(.lux-stat-card[data-tilt]) {
+  position: relative;
+  border-radius: 14px;
+  border-color: hsl(var(--border) / 0.8);
+  box-shadow: var(--shadow-soft);
+  transition: border-color var(--motion-base), box-shadow var(--motion-base);
+}
+
+.dashboard-page :deep(.lux-stat-card[data-tilt]:hover) {
+  border-color: hsl(var(--primary) / 0.2);
+  box-shadow: var(--shadow-floating);
+}
+
+.dashboard-page :deep(.lux-stat-label) {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dashboard-page :deep(.lux-stat-icon) {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.dashboard-page :deep(.lux-stat-value),
+.dashboard-page :deep(.lux-stat-card .el-statistic__content) {
+  font-size: 27px;
+  font-weight: 550;
+  letter-spacing: -0.045em;
+}
+
+.dashboard-page :deep(.lux-chart-card) {
+  --el-card-border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-pendulum { animation: workspace-swing 1.6s ease-in-out infinite; }
+  .workspace-reveal-note { animation: workspace-wipe 1100ms var(--ease-spring) 400ms both; }
+  .workspace-orbit > i { animation: orbit-arrive 1100ms var(--ease-spring) both; }
+  .workspace-orbit > i:nth-child(2) { animation-delay: 90ms; }
+  .workspace-orbit > i:nth-child(3) { animation-delay: 180ms; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .workspace-hero::before { animation: workspace-aurora 16s ease-in-out 2 alternate; }
+
+  .dashboard-page :deep(.lux-stat-card[data-tilt]) {
+    transform: perspective(800px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+    transition: transform 280ms var(--ease-spring), box-shadow 220ms, border-color 220ms;
+  }
+
+  .dashboard-page :deep(.lux-stat-card[data-tilt][data-lit]) {
+    z-index: 1;
+    transition: transform 100ms linear, box-shadow 220ms, border-color 220ms;
+  }
+}
+
+@keyframes workspace-aurora { to { transform: translate(4%, -3%) rotate(8deg); } }
+@keyframes orbit-arrive { from { opacity: 0; scale: 0.85; } to { opacity: 1; scale: 1; } }
+
+@media (max-width: 767px) {
+  .workspace-hero { min-height: 185px; padding: 24px; border-radius: 10px; }
+  .workspace-orbit { display: none; }
+  .workspace-hero-caption { gap: 12px; }
+  .workspace-hero-caption span + span { padding-left: 12px; }
+}
+
 .dashboard-activity-cell {
   animation: dashboard-activity-cell-enter 180ms ease-out both;
 }

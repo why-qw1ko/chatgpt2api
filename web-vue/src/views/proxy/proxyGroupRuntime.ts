@@ -11,6 +11,7 @@ import {
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useOperationProgressRuntime } from '@/composables/useOperationProgressRuntime'
 import { useToast } from '@/composables/useToast'
+import { writeClipboardText } from '@/lib/clipboard'
 import { errorMessage, prefixedErrorMessage } from '@/lib/errorMessage'
 import {
   proxyGroupReference,
@@ -184,19 +185,7 @@ export function useProxyGroupRuntime() {
     const text = String(value || '').trim()
     if (!text) return
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text)
-      } else {
-        const input = document.createElement('textarea')
-        input.value = text
-        input.setAttribute('readonly', 'readonly')
-        input.style.position = 'fixed'
-        input.style.opacity = '0'
-        document.body.appendChild(input)
-        input.select()
-        document.execCommand('copy')
-        document.body.removeChild(input)
-      }
+      await writeClipboardText(text)
       toast.success(message)
     } catch {
       toast.error('复制失败')

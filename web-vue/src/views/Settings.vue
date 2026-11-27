@@ -1,22 +1,21 @@
 <template>
   <div class="space-y-6">
     <PagePanel v-if="localSettings" class="settings-page-panel space-y-5">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p class="ui-section-title">设置</p>
-          <p class="mt-1 text-xs text-muted-foreground">按原版模块分组维护系统配置。</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
+      <PanelHeader page title="系统设置" align="start">
+        <template #copy>
+          <p class="mt-1 text-xs text-muted-foreground">集中管理服务配置、存储与访问密钥。</p>
+        </template>
+        <template #actions>
           <Button size="sm" variant="outline" :disabled="settingsStore.isLoading || isSaving" @click="reloadSettings">
             {{ settingsStore.isLoading ? '刷新中...' : '刷新' }}
           </Button>
-          <Button size="sm" variant="primary" :disabled="settingsStore.isLoading || isSaving || !localSettings || hasInvalidNumberSettings" @click="handleSave">
+          <Button size="sm" variant="primary" :loading="isSaving" :disabled="settingsStore.isLoading || !localSettings || hasInvalidNumberSettings" @click="handleSave">
             {{ isSaving ? '保存中...' : '保存设置' }}
           </Button>
-        </div>
-      </div>
+        </template>
+      </PanelHeader>
 
-      <ConsoleSegmentedTabs v-model="activeSettingsTab" :options="settingsTabs" aria-label="设置分组" />
+      <ConsoleSegmentedTabs v-model="activeSettingsTab" :options="settingsTabs" class="settings-tabs" aria-label="设置分组" />
 
       <div v-if="activeSettingsTab === 'basic'" class="space-y-4">
         <SurfaceBox density="compact">
@@ -34,6 +33,7 @@
               :image-retention-hours-field="imageRetentionHoursField"
               :log-retention-hours-field="logRetentionHoursField"
               :console-request-timeout-field="consoleRequestTimeoutField"
+              :studio-context-rounds-field="studioContextRoundsField"
               :image-poll-timeout-field="imagePollTimeoutField"
               :image-stream-timeout-field="imageStreamTimeoutField"
               :image-poll-initial-wait-field="imagePollInitialWaitField"
@@ -124,12 +124,15 @@
         v-else-if="activeSettingsTab === 'keys'"
         :user-keys="userKeys"
         :user-keys-loading="userKeysLoading"
+        :user-keys-error="userKeysError"
         :user-key-busy="userKeyBusy"
         :new-user-key="newUserKey"
         @load="loadUserKeys"
         @create="openUserKeyCreateModal"
         @copy="copyUserKey"
+        @dismiss-key="clearNewUserKey"
         @edit="openUserKeyEditModal"
+        @rotate="rotateUserKey"
         @toggle="toggleUserKey"
         @delete="deleteUserKey"
       />
@@ -291,7 +294,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
-import { Button, FormField, FormSection, HelpTip } from 'nanocat-ui'
+import { Button, FormField, FormSection, HelpTip } from '@/components/ui'
 import { usePageRuntime } from '@/composables/usePageRuntime'
 import ConsoleSegmentedTabs from '@/components/ai/ConsoleSegmentedTabs.vue'
 import ModalBody from '@/components/ai/ModalBody.vue'
@@ -302,6 +305,7 @@ import AccountImportTargetGroupField from '@/views/accounts/AccountImportTargetG
 import AccountOperationDrawer from '@/views/accounts/AccountOperationDrawer.vue'
 import PageLoadingState from '@/components/ai/PageLoadingState.vue'
 import PagePanel from '@/components/ai/PagePanel.vue'
+import PanelHeader from '@/components/ai/PanelHeader.vue'
 import StateBlock from '@/components/ai/StateBlock.vue'
 import SurfaceBox from '@/components/ai/SurfaceBox.vue'
 import {
@@ -462,12 +466,14 @@ const userKeysRuntime = useSettingsUserKeysRuntime({
 const userKeys = userKeysRuntime.userKeys
 const userKeysLoaded = userKeysRuntime.userKeysLoaded
 const userKeysLoading = userKeysRuntime.userKeysLoading
+const userKeysError = userKeysRuntime.userKeysError
 const userKeyBusy = userKeysRuntime.userKeyBusy
 const userKeyModal = userKeysRuntime.userKeyModal
 const editingUserKey = userKeysRuntime.editingUserKey
 const newUserKey = userKeysRuntime.newUserKey
 const userKeyForm = userKeysRuntime.userKeyForm
 const copyUserKey = userKeysRuntime.copyUserKey
+const clearNewUserKey = userKeysRuntime.clearNewUserKey
 const openUserKeyCreateModal = userKeysRuntime.openUserKeyCreateModal
 const openUserKeyEditModal = userKeysRuntime.openUserKeyEditModal
 const closeUserKeyModal = userKeysRuntime.closeUserKeyModal
@@ -475,6 +481,7 @@ const loadUserKeys = userKeysRuntime.loadUserKeys
 const createUserKey = userKeysRuntime.createUserKey
 const updateUserKey = userKeysRuntime.updateUserKey
 const toggleUserKey = userKeysRuntime.toggleUserKey
+const rotateUserKey = userKeysRuntime.rotateUserKey
 const deleteUserKey = userKeysRuntime.deleteUserKey
 
 const sensitiveWordsText = computed({
@@ -530,6 +537,14 @@ const consoleRequestTimeoutField = useNumberSettingField(
     localSettings.value.console_request_timeout_secs = value
   },
   { integer: true, metadata: () => fieldMetadata('console_request_timeout_secs') },
+)
+const studioContextRoundsField = useNumberSettingField(
+  () => localSettings.value?.studio_context_rounds,
+  (value) => {
+    if (!localSettings.value) return
+    localSettings.value.studio_context_rounds = value
+  },
+  { integer: true, metadata: () => fieldMetadata('studio_context_rounds') },
 )
 const imagePollTimeoutField = useNumberSettingField(
   () => localSettings.value?.image_poll_timeout_secs,
@@ -627,6 +642,7 @@ const numberSettingFields = [
   logRetentionHoursField,
   refreshAccountIntervalField,
   consoleRequestTimeoutField,
+  studioContextRoundsField,
   imagePollTimeoutField,
   imageStreamTimeoutField,
   imagePollInitialWaitField,
@@ -703,6 +719,11 @@ useSettingsTabRuntime({
 </script>
 
 <style scoped>
+.settings-tabs {
+  --segmented-selected-bg: var(--selection-background);
+  --segmented-selected-color: var(--selection-foreground);
+}
+
 .settings-page-panel {
   border: 0 !important;
   border-radius: 0 !important;

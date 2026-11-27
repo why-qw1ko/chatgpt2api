@@ -8,7 +8,8 @@ from api.image_inputs import parse_image_edit_request, read_image_sources
 from api.image_task_contract import ImageTaskPage, ImageTaskRow
 from api.support import require_identity, resolve_image_base_url
 from services.content_filter import check_request
-from services.image_task_service import ImageTaskLimitExceededError, ImageTaskQueueFullError, image_task_service
+from services.image_quota_service import ImageQuotaExceededError, ImageQuotaUnavailableError
+from services.image_task_service import ImageTaskQueueFullError, image_task_service
 from services.log_service import LoggedCall
 
 
@@ -36,10 +37,24 @@ def _queue_full_http_error(exc: ImageTaskQueueFullError) -> HTTPException:
     )
 
 
-def _limit_exceeded_http_error(exc: ImageTaskLimitExceededError) -> HTTPException:
+def _limit_exceeded_http_error(exc: ImageQuotaExceededError) -> HTTPException:
     return HTTPException(
         status_code=429,
-        detail={"code": exc.code, "error": str(exc), "limit": exc.limit, "used": exc.used},
+        detail={
+            "code": exc.code,
+            "error": str(exc),
+            "limit": exc.limit,
+            "used": exc.used,
+            "reserved": exc.reserved,
+            "remaining": exc.remaining,
+        },
+    )
+
+
+def _quota_unavailable_http_error(exc: ImageQuotaUnavailableError) -> HTTPException:
+    return HTTPException(
+        status_code=503,
+        detail={"code": exc.code, "error": str(exc)},
     )
 
 
@@ -69,7 +84,8 @@ def create_router() -> APIRouter:
         authorization: str | None = Header(default=None),
     ):
         identity = require_identity(authorization)
-        await filter_or_log(LoggedCall(identity, "/api/image-tasks/generations", body.model, "文生图任务", request_text=body.prompt), body.prompt)
+        call = LoggedCall(identity, "/api/image-tasks/generations", body.model, "文生图任务", request_text=body.prompt)
+        await filter_or_log(call, body.prompt)
         try:
             return await run_in_threadpool(
                 image_task_service.submit_generation,
@@ -82,8 +98,11 @@ def create_router() -> APIRouter:
                 quality=body.quality,
                 base_url=resolve_image_base_url(request),
             )
-        except ImageTaskLimitExceededError as exc:
+        except ImageQuotaExceededError as exc:
+            call.log("调用失败", status="failed", error=str(exc), extra={"error_code": exc.code})
             raise _limit_exceeded_http_error(exc) from exc
+        except ImageQuotaUnavailableError as exc:
+            raise _quota_unavailable_http_error(exc) from exc
         except ImageTaskQueueFullError as exc:
             raise _queue_full_http_error(exc) from exc
         except ValueError as exc:
@@ -101,7 +120,8 @@ def create_router() -> APIRouter:
             raise HTTPException(status_code=400, detail={"error": "client_task_id is required"})
         prompt = str(payload["prompt"])
         model = str(payload["model"])
-        await filter_or_log(LoggedCall(identity, "/api/image-tasks/edits", model, "图生图任务", request_text=prompt), prompt)
+        call = LoggedCall(identity, "/api/image-tasks/edits", model, "图生图任务", request_text=prompt)
+        await filter_or_log(call, prompt)
         reservation = None
         try:
             reservation = await run_in_threadpool(image_task_service.reserve_submission)
@@ -121,8 +141,11 @@ def create_router() -> APIRouter:
                 masks=masks,
                 reservation=reservation,
             )
-        except ImageTaskLimitExceededError as exc:
+        except ImageQuotaExceededError as exc:
+            call.log("调用失败", status="failed", error=str(exc), extra={"error_code": exc.code})
             raise _limit_exceeded_http_error(exc) from exc
+        except ImageQuotaUnavailableError as exc:
+            raise _quota_unavailable_http_error(exc) from exc
         except ImageTaskQueueFullError as exc:
             raise _queue_full_http_error(exc) from exc
         except ValueError as exc:
@@ -146,6 +169,12 @@ def create_router() -> APIRouter:
                 task_id,
                 body.extra_timeout_secs,
             )
+        except ImageQuotaExceededError as exc:
+            call = LoggedCall(identity, "/api/image-tasks/resume-poll", "", "继续轮询图片任务")
+            call.log("调用失败", status="failed", error=str(exc), extra={"error_code": exc.code})
+            raise _limit_exceeded_http_error(exc) from exc
+        except ImageQuotaUnavailableError as exc:
+            raise _quota_unavailable_http_error(exc) from exc
         except ImageTaskQueueFullError as exc:
             raise _queue_full_http_error(exc) from exc
         except ValueError as exc:

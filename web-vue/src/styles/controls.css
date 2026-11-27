@@ -1,0 +1,250 @@
+/* Console controls: one size/state system, including teleported overlays. */
+:root {
+  --workspace-control: 36px;
+  --workspace-control-compact: 32px;
+  --workspace-control-large: 40px;
+  --control-fill: hsl(var(--muted));
+  --control-hover: color-mix(in srgb, var(--control-fill) 88%, hsl(var(--foreground)));
+  --control-focus: hsl(var(--ring));
+  --control-primary-hover: color-mix(in srgb, hsl(var(--primary)) 88%, hsl(var(--foreground)));
+  --el-menu-hover-bg-color: var(--control-fill);
+}
+
+html .el-button + .el-button { margin-inline-start: 0; }
+html .lux-button {
+  height: var(--workspace-control);
+  padding-inline: 14px;
+  border-radius: var(--control-radius);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: normal;
+  transition: background-color var(--motion-fast) var(--ease-out-soft),
+    color var(--motion-fast) var(--ease-out-soft), border-color var(--motion-fast) var(--ease-out-soft);
+}
+html .lux-button.el-button--small { height: var(--workspace-control-compact); padding-inline: 10px; font-size: 13px; }
+html .lux-button.el-button--large { height: var(--workspace-control-large); padding-inline: 16px; }
+html .lux-button--icon { width: var(--workspace-control); padding-inline: 0; flex-shrink: 0; }
+html .lux-button--icon.el-button--small { width: var(--workspace-control-compact); padding-inline: 0; }
+html .lux-button--icon.el-button--large { width: var(--workspace-control-large); padding-inline: 0; }
+html .lux-button--outline {
+  --el-button-text-color: hsl(var(--foreground));
+  --el-button-bg-color: var(--control-fill);
+  --el-button-border-color: transparent;
+  --el-button-hover-text-color: hsl(var(--foreground));
+  --el-button-hover-bg-color: var(--control-hover);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-text-color: hsl(var(--foreground));
+  --el-button-active-bg-color: var(--control-hover);
+  --el-button-active-border-color: transparent;
+}
+html .el-button--primary:not(.is-plain, .is-link, .is-text) {
+  --el-button-text-color: hsl(var(--primary-foreground));
+  --el-button-bg-color: hsl(var(--primary));
+  --el-button-border-color: transparent;
+  --el-button-hover-text-color: hsl(var(--primary-foreground));
+  --el-button-hover-bg-color: var(--control-primary-hover);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-text-color: hsl(var(--primary-foreground));
+  --el-button-active-bg-color: var(--el-color-primary-dark-2);
+  --el-button-active-border-color: transparent;
+  --el-button-disabled-bg-color: var(--control-fill);
+  --el-button-disabled-border-color: transparent;
+  --el-button-disabled-text-color: var(--el-text-color-disabled);
+}
+html .lux-button--ghost {
+  --el-button-text-color: hsl(var(--muted-foreground));
+  --el-button-hover-text-color: hsl(var(--foreground));
+  --el-button-hover-link-text-color: hsl(var(--foreground));
+  --el-fill-color-light: var(--control-fill);
+  --el-fill-color: var(--control-hover);
+}
+html .lux-button--danger {
+  --el-button-text-color: hsl(var(--tone-error-foreground));
+  --el-button-bg-color: hsl(var(--tone-error-bg));
+  --el-button-border-color: transparent;
+  --el-button-hover-text-color: hsl(var(--tone-error-foreground));
+  --el-button-hover-bg-color: color-mix(in srgb, hsl(var(--tone-error-bg)) 88%, hsl(var(--tone-error-strong)));
+  --el-button-hover-border-color: transparent;
+  --el-button-active-text-color: hsl(var(--tone-error-foreground));
+  --el-button-active-bg-color: var(--el-button-hover-bg-color);
+  --el-button-active-border-color: transparent;
+}
+html .lux-button.is-disabled {
+  --el-button-disabled-border-color: transparent;
+  --el-button-disabled-bg-color: var(--control-fill);
+  --el-button-disabled-text-color: var(--el-text-color-disabled);
+}
+html :is(.lux-button, .lux-close):focus-visible { outline: 2px solid var(--control-focus); outline-offset: 2px; }
+html .lux-close { width: var(--workspace-control-compact); height: var(--workspace-control-compact); padding: 0; border-radius: var(--control-radius); }
+html .lux-close--dark { color: #fff; background: rgb(0 0 0 / 0.25); }
+
+html .lux-input { --el-input-height: var(--workspace-control); }
+html .lux-input.el-input--small { --el-input-height: var(--workspace-control-compact); }
+html .lux-input.el-input--large { --el-input-height: var(--workspace-control-large); }
+html .lux-input .el-input__wrapper,
+html .lux-select .el-select__wrapper {
+  padding-inline: 12px;
+  border-radius: var(--control-radius);
+  background: var(--control-fill);
+  box-shadow: none;
+  font-size: 14px;
+  transition: background-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+html .lux-select .el-select__wrapper { min-height: var(--workspace-control); }
+html .lux-input .el-input__inner { min-width: 0; font-size: inherit; line-height: 20px; }
+html .lux-input .el-input__wrapper:hover,
+html .lux-select .el-select__wrapper:hover { background: var(--control-hover); box-shadow: none; }
+html .lux-input .el-input__wrapper.is-focus,
+html .lux-select .el-select__wrapper.is-focused { background: hsl(var(--card)); box-shadow: inset 0 0 0 1px var(--control-focus); }
+html .lux-input.is-disabled .el-input__wrapper,
+html .lux-select .el-select__wrapper.is-disabled { background: var(--control-fill); box-shadow: none; opacity: 0.6; }
+html :is(.ui-input-sm, .ui-input-md, .ui-textarea-sm, .el-textarea__inner) {
+  min-height: var(--workspace-control);
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  padding: 9px 12px;
+  background: var(--control-fill);
+  color: hsl(var(--foreground));
+  font: 14px/1.5 var(--el-font-family);
+}
+html :is(.ui-textarea-sm, .el-textarea__inner) { min-height: 96px; }
+html :is(.ui-input-sm, .ui-input-md, .ui-textarea-sm, .el-textarea__inner):focus { outline: none; border-color: transparent; background: hsl(var(--card)); box-shadow: inset 0 0 0 1px var(--control-focus); }
+html .lux-select .el-select__input:focus-visible { outline: none; }
+html[data-input-mode="keyboard"] .lux-select:focus-within { outline: 2px solid var(--control-focus); outline-offset: 3px; border-radius: var(--control-radius); }
+html .lux-field.is-error :is(.el-input__wrapper, .el-textarea__inner),
+html [aria-invalid="true"] { box-shadow: inset 0 0 0 1px hsl(var(--tone-error-strong)); }
+html .el-select__caret { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+
+/* The popper supplies the only surface. Options and grouped rows share a flat list. */
+html :is(.lux-select-menu.el-popper, .lux-action-popover.el-popover) {
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--control-radius);
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-floating);
+}
+html .lux-select-menu .el-select-dropdown__list { padding-block: 4px; }
+html .lux-select-menu .el-select-group__title { padding-inline: 12px; line-height: 28px; }
+html .lux-select-menu .el-select-group__wrap:not(:last-of-type) { padding-bottom: 4px; }
+html .lux-select-menu .el-select-group__wrap:not(:last-of-type)::after {
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+html .lux-select-menu .el-select-dropdown__item {
+  height: 34px;
+  padding-inline: 12px 28px;
+  line-height: 34px;
+  font-size: 14px;
+}
+html .lux-select-menu .el-select-dropdown__item.is-selected {
+  color: hsl(var(--secondary-foreground));
+  font-weight: 500;
+}
+html .lux-select-menu .el-select-dropdown__item.is-selected::after {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 5px;
+  height: 9px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-60%) rotate(45deg);
+  background: none;
+  mask: none;
+  content: '';
+}
+html .lux-select-menu .el-select-dropdown__item.is-hovering { background: var(--control-fill); }
+html .lux-select-menu .el-select-dropdown__item.is-disabled { color: var(--el-text-color-disabled); background: transparent; }
+html .lux-action-menu.el-menu { --el-menu-item-height: 34px; --el-menu-sub-item-height: 34px; --el-menu-base-level-padding: 12px; padding-block: 4px; }
+html .lux-action-menu .el-menu { background: transparent; }
+html .lux-action-menu .el-menu-item.is-active:not(.lux-menu-danger) { color: hsl(var(--secondary-foreground)); }
+html .lux-action-menu .el-menu-item:focus-visible { outline: 2px solid var(--control-focus); outline-offset: -2px; }
+html .el-checkbox {
+  --el-checkbox-input-width: 16px;
+  --el-checkbox-input-height: 16px;
+  --el-checkbox-border-radius: var(--control-radius);
+  --el-checkbox-bg-color: hsl(var(--card));
+  --el-checkbox-input-border: 1px solid hsl(var(--input));
+  --el-checkbox-input-border-color-hover: hsl(var(--primary));
+  --el-checkbox-checked-bg-color: hsl(var(--primary));
+  --el-checkbox-checked-input-border-color: hsl(var(--primary));
+  --el-checkbox-checked-icon-color: hsl(var(--primary-foreground));
+  --el-checkbox-checked-text-color: hsl(var(--foreground));
+  --el-checkbox-disabled-checked-input-fill: hsl(var(--muted));
+  --el-checkbox-disabled-checked-input-border-color: hsl(var(--input));
+  --el-checkbox-disabled-checked-icon-color: hsl(var(--muted-foreground));
+  min-height: 28px;
+  margin-right: 0;
+  vertical-align: middle;
+}
+html .el-checkbox__input { display: inline-flex; }
+html .el-checkbox__original { inset: 50% auto auto 50%; width: 1px; height: 1px; }
+html .el-checkbox__input.is-indeterminate .el-checkbox__inner::before { top: 50%; height: 2px; transform: translateY(-50%) scaleX(0.55); }
+html .el-checkbox__label { font-size: 0.8125rem; line-height: 1.5; }
+html .lux-table .lux-table-selection { width: 60px; min-width: 60px; padding: 12px 20px; text-align: center; vertical-align: middle; }
+.lux-segmented-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 2px;
+  scroll-padding-inline: 2px;
+}
+
+.lux-segmented-scroll .el-segmented {
+  --el-segmented-color: hsl(var(--muted-foreground));
+  --el-segmented-bg-color: var(--control-fill);
+  --el-segmented-item-selected-bg-color: var(--segmented-selected-bg, hsl(var(--secondary)));
+  --el-segmented-item-selected-color: var(--segmented-selected-color, hsl(var(--secondary-foreground)));
+  --el-segmented-item-selected-disabled-bg-color: hsl(var(--card));
+  --el-segmented-item-hover-bg-color: var(--control-hover);
+  --el-segmented-item-active-bg-color: var(--control-hover);
+  --el-border-radius-base: calc(var(--control-radius) + 4px);
+  min-height: var(--workspace-control);
+  padding: 4px;
+  font-size: 0.8125rem;
+}
+
+.lux-segmented-scroll .el-segmented.is-block { width: max-content; min-width: 100%; }
+.lux-segmented-scroll .el-segmented__group { gap: 4px; }
+.lux-segmented-scroll .el-segmented__group > .el-segmented__item {
+  position: relative;
+  min-width: max-content;
+  flex: 1 0 auto;
+  border-radius: var(--control-radius);
+}
+.lux-segmented-scroll .el-segmented__item.is-selected.is-disabled { color: var(--el-segmented-item-disabled-color); }
+.lux-segmented-scroll .el-segmented__item-selected {
+  border-radius: var(--control-radius);
+  transition: transform var(--motion-base) var(--ease-out-soft);
+}
+.lux-segmented-scroll .el-segmented__item-selected.is-focus-visible::before { content: none; }
+.lux-segmented-scroll .el-segmented__item:has(.el-segmented__item-input:focus-visible) {
+  outline: 2px solid var(--control-focus);
+  outline-offset: -2px;
+}
+.lux-segmented-scroll .el-segmented__item-input {
+  inset-inline-start: 50%;
+  width: 1px;
+  height: 1px;
+}
+.lux-segment-count { margin-inline-start: 8px; font-variant-numeric: tabular-nums; }
+
+html .el-radio-button { --el-radio-button-checked-bg-color: hsl(var(--secondary)); --el-radio-button-checked-border-color: transparent; --el-radio-button-checked-text-color: hsl(var(--secondary-foreground)); }
+html .el-radio-button__inner { display: inline-flex; align-items: center; justify-content: center; min-height: var(--workspace-control); background: var(--control-fill); border-color: transparent; }
+
+html :is(.lux-dialog:not(.lightbox-dialog), .lux-confirm-dialog) {
+  --el-dialog-border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+}
+html .lux-dialog:not(.lightbox-dialog) .modal-header { padding: 16px 20px; background: transparent; }
+html .modal-footer { padding: 12px 20px; }
+html .lux-drawer.el-drawer { border-radius: 8px; }
+html .lightbox-dialog.lux-dialog { border: 0; background: transparent; box-shadow: none; }
+html .lux-table .lux-button { height: var(--workspace-control-compact); padding-inline: 10px; font-size: 12px; }
+html .lux-table .lux-button--icon { width: var(--workspace-control-compact); padding: 0; }
+html :is(.action-row, .panel-header-actions, .modal-footer) .lux-button { height: var(--workspace-control); }
+html :is(.action-row, .panel-header-actions, .modal-footer) .lux-button--icon { width: var(--workspace-control); }
+@media (pointer: coarse) {
+  html { --workspace-control: 40px; --workspace-control-compact: 36px; }
+}

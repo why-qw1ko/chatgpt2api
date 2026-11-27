@@ -9,11 +9,6 @@ export interface ChatStreamInput {
   onDelta?: (delta: string) => void
 }
 
-export interface ChatStreamResult {
-  content: string
-  rawChunks: number
-}
-
 function apiUrl(path: string) {
   const baseUrl = String(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
   return baseUrl ? `${baseUrl}${path}` : path
@@ -105,7 +100,7 @@ async function responseError(response: Response) {
   }
 }
 
-export async function streamChatCompletion(input: ChatStreamInput): Promise<ChatStreamResult> {
+export async function streamChatCompletion(input: ChatStreamInput): Promise<void> {
   const token = getAuthToken()
   const response = await fetch(apiUrl('/v1/chat/completions'), {
     method: 'POST',
@@ -116,6 +111,7 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     body: JSON.stringify({
       model: input.model.trim() || 'auto',
       messages: input.messages,
+      _preserve_history: true,
       stream: true,
       ...(input.reasoningEffort ? { reasoning_effort: input.reasoningEffort } : {}),
     }),
@@ -123,7 +119,7 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
   })
 
   if (!response.ok) {
-    if (response.status === 401) handleUnauthorizedResponse()
+    if (response.status === 401 && getAuthToken() === token) handleUnauthorizedResponse()
     throw new Error(await responseError(response))
   }
 
@@ -134,14 +130,11 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  let content = ''
-  let rawChunks = 0
 
   const handleEvent = (eventText: string) => {
     const data = parseSseEvent(eventText)
     if (!data) return false
     if (data === '[DONE]') return true
-    rawChunks += 1
     let payload: unknown
     try {
       payload = JSON.parse(data)
@@ -152,34 +145,30 @@ export async function streamChatCompletion(input: ChatStreamInput): Promise<Chat
     const error = extractStreamError(payload)
     if (error) throw new Error(error)
     const delta = extractDelta(payload)
-    if (delta) {
-      content += delta
-      input.onDelta?.(delta)
-    }
+    if (delta) input.onDelta?.(delta)
     return false
   }
 
-  while (true) {
-    const { value, done } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
 
-    let boundary = buffer.search(/\r?\n\r?\n/)
-    while (boundary >= 0) {
-      const eventText = buffer.slice(0, boundary)
-      const separatorLength = buffer.startsWith('\r\n\r\n', boundary) ? 4 : 2
-      buffer = buffer.slice(boundary + separatorLength)
-      if (handleEvent(eventText)) {
-        await reader.cancel().catch(() => {})
-        return { content, rawChunks }
+      let boundary = buffer.search(/\r?\n\r?\n/)
+      while (boundary >= 0) {
+        const eventText = buffer.slice(0, boundary)
+        const separatorLength = buffer.startsWith('\r\n\r\n', boundary) ? 4 : 2
+        buffer = buffer.slice(boundary + separatorLength)
+        if (handleEvent(eventText)) return
+        boundary = buffer.search(/\r?\n\r?\n/)
       }
-      boundary = buffer.search(/\r?\n\r?\n/)
     }
+
+    buffer += decoder.decode()
+    if (buffer.trim()) handleEvent(buffer)
+  } finally {
+    await reader.cancel().catch(() => {})
+    reader.releaseLock()
   }
-
-  const rest = decoder.decode()
-  if (rest) buffer += rest
-  if (buffer.trim()) handleEvent(buffer)
-
-  return { content, rawChunks }
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import itertools
 import json
 import re
 import time
@@ -12,13 +13,14 @@ from concurrent.futures import (
     wait,
 )
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import tiktoken
 from curl_cffi.requests import exceptions as curl_exceptions
 
 from services.account_service import ImageAccountSelectionError, account_service
 from services.config import config
+from services.generation_network_guard import ensure_generation_network
 from services.image_failure import (
     ImageDownloadError,
     ImageFailure,
@@ -54,6 +56,9 @@ from utils.helper import (
 from utils.image_tokens import count_image_content_tokens, image_output_metadata, image_size_from_bytes
 from utils.log import logger
 from utils.diagnostics import diagnostic_excerpt
+
+if TYPE_CHECKING:
+    from services.image_quota_service import ImageQuotaReservation
 
 
 def _monitor_image_stage(request: "ConversationRequest", event: str, **data: Any) -> None:
@@ -389,10 +394,16 @@ def message_text(content: Any) -> str:
 
 def normalize_messages(messages: object, system: Any = None) -> list[dict[str, Any]]:
     normalized = []
-    if config.global_system_prompt:
-        normalized.append({"role": "system", "content": config.global_system_prompt})
+    global_prompt = config.global_system_prompt
+    existing_system_texts: set[str] = set()
+    if isinstance(messages, list):
+        for message in messages:
+            if isinstance(message, dict) and str(message.get("role") or "") == "system":
+                existing_system_texts.add(str(message.get("content") or ""))
+    if global_prompt and global_prompt not in existing_system_texts:
+        normalized.append({"role": "system", "content": global_prompt})
     system_text = message_text(system)
-    if system_text:
+    if system_text and system_text not in existing_system_texts and system_text != global_prompt:
         normalized.append({"role": "system", "content": system_text})
     if isinstance(messages, list):
         for message in messages:
@@ -493,6 +504,7 @@ def format_image_result(
     requested_size: str | None = None,
     deadline_monotonic: float | None = None,
     owner_id: str = "",
+    max_results: int | None = None,
 ) -> dict[str, Any]:
     data: list[dict[str, Any]] = []
     image_urls: list[str] = []
@@ -520,6 +532,8 @@ def format_image_result(
         if dimensions:
             asset["width"], asset["height"] = dimensions
         data.append(asset)
+        if max_results is not None and len(data) >= max_results:
+            break
     result: dict[str, Any] = {"created": created or int(time.time()), "data": data}
     if image_urls:
         result["_image_urls"] = image_urls
@@ -540,6 +554,9 @@ class ConversationRequest:
     quality: str = "auto"
     response_format: str = "b64_json"
     base_url: str | None = None
+    upstream_conversation_id: str = ""
+    upstream_parent_message_id: str = ""
+    result_facts: dict[str, Any] | None = None
     message_as_error: bool = False
     progress_callback: Any = None  # Callable[[str], None] | None
     call_id: str = ""
@@ -547,6 +564,7 @@ class ConversationRequest:
     monitor_attempt: int = 0
     deadline_monotonic: float = 0.0
     owner_id: str = ""
+    image_quota: ImageQuotaReservation | None = None
 
 
 @dataclass
@@ -677,7 +695,11 @@ def strip_history(text: str, history_text: str = "") -> str:
     history_text = str(history_text or "")
     while history_text and text.startswith(history_text):
         text = text[len(history_text):]
-    return text
+    history_messages = [item for item in history_text.split("\n\n") if item]
+    for item in history_messages:
+        if text.startswith(item):
+            text = text[len(item):]
+    return text.lstrip("\n")
 
 
 def sanitize_output_text(text: str) -> str:
@@ -995,6 +1017,7 @@ def conversation_base_event(event_type: str, state: ConversationState, **extra: 
         "message_type": state.message_type,
         "message_role": str(state.message_facts.get("role") or ""),
         "content_type": str(state.message_facts.get("content_type") or ""),
+        "message_id": str(state.message_facts.get("message_id") or ""),
         "_terminal_tool_arguments": (
             dict(state.terminal_tool_arguments)
             if state.terminal_tool_arguments is not None else None
@@ -1062,26 +1085,77 @@ def conversation_events(
     size: str | None = None,
     quality: str = "auto",
     thinking_effort: str = "",
+    request: ConversationRequest | None = None,
 ) -> Iterator[dict[str, Any]]:
+    request = request or ConversationRequest()
+    ensure_generation_network(backend.proxy_profile)
     normalized = normalize_messages(messages or ([{"role": "user", "content": prompt}] if prompt else []))
     image_model = is_supported_image_model(model)
     history_text = "" if image_model else assistant_history_text(normalized)
     history_messages = [] if image_model else assistant_history_messages(normalized)
     final_prompt = prompt_with_global_system(build_image_prompt(prompt, size, quality)) if image_model else prompt
-    payloads = backend.stream_conversation(
-        messages=normalized,
-        model=model,
-        prompt=final_prompt,
-        images=images if image_model else None,
-        system_hints=["picture_v2"] if image_model else None,
-        thinking_effort=thinking_effort if not image_model else "",
-    )
-    yield from iter_conversation_payloads(
-        payloads,
-        history_text,
-        history_messages,
-        classify_terminal_text_as_image_failure=image_model,
-    )
+    upstream_conversation_id = str(getattr(request, "upstream_conversation_id", "") or "")
+    upstream_parent_message_id = str(getattr(request, "upstream_parent_message_id", "") or "")
+    use_upstream_thread = bool(upstream_conversation_id or upstream_parent_message_id)
+
+    def _open_stream(conversation_id: str = "", parent_message_id: str = ""):
+        return backend.stream_conversation(
+            messages=normalized,
+            model=model,
+            prompt=final_prompt,
+            images=images if image_model else None,
+            system_hints=["picture_v2"] if image_model else None,
+            thinking_effort=thinking_effort if not image_model else "",
+            conversation_id=conversation_id,
+            parent_message_id=parent_message_id,
+        )
+
+    emitted = {"count": 0}
+
+    def _iter_events(source):
+        for event in iter_conversation_payloads(
+            source,
+            history_text,
+            history_messages,
+            classify_terminal_text_as_image_failure=image_model,
+        ):
+            emitted["count"] += 1
+            if isinstance(getattr(request, "result_facts", None), dict):
+                if event.get("conversation_id"):
+                    request.result_facts["conversation_id"] = str(event.get("conversation_id") or "")
+                if event.get("message_id"):
+                    request.result_facts["message_id"] = str(event.get("message_id") or "")
+            yield event
+
+    if use_upstream_thread:
+        try:
+            source = _open_stream(upstream_conversation_id, upstream_parent_message_id)
+            first = next(source, None)
+            if first is None:
+                raise RuntimeError("upstream conversation continuation returned empty stream")
+
+            def _chained():
+                yield first
+                yield from source
+
+            yield from _iter_events(_chained())
+            return
+        except Exception as exc:
+            if emitted["count"] > 0:
+                raise
+            logger.warning({
+                "event": "upstream_conversation_continue_failed",
+                "conversation_id": upstream_conversation_id,
+                "parent_message_id": upstream_parent_message_id,
+                "error_type": type(exc).__name__,
+                "error": diagnostic_excerpt(str(exc), 500),
+            })
+            if isinstance(getattr(request, "result_facts", None), dict):
+                request.result_facts["upstream_fallback"] = True
+            request.upstream_conversation_id = ""
+            request.upstream_parent_message_id = ""
+
+    yield from _iter_events(_open_stream("", ""))
 
 
 def _text_account_email(access_token: str) -> str:
@@ -1126,6 +1200,7 @@ def stream_text_deltas(backend: OpenAIBackendAPI, request: ConversationRequest) 
                 model=request.model,
                 prompt=request.prompt,
                 thinking_effort=request.thinking_effort,
+                request=request,
             ):
                 structured_failure = event.get("_image_failure")
                 if isinstance(structured_failure, ImageFailure):
@@ -1629,6 +1704,7 @@ def _image_result_output_from_urls(
         requested_size=request.size,
         deadline_monotonic=request.deadline_monotonic or None,
         owner_id=request.owner_id,
+        max_results=1 if request.image_quota is not None and request.image_quota.capped else None,
     )
     data = formatted["data"]
     if not data:
@@ -1666,6 +1742,7 @@ def stream_image_outputs(
                 images=request.images or [],
                 size=request.size,
                 quality=request.quality,
+                request=request,
         ):
             last = event
             if event.get("type") == "conversation.delta":
@@ -1958,6 +2035,7 @@ def stream_codex_image_outputs(
         index: int = 1,
         total: int = 1,
 ) -> Iterator[ImageOutput]:
+    ensure_generation_network(backend.proxy_profile)
     codex_started = time.perf_counter()
     events = list(backend.iter_codex_image_response_events(
         prompt=request.prompt,
@@ -2017,6 +2095,7 @@ def stream_codex_image_outputs(
         requested_size=request.size,
         deadline_monotonic=request.deadline_monotonic or None,
         owner_id=request.owner_id,
+        max_results=1 if request.image_quota is not None and request.image_quota.capped else None,
     )
     data = formatted["data"]
     if data:
@@ -2740,6 +2819,25 @@ def _select_image_pool_error(errors: dict[int, Exception]) -> Exception | None:
     return selected
 
 
+def _generate_image_slot(request: ConversationRequest, index: int, total: int) -> list[ImageOutput]:
+    quota = request.image_quota
+    if quota is None:
+        return _generate_single_image(request, index, total)
+    quota.retain_work()
+    try:
+        outputs = _generate_single_image(request, index, total)
+        for output in outputs:
+            if output.kind != "result":
+                continue
+            accepted = quota.record(len(output.data))
+            if accepted < len(output.data):
+                output.data = output.data[:accepted]
+                output.image_urls = output.image_urls[:accepted]
+        return outputs
+    finally:
+        quota.release_work()
+
+
 def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[ImageOutput]:
     """并行生成多张图片，每张图片使用独立线程和账号，互不阻塞。"""
     if not is_supported_image_model(request.model):
@@ -2761,7 +2859,7 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
 
     if request.n <= 1:
         # 单张图片，直接执行（无需线程池开销）
-        outputs = _generate_single_image(replace(request), 1, 1)
+        outputs = _generate_image_slot(replace(request), 1, 1)
         if not outputs:
             raise ImageGenerationError(
                 "image generation completed without output",
@@ -2782,7 +2880,7 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
         errors: dict[int, Exception] = {}
         for index in range(1, request.n + 1):
             try:
-                outputs = _generate_single_image(replace(request), index, request.n)
+                outputs = _generate_image_slot(replace(request), index, request.n)
             except Exception as exc:
                 _capture_failed_image_attempts(request, exc)
                 errors[index] = exc
@@ -2851,8 +2949,18 @@ def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[Ima
         return outputs
 
     try:
+        quota = request.image_quota
         for index in range(1, request.n + 1):
-            future = executor.submit(_generate_single_image, replace(request), index, request.n)
+            if quota is not None:
+                quota.retain_work()
+            try:
+                future = executor.submit(_generate_image_slot, replace(request), index, request.n)
+            except BaseException:
+                if quota is not None:
+                    quota.release_work()
+                raise
+            if quota is not None:
+                future.add_done_callback(lambda _: quota.release_work())
             futures[future] = index
 
         # yield 结果：按完成顺序立即输出，不再等所有图片都结束后才返回成功结果。

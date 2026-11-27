@@ -6,6 +6,7 @@ import type {
 import { usePageRuntime } from '@/composables/usePageRuntime'
 import { usePagedQuery } from '@/composables/usePageQuery'
 import { useToast } from '@/composables/useToast'
+import { writeClipboardText } from '@/lib/clipboard'
 import { errorMessage } from '@/lib/errorMessage'
 import { useAccountBulkActionsRuntime } from './accountBulkActionsRuntime'
 import { useAccountBulkProgressRuntime } from './accountBulkProgressRuntime'
@@ -69,9 +70,6 @@ export function useAccountsPage() {
       accountAllTotal.value = Number(res.all_total ?? 0)
       accounts.value = res.accounts || []
       accountSelection.pruneToCurrentAccounts()
-    },
-    onError: (_message, error) => {
-      setError('加载失败', error)
     },
   })
   const visibleAccounts = computed(() => accounts.value)
@@ -267,7 +265,7 @@ export function useAccountsPage() {
         toast.warning(`当前账号没有可复制的 ${label}`)
         return
       }
-      await navigator.clipboard.writeText(token)
+      await writeClipboardText(token)
       toast.success(`${label} 已复制`)
     } catch (error) {
       setError(`复制 ${label} 失败`, error)
@@ -275,7 +273,10 @@ export function useAccountsPage() {
   }
 
   async function loadData(options?: { silentErrorToast?: boolean }) {
-    await accountListQuery.load({ silentError: options?.silentErrorToast })
+    await accountListQuery.load()
+    if (accountListQuery.error.value && !options?.silentErrorToast) {
+      setError('加载失败', accountListQuery.error.value)
+    }
     await reconcileScopedSelection(false)
   }
 
@@ -382,6 +383,8 @@ export function useAccountsPage() {
   const setViewMode = pageLifecycle.setViewMode
 
   return {
+    listError: accountListQuery.error,
+    hasListSnapshot: accountListQuery.hasSnapshot,
     loading,
     saving,
     showModal,

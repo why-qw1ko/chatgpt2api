@@ -8,7 +8,7 @@
   >
     <ModalHeader
       title="创建用户密钥"
-      subtitle="名称只是备注；创建后会生成一条只展示一次的原始密钥。"
+      subtitle="密钥创建后只展示一次，请及时保存。"
       :close-disabled="busy === 'create'"
       :bordered="false"
       @close="$emit('close')"
@@ -17,8 +17,11 @@
       <FormField label="名称">
         <Input v-model.trim="form.name" block placeholder="例如：运营画图账号" />
       </FormField>
-      <FormField label="每日图片生成限制（可选）">
-        <Input v-model.trim="form.dailyImageLimit" block type="number" placeholder="留空表示不限制，0表示禁止生成" />
+      <FormField label="自定义密钥（可选）">
+        <Input v-model.trim="form.key" block type="password" autocomplete="new-password" placeholder="留空则自动生成" />
+      </FormField>
+      <FormField label="每日图片上限（可选）">
+        <Input v-model.trim="form.dailyImageLimit" block type="number" min="0" step="1" placeholder="留空表示不限，0 表示禁止生成" />
       </FormField>
     </ModalBody>
     <ModalFooter :bordered="false">
@@ -47,11 +50,11 @@
       <FormField label="名称">
         <Input v-model.trim="form.name" block placeholder="例如：运营画图账号" />
       </FormField>
-      <FormField label="新的专用密钥（可选）">
-        <Input v-model.trim="form.key" block root-class="font-mono" placeholder="留空则不修改当前密钥" />
+      <FormField label="自定义新密钥（可选）">
+        <Input v-model.trim="form.key" block type="password" autocomplete="new-password" placeholder="留空则保留当前密钥" />
       </FormField>
-      <FormField label="每日图片生成限制（可选）">
-        <Input v-model.trim="form.dailyImageLimit" block type="number" placeholder="留空表示不限制，0表示禁止生成" />
+      <FormField label="每日图片上限（可选）">
+        <Input v-model.trim="form.dailyImageLimit" block type="number" min="0" step="1" placeholder="留空表示不限，0 表示禁止生成" />
       </FormField>
     </ModalBody>
     <ModalFooter :bordered="false">
@@ -65,7 +68,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, FormField, Input } from 'nanocat-ui'
+import { Button, FormField, Input } from '@/components/ui'
 import type { UserKey } from '@/api/userKeys'
 import ModalBody from '@/components/ai/ModalBody.vue'
 import ModalFooter from '@/components/ai/ModalFooter.vue'
